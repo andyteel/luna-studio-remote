@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self';"
+    />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>LUNA Studio Remote</title>
+    <link rel="stylesheet" href="./qr-window.css" />
+  </head>
+  <body>
+    <main class="window-shell">
+      <section class="utility-frame">
+        <header class="topbar remote-topbar">
+          <div class="brand-block">
+            <img src="../desktop-assets/ua-diamond-on.png" alt="" class="header-logo" />
+            <div class="brand-copy">
+              <h1>LUNA STUDIO REMOTE</h1>
+              <p class="header-subtitle">REMOTE SERVER</p>
+            </div>
+          </div>
+        </header>
+
+        <section class="panel-group main-surface">
+          <div class="surface-grid">
+            <section class="hardware-panel qr-panel">
+              <div class="section-header">
+                <h2>SCAN REMOTE</h2>
+                <p class="detail">USE YOUR PHONE ON THE SAME WI-FI NETWORK</p>
+              </div>
+              <div class="qr-frame">
+                <img id="qr-image" alt="Remote QR code" class="hidden" />
+                <div id="qr-placeholder" class="placeholder">WAITING FOR LAN URL…</div>
+              </div>
+            </section>
+
+            <div class="info-column">
+              <section class="hardware-panel status-panel">
+                <div class="section-header">
+                  <h2>SERVER STATUS</h2>
+                  <p id="status-detail" class="detail">PREPARING THE BUNDLED PRODUCTION REMOTE.</p>
+                </div>
+                <div class="status-copy">
+                  <div class="status-line">
+                    <span id="status-orb" class="status-orb online"></span>
+                    <p id="status-title" class="status-line-label">SERVER RUNNING</p>
+                  </div>
+                  <div class="info-block">
+                    <p class="eyebrow">LAN URL</p>
+                    <p id="remote-url" class="url-text">NOT AVAILABLE YET</p>
+                  </div>
+                  <p id="port-message" class="port-message hidden"></p>
+                </div>
+              </section>
+
+              <section id="permissions-note" class="hardware-panel note-panel hidden">
+                <div class="section-header">
+                  <h2>MACOS PERMISSIONS</h2>
+                </div>
+                <div class="hardware-plate note-plate">
+                  <p class="note-copy">
+                    ALLOW <strong>ACCESSIBILITY</strong>, <strong>AUTOMATION</strong>, AND
+                    <strong>LOCAL NETWORK</strong> ACCESS IF MACOS PROMPTS FOR THEM.
+                  </p>
+                  <button id="dismiss-note" class="hardware-button hardware-button-neutral" type="button"><span class="button-text">GOT IT</span></button>
+                </div>
+              </section>
+
+              <section class="hardware-panel controls-panel">
+                <div class="section-header">
+                  <h2>SERVER CONTROLS</h2>
+                </div>
+                <div class="controls-grid">
+                  <button id="copy-url" class="hardware-button hardware-button-neutral" type="button"><span class="button-text">COPY REMOTE URL</span></button>
+                  <button id="open-local" class="hardware-button hardware-button-blue" type="button"><span class="button-text">OPEN REMOTE LOCALLY</span></button>
+                  <button id="restart-server" class="hardware-button hardware-button-blue" type="button"><span class="button-text">RESTART SERVER</span></button>
+                  <button id="stop-server" class="hardware-button hardware-button-amber" type="button"><span class="button-text">STOP SERVER</span></button>
+                  <button id="start-server" class="hardware-button hardware-button-blue hidden" type="button"><span class="button-text">START SERVER</span></button>
+                  <button id="quit-app" class="hardware-button hardware-button-red" type="button"><span class="button-text">QUIT</span></button>
+                </div>
+              </section>
+            </div>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <script src="./qr-window.js"></script>
+  </body>
+</html>

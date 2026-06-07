@@ -1,0 +1,540 @@
+@font-face {
+  font-family: "Luna Oxygen";
+  src: url("../luna-fonts/Oxygen.otf") format("opentype");
+  font-weight: 400;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "Luna Oxygen Bold";
+  src: url("../luna-fonts/Oxygen-Bold.otf") format("opentype");
+  font-weight: 700;
+  font-style: normal;
+}
+
+:root {
+  color-scheme: dark;
+  font-family: "Avenir Next", "Segoe UI", sans-serif;
+  --luna-app-bg: #676e72;
+  --luna-panel-bg: #222222;
+  --luna-panel: #23272d;
+  --luna-panel-dark: #171a1f;
+  --luna-border: #101318;
+  --luna-text: #ece9e1;
+  --luna-muted: #a0a7b1;
+  --luna-amber: #d9ac59;
+  --luna-blue: #3e7187;
+  --luna-red: #772626;
+  --luna-green: #63af7a;
+  --luna-offline: #b64b4b;
+  --switch-frame-top: #24292e;
+  --switch-frame-bottom: #08090a;
+  --switch-well: #050606;
+  --switch-cap-light: #a8adb1;
+  --switch-cap-base: #979ca0;
+  --switch-cap-dark: #858a8e;
+  --switch-cap-border: #73787c;
+  --switch-cap-grid-row: rgba(180, 185, 189, 0.12);
+  --switch-cap-grid-col: rgba(105, 110, 114, 0.1);
+  --switch-glow-color: rgba(255, 255, 255, 0);
+}
+
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html,
+body {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+body {
+  background: var(--luna-app-bg);
+  color: var(--luna-text);
+}
+
+button {
+  font: inherit;
+  cursor: pointer;
+}
+
+button:focus,
+button:focus-visible {
+  outline: none;
+}
+
+.window-shell {
+  width: 100%;
+  height: 100%;
+  padding: 10px;
+}
+
+.utility-frame {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  gap: 8px;
+  width: 100%;
+  height: 100%;
+}
+
+.topbar,
+.panel-group,
+.hardware-panel {
+  border: 1px solid #1a1a1a;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  background: var(--luna-panel-bg);
+}
+
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 10px;
+  border-radius: 8px;
+}
+
+.brand-block {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.header-logo {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+}
+
+.brand-copy {
+  min-width: 0;
+}
+
+.brand-copy h1 {
+  margin: 0;
+  font-family: "Luna Oxygen Bold", "Avenir Next", sans-serif;
+  font-size: 1rem;
+  line-height: 1;
+  letter-spacing: 0.12em;
+  color: #e5f6fe;
+  text-transform: uppercase;
+}
+
+.header-subtitle,
+.eyebrow,
+.section-header h2,
+.hardware-button,
+.caption,
+.detail,
+.note-copy,
+.status-line-label {
+  text-transform: uppercase;
+}
+
+.eyebrow,
+.section-header h2,
+.header-subtitle {
+  margin: 0;
+  font-family: "Luna Oxygen Bold", "Avenir Next", sans-serif;
+  font-size: 0.67rem;
+  letter-spacing: 0.15em;
+}
+
+.eyebrow,
+.header-subtitle {
+  color: #d9b47a;
+}
+
+.header-subtitle {
+  margin-top: 3px;
+}
+
+.status-value {
+  margin: 0;
+  font-family: "Luna Oxygen Bold", "Avenir Next", sans-serif;
+  font-size: 0.78rem;
+  letter-spacing: 0.1em;
+  color: #ece9e1;
+  text-transform: uppercase;
+}
+
+.main-surface {
+  padding: 8px;
+  border-radius: 8px;
+}
+
+.surface-grid {
+  display: grid;
+  grid-template-columns: 198px minmax(0, 1fr);
+  gap: 8px;
+  height: 100%;
+}
+
+.hardware-panel {
+  display: grid;
+  gap: 7px;
+  padding: 8px;
+  border-radius: 6px;
+}
+
+.section-header {
+  display: grid;
+  gap: 4px;
+}
+
+.section-header h2 {
+  color: var(--luna-text);
+}
+
+.detail,
+.caption,
+.placeholder,
+.port-message,
+.note-copy {
+  margin: 0;
+  color: var(--luna-muted);
+  font-size: 0.66rem;
+  line-height: 1.35;
+  letter-spacing: 0.08em;
+}
+
+.hardware-plate {
+  position: relative;
+  border-radius: 4px;
+  background: var(--switch-well);
+  box-shadow:
+    inset 0 2px 3px rgba(0, 0, 0, 0.82),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.045);
+}
+
+.hardware-plate::before {
+  content: "";
+  position: absolute;
+  inset: 4px;
+  border-radius: 2px;
+  background:
+    linear-gradient(
+      to bottom,
+      rgba(255, 255, 255, 0.28) 0%,
+      rgba(255, 255, 255, 0.09) 17%,
+      rgba(255, 255, 255, 0) 42%,
+      rgba(0, 0, 0, 0.12) 100%
+    ),
+    repeating-linear-gradient(
+      0deg,
+      var(--switch-cap-grid-row) 0 1px,
+      transparent 1px 4px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      transparent 0 3px,
+      var(--switch-cap-grid-col) 3px 4px
+    ),
+    linear-gradient(
+      to bottom,
+      var(--switch-cap-light),
+      var(--switch-cap-base) 55%,
+      var(--switch-cap-dark)
+    );
+  border: 1px solid var(--switch-cap-border);
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.48),
+    inset 1px 0 1px rgba(255, 255, 255, 0.18),
+    inset -1px 0 2px rgba(0, 0, 0, 0.16),
+    inset 0 -2px 3px rgba(0, 0, 0, 0.2);
+}
+
+.qr-panel {
+  align-content: start;
+}
+
+.qr-frame {
+  min-height: 228px;
+  display: grid;
+  place-items: center;
+  align-self: start;
+  margin-top: 2px;
+  padding: 4px 8px 8px;
+}
+
+#qr-image {
+  width: 172px;
+  height: 172px;
+  background: #f0ece4;
+  padding: 8px;
+  border-radius: 2px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.55);
+}
+
+.placeholder {
+  text-align: center;
+  color: var(--luna-muted);
+}
+
+.info-column {
+  display: grid;
+  grid-template-rows: auto auto 1fr;
+  gap: 8px;
+  min-height: 0;
+}
+
+.status-panel,
+.note-panel,
+.controls-panel {
+  min-height: 0;
+}
+
+.status-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.status-orb {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: var(--luna-offline);
+  box-shadow: 0 0 12px currentColor;
+  color: var(--luna-offline);
+}
+
+.status-orb.online {
+  background: var(--luna-blue);
+  color: var(--luna-blue);
+}
+
+.status-orb.offline {
+  background: var(--luna-offline);
+  color: var(--luna-offline);
+}
+
+.status-line-label {
+  font-family: "Luna Oxygen Bold", "Avenir Next", sans-serif;
+  font-size: 0.74rem;
+  letter-spacing: 0.12em;
+  color: #ece9e1;
+  margin: 0;
+}
+
+.status-copy {
+  display: grid;
+  gap: 10px;
+}
+
+.url-text {
+  margin: 5px 0 0;
+  font-family: "Luna Oxygen Bold", "Avenir Next", sans-serif;
+  font-size: 0.88rem;
+  line-height: 1.3;
+  letter-spacing: 0.04em;
+  color: #ece9e1;
+  word-break: break-word;
+  text-transform: none;
+}
+
+.port-message {
+  color: #d9b47a;
+}
+
+.note-plate {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+  align-items: center;
+}
+
+.note-copy {
+  color: #2f2f2f;
+}
+
+.controls-panel {
+  grid-template-rows: auto 1fr;
+}
+
+.controls-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  align-content: start;
+}
+
+.hardware-button {
+  --switch-cap-light: #a8adb1;
+  --switch-cap-base: #979ca0;
+  --switch-cap-dark: #858a8e;
+  --switch-cap-border: #73787c;
+  --switch-cap-grid-row: rgba(180, 185, 189, 0.12);
+  --switch-cap-grid-col: rgba(105, 110, 114, 0.1);
+  --switch-glow-color: rgba(255, 255, 255, 0);
+  position: relative;
+  min-height: 56px;
+  padding: 8px;
+  border: 0;
+  border-radius: 5px;
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.13), transparent 18%),
+    linear-gradient(to bottom, var(--switch-frame-top), var(--switch-frame-bottom));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.16),
+    inset 0 -1px 1px rgba(0, 0, 0, 0.72);
+  color: #1f2123;
+  font-family: "Luna Oxygen Bold", "Avenir Next", sans-serif;
+  font-size: 0.69rem;
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: 0.1em;
+  text-align: center;
+}
+
+.hardware-button::before,
+.hardware-button::after {
+  content: "";
+  position: absolute;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.hardware-button::before {
+  inset: 1px;
+  border-radius: 3px;
+  background: var(--switch-well);
+  box-shadow:
+    inset 0 2px 3px rgba(0, 0, 0, 0.82),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.045);
+}
+
+.hardware-button::after {
+  z-index: 1;
+  inset: 5px;
+  border-radius: 2px;
+  background:
+    linear-gradient(
+      to bottom,
+      rgba(255, 255, 255, 0.28) 0%,
+      rgba(255, 255, 255, 0.09) 17%,
+      rgba(255, 255, 255, 0) 42%,
+      rgba(0, 0, 0, 0.12) 100%
+    ),
+    repeating-linear-gradient(
+      0deg,
+      var(--switch-cap-grid-row) 0 1px,
+      transparent 1px 4px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      transparent 0 3px,
+      var(--switch-cap-grid-col) 3px 4px
+    ),
+    linear-gradient(
+      to bottom,
+      var(--switch-cap-light),
+      var(--switch-cap-base) 55%,
+      var(--switch-cap-dark)
+    );
+  border: 1px solid var(--switch-cap-border);
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.48),
+    inset 1px 0 1px rgba(255, 255, 255, 0.18),
+    inset -1px 0 2px rgba(0, 0, 0, 0.16),
+    inset 0 -2px 3px rgba(0, 0, 0, 0.2);
+  transition:
+    transform 75ms ease,
+    filter 75ms ease,
+    box-shadow 75ms ease;
+}
+
+.hardware-button:hover::after {
+  filter: brightness(1.02);
+}
+
+.hardware-button:active::after {
+  transform: translateY(2px);
+  filter: brightness(0.97);
+  box-shadow:
+    inset 0 4px 8px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18);
+}
+
+.hardware-button:disabled {
+  opacity: 0.52;
+  cursor: default;
+}
+
+.hardware-button {
+  display: grid;
+  place-items: center;
+}
+
+.hardware-button {
+  position: relative;
+  z-index: 2;
+}
+
+.hardware-button span,
+.hardware-button strong,
+.hardware-button em {
+  position: relative;
+  z-index: 3;
+}
+
+.button-text {
+  position: relative;
+  z-index: 3;
+  display: inline-block;
+}
+
+.hardware-button {
+  overflow: hidden;
+}
+
+.hardware-button-blue {
+  --switch-cap-light: #f9ffff;
+  --switch-cap-base: #eef9fa;
+  --switch-cap-dark: #c5dcde;
+  --switch-cap-border: #476479;
+  --switch-cap-grid-row: rgba(219, 252, 255, 0.22);
+  --switch-cap-grid-col: rgba(104, 173, 177, 0.14);
+  --switch-glow-color: #a9fcff;
+}
+
+.hardware-button-amber {
+  --switch-cap-light: #fff9ea;
+  --switch-cap-base: #f4ebc7;
+  --switch-cap-dark: #dbc68d;
+  --switch-cap-border: #a57a18;
+  --switch-cap-grid-row: rgba(255, 233, 150, 0.22);
+  --switch-cap-grid-col: rgba(194, 139, 16, 0.14);
+  --switch-glow-color: #ffc932;
+}
+
+.hardware-button-red {
+  --switch-cap-light: #fff7f2;
+  --switch-cap-base: #f4e7e0;
+  --switch-cap-dark: #d9c1bd;
+  --switch-cap-border: #723737;
+  --switch-cap-grid-row: rgba(255, 230, 230, 0.22);
+  --switch-cap-grid-col: rgba(186, 115, 115, 0.14);
+  --switch-glow-color: #ffaaaa;
+}
+
+.hardware-button-blue::after,
+.hardware-button-amber::after,
+.hardware-button-red::after {
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.74),
+    inset 0 0 12px color-mix(in srgb, var(--switch-glow-color) 32%, white),
+    inset -1px -1px 5px rgba(0, 0, 0, 0.12);
+}
+
+.hidden {
+  display: none;
+}

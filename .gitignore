@@ -1,0 +1,17 @@
+node_modules
+dist
+dist-server
+.env
+
+# Build outputs
+release/
+dist/
+dist-server/
+*.dmg
+*.zip
+
+# Dependencies
+node_modules/
+
+# macOS
+.DS_Store
