@@ -284,7 +284,15 @@ export const startRemoteServer = async (options: RemoteServerOptions = {}): Prom
   const port = options.port ?? config.port;
   const state = defaultState();
   const app = express();
-  const mcuService = new McuService({ logger });
+  const mcuService = new McuService({
+    enabled: config.enableMcu && config.enableMidi,
+    debugMidiMessages: config.debugMcuMidi,
+    selectedInputId: config.mcuInputId,
+    selectedInputName: config.mcuInputName,
+    selectedOutputId: config.mcuOutputId,
+    selectedOutputName: config.mcuOutputName,
+    logger,
+  });
 
   const clientDistPath = resolveClientDistPath(options.clientDistPath);
   const clientIndexPath = path.join(clientDistPath, 'index.html');
@@ -794,10 +802,17 @@ export const startRemoteServer = async (options: RemoteServerOptions = {}): Prom
     response.sendFile(clientIndexPath);
   });
 
-  const server = await new Promise<HttpServer>((resolve, reject) => {
-    const nextServer = app.listen(port, host, () => resolve(nextServer));
-    nextServer.once('error', reject);
-  });
+  let server: HttpServer;
+
+  try {
+    server = await new Promise<HttpServer>((resolve, reject) => {
+      const nextServer = app.listen(port, host, () => resolve(nextServer));
+      nextServer.once('error', reject);
+    });
+  } catch (error) {
+    await mcuService.stop();
+    throw error;
+  }
 
   const localUrl = `http://127.0.0.1:${port}`;
   const lanUrls = getLanUrls(port);
@@ -810,6 +825,9 @@ export const startRemoteServer = async (options: RemoteServerOptions = {}): Prom
   logger.log(`Resolved dist path: ${clientDistPath} Exists: ${clientDistExists && clientIndexExists ? 'true' : 'false'}`);
   logger.log(`Test mode: ${config.testMode ? 'enabled' : 'disabled'}`);
   logger.log(`Keystrokes enabled: ${config.enableKeystrokes ? 'yes' : 'no'}`);
+  logger.log(`MCU enabled: ${config.enableMcu ? 'yes' : 'no'}`);
+  logger.log(`MIDI enabled: ${config.enableMidi ? 'yes' : 'no'}`);
+  logger.log(`MCU raw MIDI logging: ${config.debugMcuMidi ? 'yes' : 'no'}`);
   logger.log(`LUNA app name: ${config.lunaAppName}`);
   logger.log(`PIN: ${config.appPin ? 'enabled' : 'disabled'}`);
   logger.log(`Bound host: ${host}`);

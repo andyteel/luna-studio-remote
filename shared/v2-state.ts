@@ -56,7 +56,9 @@ export interface McuState {
   inputPorts: McuPortState[];
   outputPorts: McuPortState[];
   selectedInputId: string | null;
+  selectedInputName: string | null;
   selectedOutputId: string | null;
+  selectedOutputName: string | null;
   virtualInputName: string | null;
   virtualOutputName: string | null;
   lastMessageAt: string | null;
