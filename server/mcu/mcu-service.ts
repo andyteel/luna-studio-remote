@@ -1,20 +1,28 @@
 import type {
   FocusedTrackState,
   McuState,
+  McuPortState,
   TransportState,
   V2RemoteState,
 } from '../../shared/v2-state.js';
 import { JzzMidiAdapter, type RawMidiMessage } from './midi-adapter.js';
+import { RtMidiVirtualPortAdapter, type VirtualMidiAdapterSnapshot } from './virtual-midi-adapter.js';
 
 export interface McuServiceOptions {
   enabled?: boolean;
+  enableVirtualMidi?: boolean;
   debugMidiMessages?: boolean;
   selectedInputId?: string;
   selectedInputName?: string;
   selectedOutputId?: string;
   selectedOutputName?: string;
+  virtualInputName?: string;
+  virtualOutputName?: string;
   logger?: Pick<Console, 'log' | 'error'>;
 }
+
+const DEFAULT_VIRTUAL_INPUT_NAME = 'LUNA Studio Remote MCU In';
+const DEFAULT_VIRTUAL_OUTPUT_NAME = 'LUNA Studio Remote MCU Out';
 
 const createTransportState = (): TransportState => ({
   playing: null,
@@ -69,10 +77,49 @@ const createMcuState = (): McuState => ({
   lastError: null,
 });
 
+const createEmptyVirtualMidiSnapshot = (): VirtualMidiAdapterSnapshot => ({
+  available: false,
+  connected: false,
+  inputCreated: false,
+  outputCreated: false,
+  virtualInputName: null,
+  virtualOutputName: null,
+  lastError: null,
+});
+
+const combineErrors = (...errors: Array<string | null | undefined>): string | null => {
+  const presentErrors = errors.filter((error): error is string => Boolean(error));
+  return presentErrors.length ? presentErrors.join('; ') : null;
+};
+
+const createVirtualInputPort = (name: string): McuPortState => ({
+  id: `virtual:input:${name}`,
+  name,
+});
+
+const createVirtualOutputPort = (name: string): McuPortState => ({
+  id: `virtual:output:${name}`,
+  name,
+});
+
+const prependPortIfMissing = (ports: McuPortState[], port: McuPortState | null): McuPortState[] => {
+  if (!port) {
+    return ports;
+  }
+
+  const normalizedName = port.name.toLowerCase();
+  const alreadyPresent = ports.some((candidate) => {
+    return candidate.id === port.id || candidate.name.toLowerCase() === normalizedName;
+  });
+
+  return alreadyPresent ? ports : [port, ...ports];
+};
+
 export class McuService {
   private readonly options: McuServiceOptions;
   private readonly logger: Pick<Console, 'log' | 'error'>;
   private midiAdapter: JzzMidiAdapter | null = null;
+  private virtualMidiAdapter: RtMidiVirtualPortAdapter | null = null;
   private transport = createTransportState();
   private focusedTrack = createFocusedTrackState();
   private mcu = createMcuState();
@@ -83,6 +130,8 @@ export class McuService {
     this.mcu = {
       ...this.mcu,
       enabled: options.enabled ?? true,
+      virtualInputName: (options.enableVirtualMidi ?? true) ? this.getVirtualInputName() : null,
+      virtualOutputName: (options.enableVirtualMidi ?? true) ? this.getVirtualOutputName() : null,
     };
   }
 
@@ -105,13 +154,21 @@ export class McuService {
       ...this.mcu,
       enabled: true,
       lifecycle: 'starting',
-      driver: 'jzz',
+      driver: (this.options.enableVirtualMidi ?? true) ? 'rtmidi' : 'jzz',
+      virtualInputName: (this.options.enableVirtualMidi ?? true) ? this.getVirtualInputName() : null,
+      virtualOutputName: (this.options.enableVirtualMidi ?? true) ? this.getVirtualOutputName() : null,
       lastError: null,
     };
 
+    const virtualSnapshot = await this.startVirtualMidi();
+    const hasManualInputSelection = Boolean(this.options.selectedInputId || this.options.selectedInputName);
+    const hasManualOutputSelection = Boolean(this.options.selectedOutputId || this.options.selectedOutputName);
+    const shouldOpenDiscoveredInputForDebug =
+      (this.options.debugMidiMessages ?? false) && (hasManualInputSelection || !virtualSnapshot.inputCreated);
+
     this.midiAdapter = new JzzMidiAdapter({
       enabled: true,
-      debugRawMessages: this.options.debugMidiMessages ?? false,
+      debugRawMessages: shouldOpenDiscoveredInputForDebug,
       selectedInputId: this.options.selectedInputId,
       selectedInputName: this.options.selectedInputName,
       selectedOutputId: this.options.selectedOutputId,
@@ -121,34 +178,63 @@ export class McuService {
     });
 
     const midiSnapshot = await this.midiAdapter.start();
+    const virtualInputPort = virtualSnapshot.inputCreated ? createVirtualInputPort(this.getVirtualInputName()) : null;
+    const virtualOutputPort = virtualSnapshot.outputCreated ? createVirtualOutputPort(this.getVirtualOutputName()) : null;
+    const inputPorts = prependPortIfMissing(midiSnapshot.inputPorts, virtualInputPort);
+    const outputPorts = prependPortIfMissing(midiSnapshot.outputPorts, virtualOutputPort);
+    const selectedInput = hasManualInputSelection
+      ? {
+          id: midiSnapshot.selectedInputId,
+          name: midiSnapshot.selectedInputName,
+        }
+      : {
+          id: virtualInputPort?.id ?? midiSnapshot.selectedInputId,
+          name: virtualInputPort?.name ?? midiSnapshot.selectedInputName,
+        };
+    const selectedOutput = hasManualOutputSelection
+      ? {
+          id: midiSnapshot.selectedOutputId,
+          name: midiSnapshot.selectedOutputName,
+        }
+      : {
+          id: virtualOutputPort?.id ?? midiSnapshot.selectedOutputId,
+          name: virtualOutputPort?.name ?? midiSnapshot.selectedOutputName,
+        };
+    const available = virtualSnapshot.available || midiSnapshot.available;
+    const connected = Boolean(selectedInput.id || selectedOutput.id);
+    const lastError = combineErrors(virtualSnapshot.lastError, midiSnapshot.lastError);
 
     this.mcu = {
       ...this.mcu,
-      available: midiSnapshot.available,
-      connected: midiSnapshot.connected,
-      lifecycle: midiSnapshot.available ? (midiSnapshot.connected ? 'connected' : 'idle') : 'error',
-      inputPorts: midiSnapshot.inputPorts,
-      outputPorts: midiSnapshot.outputPorts,
-      selectedInputId: midiSnapshot.selectedInputId,
-      selectedInputName: midiSnapshot.selectedInputName,
-      selectedOutputId: midiSnapshot.selectedOutputId,
-      selectedOutputName: midiSnapshot.selectedOutputName,
-      lastError: midiSnapshot.lastError,
+      available,
+      connected,
+      lifecycle: available ? (connected ? 'connected' : 'idle') : 'error',
+      inputPorts,
+      outputPorts,
+      selectedInputId: selectedInput.id,
+      selectedInputName: selectedInput.name,
+      selectedOutputId: selectedOutput.id,
+      selectedOutputName: selectedOutput.name,
+      virtualInputName: virtualSnapshot.virtualInputName,
+      virtualOutputName: virtualSnapshot.virtualOutputName,
+      lastError,
     };
 
-    if (!midiSnapshot.available) {
-      this.logger.error(`MCU service running without MIDI: ${midiSnapshot.lastError ?? 'MIDI unavailable'}`);
+    if (!available) {
+      this.logger.error(`MCU service running without MIDI: ${lastError ?? 'MIDI unavailable'}`);
       return;
     }
 
     this.logger.log(
-      `MCU service initialized with ${midiSnapshot.inputPorts.length} MIDI input(s) and ${midiSnapshot.outputPorts.length} MIDI output(s)`,
+      `MCU service initialized with ${inputPorts.length} MIDI input(s) and ${outputPorts.length} MIDI output(s)`,
     );
   }
 
   async stop(): Promise<void> {
     await this.midiAdapter?.stop();
     this.midiAdapter = null;
+    this.virtualMidiAdapter?.stop();
+    this.virtualMidiAdapter = null;
 
     this.mcu = {
       ...this.mcu,
@@ -156,6 +242,31 @@ export class McuService {
       lifecycle: this.mcu.enabled ? 'idle' : 'disabled',
       lastMessageAt: null,
     };
+  }
+
+  private async startVirtualMidi(): Promise<VirtualMidiAdapterSnapshot> {
+    if (this.options.enableVirtualMidi === false) {
+      return createEmptyVirtualMidiSnapshot();
+    }
+
+    this.virtualMidiAdapter = new RtMidiVirtualPortAdapter({
+      enabled: true,
+      inputName: this.getVirtualInputName(),
+      outputName: this.getVirtualOutputName(),
+      debugRawMessages: this.options.debugMidiMessages ?? false,
+      logger: this.logger,
+      onRawMessage: (message) => this.handleRawMidiMessage(message),
+    });
+
+    return this.virtualMidiAdapter.start();
+  }
+
+  private getVirtualInputName(): string {
+    return this.options.virtualInputName?.trim() || DEFAULT_VIRTUAL_INPUT_NAME;
+  }
+
+  private getVirtualOutputName(): string {
+    return this.options.virtualOutputName?.trim() || DEFAULT_VIRTUAL_OUTPUT_NAME;
   }
 
   private handleRawMidiMessage(message: RawMidiMessage): void {

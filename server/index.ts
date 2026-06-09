@@ -286,11 +286,14 @@ export const startRemoteServer = async (options: RemoteServerOptions = {}): Prom
   const app = express();
   const mcuService = new McuService({
     enabled: config.enableMcu && config.enableMidi,
+    enableVirtualMidi: config.enableVirtualMidi,
     debugMidiMessages: config.debugMcuMidi,
     selectedInputId: config.mcuInputId,
     selectedInputName: config.mcuInputName,
     selectedOutputId: config.mcuOutputId,
     selectedOutputName: config.mcuOutputName,
+    virtualInputName: config.mcuVirtualInputName,
+    virtualOutputName: config.mcuVirtualOutputName,
     logger,
   });
 
@@ -827,6 +830,9 @@ export const startRemoteServer = async (options: RemoteServerOptions = {}): Prom
   logger.log(`Keystrokes enabled: ${config.enableKeystrokes ? 'yes' : 'no'}`);
   logger.log(`MCU enabled: ${config.enableMcu ? 'yes' : 'no'}`);
   logger.log(`MIDI enabled: ${config.enableMidi ? 'yes' : 'no'}`);
+  logger.log(`Virtual MIDI enabled: ${config.enableVirtualMidi ? 'yes' : 'no'}`);
+  logger.log(`Virtual MCU input: ${config.mcuVirtualInputName}`);
+  logger.log(`Virtual MCU output: ${config.mcuVirtualOutputName}`);
   logger.log(`MCU raw MIDI logging: ${config.debugMcuMidi ? 'yes' : 'no'}`);
   logger.log(`LUNA app name: ${config.lunaAppName}`);
   logger.log(`PIN: ${config.appPin ? 'enabled' : 'disabled'}`);
