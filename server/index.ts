@@ -7,6 +7,7 @@ import { commandMap, commandRegistry, type BaseKey, type CommandId, type Modifie
 import { config } from './config.js';
 import { getLanUrls } from './network.js';
 import { buildAppleScript, buildKeyAction, isLunaRunning, triggerLunaCommand, triggerShortcut, type ShortcutSpec } from './luna.js';
+import { McuService } from './mcu/mcu-service.js';
 import type { RemoteState, TestShortcutDebug } from './types.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -283,11 +284,14 @@ export const startRemoteServer = async (options: RemoteServerOptions = {}): Prom
   const port = options.port ?? config.port;
   const state = defaultState();
   const app = express();
+  const mcuService = new McuService({ logger });
 
   const clientDistPath = resolveClientDistPath(options.clientDistPath);
   const clientIndexPath = path.join(clientDistPath, 'index.html');
   const clientDistExists = fs.existsSync(clientDistPath);
   const clientIndexExists = fs.existsSync(clientIndexPath);
+
+  await mcuService.start();
 
   const logStageError = (stage: string, error: unknown) => {
     const serialized = serializeError(error);
@@ -321,6 +325,7 @@ export const startRemoteServer = async (options: RemoteServerOptions = {}): Prom
 
   const getState = async (): Promise<RemoteState> => {
     let lunaDetected = false;
+    const mcuSnapshot = mcuService.getSnapshot();
 
     try {
       lunaDetected = await isLunaRunning(config.lunaAppName);
@@ -339,6 +344,9 @@ export const startRemoteServer = async (options: RemoteServerOptions = {}): Prom
       lastError: state.lastError,
       serverTime: new Date().toISOString(),
       pinRequired: config.appPin.length > 0,
+      transport: mcuSnapshot.transport,
+      focusedTrack: mcuSnapshot.focusedTrack,
+      mcu: mcuSnapshot.mcu,
       debug: {
         lastCommandId: state.lastCommand,
         lastKeyAction: state.lastKeyAction,
@@ -815,6 +823,7 @@ export const startRemoteServer = async (options: RemoteServerOptions = {}): Prom
     lanUrls,
     clientDistPath,
     stop: async () => {
+      await mcuService.stop();
       await new Promise<void>((resolve, reject) => {
         server.close((error) => {
           if (error) {

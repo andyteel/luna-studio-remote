@@ -1,4 +1,5 @@
 import type { BaseKey, CommandDefinition, CommandId, ModifierKey } from '../shared/commands';
+import type { V2RemoteState } from '../shared/v2-state';
 
 export interface ShortcutTestState {
   shortcutLabel: string | null;
@@ -28,7 +29,7 @@ export interface RemoteDebugState {
   lastShortcutTest: ShortcutTestState;
 }
 
-export interface RemoteState {
+export interface RemoteState extends V2RemoteState {
   ok: true;
   testMode: boolean;
   lunaAppName: string;
