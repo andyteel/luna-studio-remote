@@ -30,8 +30,7 @@ import uaDiamondMouseover from '../luna-image-resources/buttons/ua_diamond_mouse
 
 const statusPollMs = 3000;
 type TabId = 'tracking' | 'navigate' | 'settings';
-const clientEnv = import.meta.env as Record<string, string | boolean | undefined>;
-const showDebugTools = import.meta.env.DEV || clientEnv.VITE_SHOW_DEBUG_TOOLS === 'true' || clientEnv.SHOW_DEBUG_TOOLS === 'true';
+const showDebugTools = false;
 
 const shortcutKeyOptions: Array<{ value: BaseKey; label: string }> = [
   { value: 'digit0', label: '0' },
@@ -537,8 +536,8 @@ const App = () => {
   const [labRequestJson, setLabRequestJson] = useState('Waiting');
   const [labResponseJson, setLabResponseJson] = useState('Waiting');
   const holdAnimationRef = useRef<number | null>(null);
-  const currentTab: TabId = showDebugTools ? activeTab : 'tracking';
-  const isProductionRemote = !showDebugTools;
+  const currentTab: TabId = 'tracking';
+  const isProductionRemote = true;
 
   const fetchState = async () => {
     const response = await fetch('/api/state');
