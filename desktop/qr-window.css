@@ -165,6 +165,7 @@ button:focus-visible {
 }
 
 .main-surface {
+  position: relative;
   padding: 8px;
   border-radius: 8px;
 }
@@ -298,6 +299,10 @@ button:focus-visible {
   margin-bottom: 10px;
 }
 
+.midi-status-line {
+  margin: 5px 0 4px;
+}
+
 .status-orb {
   width: 10px;
   height: 10px;
@@ -313,6 +318,44 @@ button:focus-visible {
 }
 
 .status-orb.offline {
+  background: var(--luna-offline);
+  color: var(--luna-offline);
+}
+
+.status-orb.ready {
+  background: var(--luna-green);
+  color: var(--luna-green);
+}
+
+.status-orb.warning {
+  background: var(--luna-amber);
+  color: var(--luna-amber);
+}
+
+.midi-status-summary {
+  padding-top: 2px;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--luna-offline);
+  color: var(--luna-offline);
+  box-shadow: 0 0 10px currentColor;
+}
+
+.status-dot.online {
+  background: var(--luna-green);
+  color: var(--luna-green);
+}
+
+.status-dot.warning {
+  background: var(--luna-amber);
+  color: var(--luna-amber);
+}
+
+.status-dot.offline {
   background: var(--luna-offline);
   color: var(--luna-offline);
 }
@@ -365,6 +408,230 @@ button:focus-visible {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
   align-content: start;
+}
+
+.midi-setup-panel {
+  position: absolute;
+  inset: 8px;
+  z-index: 10;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 8px;
+  background: #222222;
+}
+
+.midi-panel-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: start;
+}
+
+.midi-close-button {
+  min-width: 92px;
+  min-height: 44px;
+}
+
+.midi-setup-scroll {
+  display: grid;
+  gap: 8px;
+  min-height: 0;
+  overflow: auto;
+  padding-right: 2px;
+}
+
+.midi-setup-grid,
+.instruction-grid,
+.detected-port-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.midi-setup-block,
+.midi-warning-block {
+  display: grid;
+  gap: 7px;
+  padding: 8px;
+  border-radius: 5px;
+  border: 1px solid rgba(255, 255, 255, 0.055);
+  background: rgba(5, 6, 6, 0.36);
+}
+
+.midi-setup-block h3,
+.midi-warning-block h3 {
+  margin: 0;
+  font-family: "Luna Oxygen Bold", "Avenir Next", sans-serif;
+  color: #ece9e1;
+  font-size: 0.66rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.mode-row,
+.midi-action-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.midi-action-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.mode-pill {
+  display: grid;
+  gap: 3px;
+  align-content: center;
+  min-height: 44px;
+  padding: 8px;
+  border-radius: 5px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(70, 75, 82, 0.32);
+  color: var(--luna-muted);
+  font-family: "Luna Oxygen Bold", "Avenir Next", sans-serif;
+  font-size: 0.66rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.mode-pill.active {
+  color: #eef5f7;
+  border-color: rgba(99, 175, 122, 0.42);
+  background: rgba(66, 93, 82, 0.48);
+}
+
+.mode-pill small {
+  color: var(--luna-muted);
+  font-size: 0.58rem;
+  letter-spacing: 0.08em;
+}
+
+.midi-port-row {
+  display: grid;
+  gap: 3px;
+}
+
+.midi-port-row span,
+.midi-check strong,
+.instruction-grid strong,
+.detected-port-grid strong,
+.mcu-diagnostic-grid strong,
+.midi-diagnostics > div > strong {
+  font-family: "Luna Oxygen Bold", "Avenir Next", sans-serif;
+  font-size: 0.63rem;
+  letter-spacing: 0.12em;
+  color: var(--luna-muted);
+  text-transform: uppercase;
+}
+
+.midi-port-row strong,
+.detected-port-list,
+.selected-port-detail {
+  overflow-wrap: anywhere;
+}
+
+.midi-port-row strong {
+  font-size: 0.78rem;
+  color: #ece9e1;
+}
+
+.selected-midi-row {
+  margin-top: 2px;
+  padding-top: 5px;
+  border-top: 1px solid rgba(255, 255, 255, 0.055);
+}
+
+.selected-midi-row strong {
+  color: #d9b47a;
+  font-size: 0.72rem;
+}
+
+.midi-check-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.midi-check {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 7px;
+  align-items: center;
+  min-height: 30px;
+}
+
+.midi-check.ready strong {
+  color: #cfead6;
+}
+
+.midi-check.waiting strong {
+  color: #d9b47a;
+}
+
+.midi-check.error strong {
+  color: #ecb1b1;
+}
+
+.midi-warning-block {
+  border-color: rgba(217, 172, 89, 0.28);
+  background: rgba(62, 46, 22, 0.35);
+}
+
+.midi-warning-list {
+  display: grid;
+  gap: 5px;
+}
+
+.midi-warning-list p,
+.instruction-grid p,
+.detected-port-list,
+.midi-action-message {
+  margin: 0;
+  color: var(--luna-muted);
+  font-size: 0.66rem;
+  line-height: 1.35;
+  letter-spacing: 0.06em;
+}
+
+.instruction-grid p {
+  margin-top: 4px;
+}
+
+.detected-port-grid,
+.mcu-diagnostic-grid {
+  align-items: start;
+}
+
+.mcu-diagnostic-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.midi-diagnostics {
+  gap: 7px;
+}
+
+.midi-diagnostics summary {
+  cursor: pointer;
+  color: #ece9e1;
+  font-family: "Luna Oxygen Bold", "Avenir Next", sans-serif;
+  font-size: 0.66rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.midi-diagnostics summary::marker {
+  color: var(--luna-amber);
+}
+
+.midi-diagnostics[open] summary {
+  margin-bottom: 7px;
+}
+
+.midi-action-message {
+  color: #d9b47a;
 }
 
 .hardware-button {

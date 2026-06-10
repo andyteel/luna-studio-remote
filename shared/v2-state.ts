@@ -1,4 +1,5 @@
 export type FeedbackSource = 'unknown' | 'mcu' | 'keystrokeFallback';
+export type MidiMode = 'iac' | 'virtual';
 
 export interface TransportState {
   playing: boolean | null;
@@ -42,6 +43,30 @@ export interface FocusedTrackState {
 export interface McuPortState {
   id: string;
   name: string;
+}
+
+export type McuDiagnosticMessageKind = 'transport' | 'lcd' | 'select' | 'other';
+
+export interface McuRecentMessageDiagnostic {
+  receivedAt: string;
+  inputName: string;
+  bytesHex: string;
+  kind: McuDiagnosticMessageKind;
+  detail: string;
+}
+
+export interface McuDiagnosticsState {
+  rawMessageCount: number;
+  transportMessageCount: number;
+  lcdMessageCount: number;
+  selectMessageCount: number;
+  focusedTrackFeedbackCount: number;
+  lastRawMessageAt: string | null;
+  lastTransportFeedbackAt: string | null;
+  lastLcdFeedbackAt: string | null;
+  lastSelectFeedbackAt: string | null;
+  lastFocusedTrackFeedbackAt: string | null;
+  recentMessages: McuRecentMessageDiagnostic[];
 }
 
 export type McuLifecycleState = 'disabled' | 'idle' | 'starting' | 'connected' | 'error';

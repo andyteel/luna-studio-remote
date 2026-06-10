@@ -37,6 +37,7 @@ export interface RawMidiMessage {
 
 export interface MidiAdapterOptions {
   enabled: boolean;
+  listenForMessages: boolean;
   debugRawMessages: boolean;
   selectedInputId?: string;
   selectedInputName?: string;
@@ -159,7 +160,7 @@ export class JzzMidiAdapter {
         lastError: selectionErrors.length ? selectionErrors.join('; ') : null,
       };
 
-      if (this.options.debugRawMessages && selectedInput) {
+      if (this.options.listenForMessages && selectedInput) {
         await this.openRawMessageInput(selectedInput);
       }
 
@@ -277,7 +278,10 @@ export class JzzMidiAdapter {
       };
 
       this.options.onRawMessage?.(message);
-      this.logger.log(`[MCU MIDI IN] ${selectedInput.name}: ${formatMidiBytes(bytes)}`);
+
+      if (this.options.debugRawMessages) {
+        this.logger.log(`[MCU MIDI IN] ${selectedInput.name}: ${formatMidiBytes(bytes)}`);
+      }
     };
 
     await input.open?.();

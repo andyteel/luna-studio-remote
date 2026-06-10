@@ -1,5 +1,5 @@
 import type { BaseKey, CommandId, ModifierKey } from '../shared/commands.js';
-import type { V2RemoteState } from '../shared/v2-state.js';
+import type { McuDiagnosticsState, MidiMode, V2RemoteState } from '../shared/v2-state.js';
 
 export interface ShortcutTestState {
   shortcutLabel: string | null;
@@ -34,6 +34,17 @@ export interface RemoteState extends V2RemoteState {
   testMode: boolean;
   lunaAppName: string;
   lunaDetected: boolean;
+  midiMode: MidiMode;
+  expectedIacInputName: string;
+  expectedIacOutputName: string;
+  expectedIacInputFound: boolean;
+  expectedIacOutputFound: boolean;
+  midiConnected: boolean;
+  mcuReceiving: boolean;
+  focusedTrackHydrated: boolean;
+  focusedTrackReady: boolean;
+  mcuDiagnostics: McuDiagnosticsState;
+  setupWarnings: string[];
   lastCommand: CommandId | null;
   lastCommandAt: string | null;
   lastError: string | null;

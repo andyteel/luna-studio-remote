@@ -108,15 +108,13 @@ const startVirtualMidi = (message: Extract<WorkerInboundMessage, { type: 'start'
   try {
     virtualInput = new midi.Input();
 
-    if (message.debugRawMessages) {
-      virtualInput.on('message', (_deltaTime, rawMessage) => {
-        sendMessage({
-          type: 'raw',
-          bytes: Array.from(rawMessage ?? []),
-          receivedAt: new Date().toISOString(),
-        });
+    virtualInput.on('message', (_deltaTime, rawMessage) => {
+      sendMessage({
+        type: 'raw',
+        bytes: Array.from(rawMessage ?? []),
+        receivedAt: new Date().toISOString(),
       });
-    }
+    });
 
     virtualInput.openVirtualPort(message.inputName);
     virtualInput.ignoreTypes?.(false, false, false);

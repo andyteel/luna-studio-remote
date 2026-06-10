@@ -1,7 +1,10 @@
 import type {
   FocusedTrackState,
+  MidiMode,
+  McuDiagnosticsState,
   McuState,
   McuPortState,
+  McuRecentMessageDiagnostic,
   TransportState,
   V2RemoteState,
 } from '../../shared/v2-state.js';
@@ -12,6 +15,7 @@ import { RtMidiVirtualPortAdapter, type VirtualMidiAdapterSnapshot } from './vir
 
 export interface McuServiceOptions {
   enabled?: boolean;
+  midiMode?: MidiMode;
   enableVirtualMidi?: boolean;
   debugMidiMessages?: boolean;
   selectedInputId?: string;
@@ -25,9 +29,12 @@ export interface McuServiceOptions {
 
 const DEFAULT_VIRTUAL_INPUT_NAME = 'LUNA Studio Remote MCU In';
 const DEFAULT_VIRTUAL_OUTPUT_NAME = 'LUNA Studio Remote MCU Out';
+const FOCUSED_TRACK_NOT_HYDRATED_ERROR =
+  'Focused track is not hydrated yet. Select a track in LUNA or wait for MCU LCD/select feedback.';
 const MCU_BUTTON_PRESS_VELOCITY = 127;
 const MCU_BUTTON_RELEASE_VELOCITY = 0;
 const MCU_BUTTON_RELEASE_DELAY_MS = 20;
+const MAX_RECENT_MCU_DIAGNOSTIC_MESSAGES = 12;
 
 export interface FocusedTrackControlResult {
   role: FocusedTrackMcuControlRole;
@@ -89,6 +96,20 @@ const createMcuState = (): McuState => ({
   lastError: null,
 });
 
+const createMcuDiagnosticsState = (): McuDiagnosticsState => ({
+  rawMessageCount: 0,
+  transportMessageCount: 0,
+  lcdMessageCount: 0,
+  selectMessageCount: 0,
+  focusedTrackFeedbackCount: 0,
+  lastRawMessageAt: null,
+  lastTransportFeedbackAt: null,
+  lastLcdFeedbackAt: null,
+  lastSelectFeedbackAt: null,
+  lastFocusedTrackFeedbackAt: null,
+  recentMessages: [],
+});
+
 const createEmptyVirtualMidiSnapshot = (): VirtualMidiAdapterSnapshot => ({
   available: false,
   connected: false,
@@ -106,6 +127,10 @@ const combineErrors = (...errors: Array<string | null | undefined>): string | nu
 
 const serializeError = (error: unknown): string => {
   return error instanceof Error ? error.message : String(error);
+};
+
+const formatMidiBytes = (bytes: number[]): string => {
+  return bytes.map((byte) => byte.toString(16).padStart(2, '0').toUpperCase()).join(' ');
 };
 
 const delay = (milliseconds: number): Promise<void> => {
@@ -134,6 +159,17 @@ const cloneMcuState = (mcu: McuState): McuState => ({
   outputPorts: [...mcu.outputPorts],
 });
 
+const cloneMcuDiagnosticsState = (diagnostics: McuDiagnosticsState): McuDiagnosticsState => ({
+  ...diagnostics,
+  recentMessages: diagnostics.recentMessages.map((message) => ({ ...message })),
+});
+
+const cloneV2RemoteState = (snapshot: V2RemoteState): V2RemoteState => ({
+  transport: cloneTransportState(snapshot.transport),
+  focusedTrack: cloneFocusedTrackState(snapshot.focusedTrack),
+  mcu: cloneMcuState(snapshot.mcu),
+});
+
 const hasTransportFeedback = (transport: TransportState): boolean => {
   return transport.source !== 'unknown' || transport.updatedAt !== null;
 };
@@ -145,6 +181,10 @@ const hasFocusedTrackFeedback = (focusedTrack: FocusedTrackState): boolean => {
     focusedTrack.index !== null ||
     focusedTrack.name !== null
   );
+};
+
+const isFocusedTrackHydrated = (focusedTrack: FocusedTrackState): boolean => {
+  return focusedTrack.source === 'mcu' && focusedTrack.index !== null && focusedTrack.name !== null;
 };
 
 const hasMcuConnectivityState = (mcu: McuState): boolean => {
@@ -168,10 +208,21 @@ const lostFocusedTrackFeedback = (current: FocusedTrackState, previous: FocusedT
   return (
     hasFocusedTrackFeedback(previous) &&
     (
+      (
+        current.source === 'unknown' &&
+        current.updatedAt === null &&
+        current.index === null &&
+        current.name === null
+      ) ||
       (previous.source !== 'unknown' && current.source === 'unknown') ||
       (previous.updatedAt !== null && current.updatedAt === null) ||
       (previous.index !== null && current.index === null) ||
-      (previous.name !== null && current.name === null)
+      (
+        previous.index !== null &&
+        current.index === previous.index &&
+        previous.name !== null &&
+        current.name === null
+      )
     )
   );
 };
@@ -397,16 +448,20 @@ export class McuService {
   private focusedTrack = createFocusedTrackState();
   private selectedStripIndex: number | null = null;
   private stripLcdStates = createStripLcdStates();
+  private preservedSnapshot: V2RemoteState | null = null;
   private mcu = createMcuState();
+  private diagnostics = createMcuDiagnosticsState();
 
   constructor(options: McuServiceOptions = {}) {
     this.options = options;
     this.logger = options.logger ?? console;
+    const useVirtualMidi = this.shouldUseVirtualMidi();
+
     this.mcu = {
       ...this.mcu,
       enabled: options.enabled ?? true,
-      virtualInputName: (options.enableVirtualMidi ?? true) ? this.getVirtualInputName() : null,
-      virtualOutputName: (options.enableVirtualMidi ?? true) ? this.getVirtualOutputName() : null,
+      virtualInputName: useVirtualMidi ? this.getVirtualInputName() : null,
+      virtualOutputName: useVirtualMidi ? this.getVirtualOutputName() : null,
     };
   }
 
@@ -425,25 +480,27 @@ export class McuService {
       return;
     }
 
+    const useVirtualMidi = this.shouldUseVirtualMidi();
+
     this.mcu = {
       ...this.mcu,
       enabled: true,
       lifecycle: 'starting',
-      driver: (this.options.enableVirtualMidi ?? true) ? 'rtmidi' : 'jzz',
-      virtualInputName: (this.options.enableVirtualMidi ?? true) ? this.getVirtualInputName() : null,
-      virtualOutputName: (this.options.enableVirtualMidi ?? true) ? this.getVirtualOutputName() : null,
+      driver: useVirtualMidi ? 'rtmidi' : 'jzz',
+      virtualInputName: useVirtualMidi ? this.getVirtualInputName() : null,
+      virtualOutputName: useVirtualMidi ? this.getVirtualOutputName() : null,
       lastError: null,
     };
 
     const virtualSnapshot = await this.startVirtualMidi();
     const hasManualInputSelection = Boolean(this.options.selectedInputId || this.options.selectedInputName);
     const hasManualOutputSelection = Boolean(this.options.selectedOutputId || this.options.selectedOutputName);
-    const shouldOpenDiscoveredInputForDebug =
-      (this.options.debugMidiMessages ?? false) && (hasManualInputSelection || !virtualSnapshot.inputCreated);
+    const shouldListenToJzzInput = !useVirtualMidi || hasManualInputSelection || !virtualSnapshot.inputCreated;
 
     this.midiAdapter = new JzzMidiAdapter({
       enabled: true,
-      debugRawMessages: shouldOpenDiscoveredInputForDebug,
+      listenForMessages: shouldListenToJzzInput,
+      debugRawMessages: this.options.debugMidiMessages ?? false,
       selectedInputId: this.options.selectedInputId,
       selectedInputName: this.options.selectedInputName,
       selectedOutputId: this.options.selectedOutputId,
@@ -476,7 +533,7 @@ export class McuService {
           name: virtualOutputPort?.name ?? midiSnapshot.selectedOutputName,
         };
     const available = virtualSnapshot.available || midiSnapshot.available;
-    const connected = Boolean(selectedInput.id || selectedOutput.id);
+    const connected = Boolean(selectedInput.id && selectedOutput.id);
     const lastError = combineErrors(virtualSnapshot.lastError, midiSnapshot.lastError);
 
     this.mcu = {
@@ -500,6 +557,8 @@ export class McuService {
       return;
     }
 
+    this.rememberPreservedSnapshot(this.buildCurrentSnapshot());
+
     this.logger.log(
       `MCU service initialized with ${inputPorts.length} MIDI input(s) and ${outputPorts.length} MIDI output(s)`,
     );
@@ -520,7 +579,7 @@ export class McuService {
   }
 
   private async startVirtualMidi(): Promise<VirtualMidiAdapterSnapshot> {
-    if (this.options.enableVirtualMidi === false) {
+    if (!this.shouldUseVirtualMidi()) {
       return createEmptyVirtualMidiSnapshot();
     }
 
@@ -536,6 +595,10 @@ export class McuService {
     return this.virtualMidiAdapter.start();
   }
 
+  private shouldUseVirtualMidi(): boolean {
+    return (this.options.midiMode ?? 'virtual') === 'virtual' && (this.options.enableVirtualMidi ?? true);
+  }
+
   private getVirtualInputName(): string {
     return this.options.virtualInputName?.trim() || DEFAULT_VIRTUAL_INPUT_NAME;
   }
@@ -545,6 +608,12 @@ export class McuService {
   }
 
   async sendFocusedTrackControl(role: FocusedTrackMcuControlRole): Promise<FocusedTrackControlResult> {
+    this.restorePreservedSnapshot();
+
+    if (!isFocusedTrackHydrated(this.focusedTrack)) {
+      throw new Error(FOCUSED_TRACK_NOT_HYDRATED_ERROR);
+    }
+
     const stripIndex = this.focusedTrack.index;
 
     if (
@@ -581,6 +650,59 @@ export class McuService {
   }
 
   preserveSnapshot(snapshot: V2RemoteState): void {
+    this.rememberPreservedSnapshot(snapshot);
+    this.restorePreservedSnapshot();
+  }
+
+  private buildCurrentSnapshot(): V2RemoteState {
+    return {
+      transport: cloneTransportState(this.transport),
+      focusedTrack: cloneFocusedTrackState(this.focusedTrack),
+      mcu: cloneMcuState(this.mcu),
+    };
+  }
+
+  private rememberPreservedSnapshot(snapshot: V2RemoteState): void {
+    const preservedSnapshot = this.preservedSnapshot ?? cloneV2RemoteState(snapshot);
+
+    if (hasTransportFeedback(snapshot.transport)) {
+      preservedSnapshot.transport = cloneTransportState(snapshot.transport);
+    }
+
+    if (hasFocusedTrackFeedback(snapshot.focusedTrack)) {
+      preservedSnapshot.focusedTrack = cloneFocusedTrackState(snapshot.focusedTrack);
+    }
+
+    if (hasMcuConnectivityState(snapshot.mcu)) {
+      const nextMcu = cloneMcuState(snapshot.mcu);
+      const previousMcu = preservedSnapshot.mcu;
+
+      preservedSnapshot.mcu = {
+        ...nextMcu,
+        connected: nextMcu.connected || previousMcu.connected,
+        lifecycle: nextMcu.connected ? nextMcu.lifecycle : previousMcu.lifecycle,
+        inputPorts: nextMcu.inputPorts.length ? nextMcu.inputPorts : [...previousMcu.inputPorts],
+        outputPorts: nextMcu.outputPorts.length ? nextMcu.outputPorts : [...previousMcu.outputPorts],
+        selectedInputId: nextMcu.selectedInputId ?? previousMcu.selectedInputId,
+        selectedInputName: nextMcu.selectedInputName ?? previousMcu.selectedInputName,
+        selectedOutputId: nextMcu.selectedOutputId ?? previousMcu.selectedOutputId,
+        selectedOutputName: nextMcu.selectedOutputName ?? previousMcu.selectedOutputName,
+        virtualInputName: nextMcu.virtualInputName ?? previousMcu.virtualInputName,
+        virtualOutputName: nextMcu.virtualOutputName ?? previousMcu.virtualOutputName,
+        lastMessageAt: nextMcu.lastMessageAt ?? previousMcu.lastMessageAt,
+      };
+    }
+
+    this.preservedSnapshot = cloneV2RemoteState(preservedSnapshot);
+  }
+
+  private restorePreservedSnapshot(): void {
+    const snapshot = this.preservedSnapshot;
+
+    if (!snapshot) {
+      return;
+    }
+
     if (lostTransportFeedback(this.transport, snapshot.transport)) {
       this.transport = cloneTransportState(snapshot.transport);
     }
@@ -642,31 +764,141 @@ export class McuService {
     throw new Error(sendErrors.length ? sendErrors.join('; ') : 'No MCU output port is available');
   }
 
+  private getTransportFeedbackRole(bytes: number[]): ParsedTransportRole | null {
+    const [status, data1, data2] = bytes;
+
+    if (
+      status !== MCU_MESSAGE_MAP.protocol.noteStatus ||
+      typeof data1 !== 'number' ||
+      typeof data2 !== 'number'
+    ) {
+      return null;
+    }
+
+    return TRANSPORT_LED_NOTE_TO_ROLE.get(data1) ?? null;
+  }
+
+  private recordRawMidiDiagnostic(details: {
+    message: RawMidiMessage;
+    transportRole: ParsedTransportRole | null;
+    lcdUpdates: ParsedMcuLcdFeedback[];
+    selectFeedback: ParsedMcuSelectFeedback | null;
+    focusedTrackUpdated: boolean;
+  }): void {
+    const { message, transportRole, lcdUpdates, selectFeedback, focusedTrackUpdated } = details;
+    const hasLcdFeedback = lcdUpdates.length > 0;
+    const hasSelectFeedback = selectFeedback !== null;
+    const kind: McuRecentMessageDiagnostic['kind'] = hasLcdFeedback
+      ? 'lcd'
+      : hasSelectFeedback
+        ? 'select'
+        : transportRole
+          ? 'transport'
+          : 'other';
+    const detail = this.describeDiagnosticMessage({
+      transportRole,
+      lcdUpdates,
+      selectFeedback,
+    });
+    const recentMessage: McuRecentMessageDiagnostic = {
+      receivedAt: message.receivedAt,
+      inputName: message.inputName,
+      bytesHex: formatMidiBytes(message.bytes),
+      kind,
+      detail,
+    };
+
+    this.diagnostics = {
+      ...this.diagnostics,
+      rawMessageCount: this.diagnostics.rawMessageCount + 1,
+      transportMessageCount: this.diagnostics.transportMessageCount + (transportRole ? 1 : 0),
+      lcdMessageCount: this.diagnostics.lcdMessageCount + (hasLcdFeedback ? 1 : 0),
+      selectMessageCount: this.diagnostics.selectMessageCount + (hasSelectFeedback ? 1 : 0),
+      focusedTrackFeedbackCount: this.diagnostics.focusedTrackFeedbackCount + (focusedTrackUpdated ? 1 : 0),
+      lastRawMessageAt: message.receivedAt,
+      lastTransportFeedbackAt: transportRole ? message.receivedAt : this.diagnostics.lastTransportFeedbackAt,
+      lastLcdFeedbackAt: hasLcdFeedback ? message.receivedAt : this.diagnostics.lastLcdFeedbackAt,
+      lastSelectFeedbackAt: hasSelectFeedback ? message.receivedAt : this.diagnostics.lastSelectFeedbackAt,
+      lastFocusedTrackFeedbackAt: focusedTrackUpdated
+        ? message.receivedAt
+        : this.diagnostics.lastFocusedTrackFeedbackAt,
+      recentMessages: [
+        recentMessage,
+        ...this.diagnostics.recentMessages,
+      ].slice(0, MAX_RECENT_MCU_DIAGNOSTIC_MESSAGES),
+    };
+  }
+
+  private describeDiagnosticMessage(details: {
+    transportRole: ParsedTransportRole | null;
+    lcdUpdates: ParsedMcuLcdFeedback[];
+    selectFeedback: ParsedMcuSelectFeedback | null;
+  }): string {
+    const { transportRole, lcdUpdates, selectFeedback } = details;
+
+    if (lcdUpdates.length > 0) {
+      const firstUpdate = lcdUpdates[0];
+      const text = firstUpdate.text ? ` "${firstUpdate.text}"` : '';
+      return lcdUpdates.length === 1
+        ? `LCD ${firstUpdate.row} strip ${firstUpdate.slot + 1}${text}`
+        : `LCD ${lcdUpdates.length} updates`;
+    }
+
+    if (selectFeedback) {
+      return `Select strip ${selectFeedback.stripIndex + 1} ${selectFeedback.selected ? 'on' : 'off'}`;
+    }
+
+    if (transportRole) {
+      return `Transport ${transportRole}`;
+    }
+
+    return 'Unmapped MCU message';
+  }
+
   private handleRawMidiMessage(message: RawMidiMessage): void {
+    const transportRole = this.getTransportFeedbackRole(message.bytes);
+    const lcdUpdates = parseMcuLcdSysexFeedback(message.bytes);
+    const selectFeedback = parseMcuSelectLedFeedback(message.bytes);
+
     this.mcu = {
       ...this.mcu,
       lastMessageAt: message.receivedAt,
     };
 
-    this.applyTransportFeedback(message);
-    this.applyFocusedTrackFeedback(message);
+    this.applyTransportFeedback(message, transportRole);
+    const focusedTrackUpdated = this.applyFocusedTrackFeedback(message, lcdUpdates, selectFeedback);
+    this.recordRawMidiDiagnostic({
+      message,
+      transportRole,
+      lcdUpdates,
+      selectFeedback,
+      focusedTrackUpdated,
+    });
+    this.rememberPreservedSnapshot(this.buildCurrentSnapshot());
   }
 
-  private applyFocusedTrackFeedback(message: RawMidiMessage): void {
-    const lcdUpdates = parseMcuLcdSysexFeedback(message.bytes);
+  private applyFocusedTrackFeedback(
+    message: RawMidiMessage,
+    lcdUpdates: ParsedMcuLcdFeedback[],
+    selectFeedback: ParsedMcuSelectFeedback | null,
+  ): boolean {
+    let focusedTrackUpdated = false;
 
     if (lcdUpdates.length > 0) {
-      this.applyLcdFeedback(lcdUpdates, message.receivedAt);
+      focusedTrackUpdated = this.applyLcdFeedback(lcdUpdates, message.receivedAt) || focusedTrackUpdated;
     }
-
-    const selectFeedback = parseMcuSelectLedFeedback(message.bytes);
 
     if (selectFeedback?.selected) {
       this.applySelectedStripFeedback(selectFeedback.stripIndex, message.receivedAt);
+      focusedTrackUpdated = true;
     }
+
+    return focusedTrackUpdated;
   }
 
-  private applyLcdFeedback(updates: ParsedMcuLcdFeedback[], receivedAt: string): void {
+  private applyLcdFeedback(updates: ParsedMcuLcdFeedback[], receivedAt: string): boolean {
+    let focusedTrackUpdated = false;
+
     for (const update of updates) {
       this.stripLcdStates[update.slot] = {
         ...this.stripLcdStates[update.slot],
@@ -681,8 +913,11 @@ export class McuService {
           source: 'mcu',
           updatedAt: receivedAt,
         };
+        focusedTrackUpdated = true;
       }
     }
+
+    return focusedTrackUpdated;
   }
 
   private applySelectedStripFeedback(stripIndex: number, receivedAt: string): void {
@@ -696,23 +931,12 @@ export class McuService {
     };
   }
 
-  private applyTransportFeedback(message: RawMidiMessage): void {
-    const [status, data1, data2] = message.bytes;
-
-    if (
-      status !== MCU_MESSAGE_MAP.protocol.noteStatus ||
-      typeof data1 !== 'number' ||
-      typeof data2 !== 'number'
-    ) {
-      return;
-    }
-
-    const role = TRANSPORT_LED_NOTE_TO_ROLE.get(data1);
-
+  private applyTransportFeedback(message: RawMidiMessage, role: ParsedTransportRole | null): void {
     if (!role) {
       return;
     }
 
+    const data2 = message.bytes[2] ?? 0;
     const isOn = data2 > 0;
     const nextTransport: TransportState = {
       ...this.transport,
@@ -750,24 +974,15 @@ export class McuService {
   }
 
   getSnapshot(): V2RemoteState {
-    return {
-      transport: {
-        ...this.transport,
-      },
-      focusedTrack: {
-        ...this.focusedTrack,
-        meter: {
-          ...this.focusedTrack.meter,
-        },
-        fader: {
-          ...this.focusedTrack.fader,
-        },
-      },
-      mcu: {
-        ...this.mcu,
-        inputPorts: [...this.mcu.inputPorts],
-        outputPorts: [...this.mcu.outputPorts],
-      },
-    };
+    this.restorePreservedSnapshot();
+
+    const snapshot = this.buildCurrentSnapshot();
+    this.rememberPreservedSnapshot(snapshot);
+
+    return snapshot;
+  }
+
+  getDiagnostics(): McuDiagnosticsState {
+    return cloneMcuDiagnosticsState(this.diagnostics);
   }
 }

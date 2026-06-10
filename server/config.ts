@@ -10,6 +10,10 @@ const parseBoolean = (value: string | undefined, fallback: boolean): boolean => 
   return value.toLowerCase() === 'true';
 };
 
+const parseMidiMode = (value: string | undefined): 'iac' | 'virtual' => {
+  return value?.trim().toLowerCase() === 'virtual' ? 'virtual' : 'iac';
+};
+
 export const config = {
   host: process.env.HOST?.trim() || '0.0.0.0',
   port: Number(process.env.PORT ?? 3000),
@@ -20,8 +24,11 @@ export const config = {
   isDev: process.env.NODE_ENV !== 'production',
   enableMcu: parseBoolean(process.env.ENABLE_MCU, true),
   enableMidi: parseBoolean(process.env.ENABLE_MIDI, true),
+  midiMode: parseMidiMode(process.env.MIDI_MODE ?? process.env.MCU_MIDI_MODE),
   enableVirtualMidi: parseBoolean(process.env.ENABLE_VIRTUAL_MIDI, true),
   debugMcuMidi: parseBoolean(process.env.MCU_DEBUG_MIDI, false),
+  expectedIacInputName: process.env.MCU_IAC_INPUT_NAME?.trim() || 'LUNA Remote From LUNA',
+  expectedIacOutputName: process.env.MCU_IAC_OUTPUT_NAME?.trim() || 'LUNA Remote To LUNA',
   mcuInputId: process.env.MCU_INPUT_ID?.trim() || '',
   mcuInputName: process.env.MCU_INPUT_NAME?.trim() || '',
   mcuOutputId: process.env.MCU_OUTPUT_ID?.trim() || '',
