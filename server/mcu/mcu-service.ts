@@ -6,6 +6,7 @@ import type {
   V2RemoteState,
 } from '../../shared/v2-state.js';
 import { JzzMidiAdapter, type RawMidiMessage } from './midi-adapter.js';
+import { MCU_MESSAGE_MAP } from './mcu-message-map.js';
 import { RtMidiVirtualPortAdapter, type VirtualMidiAdapterSnapshot } from './virtual-midi-adapter.js';
 
 export interface McuServiceOptions {
@@ -114,6 +115,16 @@ const prependPortIfMissing = (ports: McuPortState[], port: McuPortState | null):
 
   return alreadyPresent ? ports : [port, ...ports];
 };
+
+type ParsedTransportRole = 'play' | 'stop' | 'record' | 'click' | 'cycle';
+
+const TRANSPORT_LED_NOTE_TO_ROLE = new Map<number, ParsedTransportRole>([
+  [MCU_MESSAGE_MAP.transport.play.led.data1, 'play'],
+  [MCU_MESSAGE_MAP.transport.stop.led.data1, 'stop'],
+  [MCU_MESSAGE_MAP.transport.record.led.data1, 'record'],
+  [MCU_MESSAGE_MAP.transport.click.led.data1, 'click'],
+  [MCU_MESSAGE_MAP.transport.cycle.led.data1, 'cycle'],
+]);
 
 export class McuService {
   private readonly options: McuServiceOptions;
@@ -274,6 +285,61 @@ export class McuService {
       ...this.mcu,
       lastMessageAt: message.receivedAt,
     };
+
+    this.applyTransportFeedback(message);
+  }
+
+  private applyTransportFeedback(message: RawMidiMessage): void {
+    const [status, data1, data2] = message.bytes;
+
+    if (
+      status !== MCU_MESSAGE_MAP.protocol.noteStatus ||
+      typeof data1 !== 'number' ||
+      typeof data2 !== 'number'
+    ) {
+      return;
+    }
+
+    const role = TRANSPORT_LED_NOTE_TO_ROLE.get(data1);
+
+    if (!role) {
+      return;
+    }
+
+    const isOn = data2 > 0;
+    const nextTransport: TransportState = {
+      ...this.transport,
+      source: 'mcu',
+      updatedAt: message.receivedAt,
+    };
+
+    switch (role) {
+      case 'play':
+        nextTransport.playing = isOn;
+        if (isOn) {
+          nextTransport.stopped = false;
+        }
+        break;
+      case 'stop':
+        nextTransport.stopped = isOn;
+        if (isOn) {
+          nextTransport.playing = false;
+        }
+        break;
+      case 'record':
+        nextTransport.recording = isOn;
+        break;
+      case 'click':
+        nextTransport.click = isOn;
+        break;
+      case 'cycle':
+        nextTransport.loop = isOn;
+        break;
+      default:
+        return;
+    }
+
+    this.transport = nextTransport;
   }
 
   getSnapshot(): V2RemoteState {
