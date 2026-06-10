@@ -114,6 +114,84 @@ const delay = (milliseconds: number): Promise<void> => {
   });
 };
 
+const cloneTransportState = (transport: TransportState): TransportState => ({
+  ...transport,
+});
+
+const cloneFocusedTrackState = (focusedTrack: FocusedTrackState): FocusedTrackState => ({
+  ...focusedTrack,
+  meter: {
+    ...focusedTrack.meter,
+  },
+  fader: {
+    ...focusedTrack.fader,
+  },
+});
+
+const cloneMcuState = (mcu: McuState): McuState => ({
+  ...mcu,
+  inputPorts: [...mcu.inputPorts],
+  outputPorts: [...mcu.outputPorts],
+});
+
+const hasTransportFeedback = (transport: TransportState): boolean => {
+  return transport.source !== 'unknown' || transport.updatedAt !== null;
+};
+
+const hasFocusedTrackFeedback = (focusedTrack: FocusedTrackState): boolean => {
+  return (
+    focusedTrack.source !== 'unknown' ||
+    focusedTrack.updatedAt !== null ||
+    focusedTrack.index !== null ||
+    focusedTrack.name !== null
+  );
+};
+
+const hasMcuConnectivityState = (mcu: McuState): boolean => {
+  return (
+    mcu.connected ||
+    mcu.lastMessageAt !== null ||
+    mcu.selectedInputId !== null ||
+    mcu.selectedInputName !== null ||
+    mcu.selectedOutputId !== null ||
+    mcu.selectedOutputName !== null ||
+    mcu.inputPorts.length > 0 ||
+    mcu.outputPorts.length > 0
+  );
+};
+
+const lostTransportFeedback = (current: TransportState, previous: TransportState): boolean => {
+  return hasTransportFeedback(previous) && !hasTransportFeedback(current);
+};
+
+const lostFocusedTrackFeedback = (current: FocusedTrackState, previous: FocusedTrackState): boolean => {
+  return (
+    hasFocusedTrackFeedback(previous) &&
+    (
+      (previous.source !== 'unknown' && current.source === 'unknown') ||
+      (previous.updatedAt !== null && current.updatedAt === null) ||
+      (previous.index !== null && current.index === null) ||
+      (previous.name !== null && current.name === null)
+    )
+  );
+};
+
+const lostMcuConnectivityState = (current: McuState, previous: McuState): boolean => {
+  return (
+    hasMcuConnectivityState(previous) &&
+    (
+      (previous.connected && !current.connected) ||
+      (previous.lastMessageAt !== null && current.lastMessageAt === null) ||
+      (previous.selectedInputId !== null && current.selectedInputId === null) ||
+      (previous.selectedInputName !== null && current.selectedInputName === null) ||
+      (previous.selectedOutputId !== null && current.selectedOutputId === null) ||
+      (previous.selectedOutputName !== null && current.selectedOutputName === null) ||
+      (previous.inputPorts.length > 0 && current.inputPorts.length === 0) ||
+      (previous.outputPorts.length > 0 && current.outputPorts.length === 0)
+    )
+  );
+};
+
 const createVirtualInputPort = (name: string): McuPortState => ({
   id: `virtual:input:${name}`,
   name,
@@ -500,6 +578,33 @@ export class McuService {
       pressMessage,
       releaseMessage,
     };
+  }
+
+  preserveSnapshot(snapshot: V2RemoteState): void {
+    if (lostTransportFeedback(this.transport, snapshot.transport)) {
+      this.transport = cloneTransportState(snapshot.transport);
+    }
+
+    if (lostFocusedTrackFeedback(this.focusedTrack, snapshot.focusedTrack)) {
+      this.focusedTrack = cloneFocusedTrackState(snapshot.focusedTrack);
+
+      if (
+        Number.isInteger(this.focusedTrack.index) &&
+        this.focusedTrack.index !== null &&
+        this.focusedTrack.index >= 0 &&
+        this.focusedTrack.index < MCU_MESSAGE_MAP.protocol.stripCount
+      ) {
+        this.selectedStripIndex = this.focusedTrack.index;
+        this.stripLcdStates[this.focusedTrack.index] = {
+          ...this.stripLcdStates[this.focusedTrack.index],
+          upper: this.focusedTrack.name,
+        };
+      }
+    }
+
+    if (lostMcuConnectivityState(this.mcu, snapshot.mcu)) {
+      this.mcu = cloneMcuState(snapshot.mcu);
+    }
   }
 
   private async sendRawMcuMessage(bytes: number[]): Promise<void> {

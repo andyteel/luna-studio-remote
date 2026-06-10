@@ -398,6 +398,7 @@ export const startRemoteServer = async (options: RemoteServerOptions = {}): Prom
 
     try {
       logger.log(`[${new Date().toISOString()}] POST /api/command command=${command.id}`);
+      const mcuSnapshotBeforeCommand = mcuService.getSnapshot();
 
       if (command.placeholder) {
         state.lastError = command.note ?? `${command.label} shortcut needs confirmation`;
@@ -484,6 +485,10 @@ export const startRemoteServer = async (options: RemoteServerOptions = {}): Prom
       state.lastCommand = command.id;
       state.lastCommandAt = new Date().toISOString();
       state.lastError = null;
+
+      if (!command.mcuControl) {
+        mcuService.preserveSnapshot(mcuSnapshotBeforeCommand);
+      }
 
       response.json({
         ok: true,
