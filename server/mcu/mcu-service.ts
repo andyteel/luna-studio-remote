@@ -126,6 +126,169 @@ const TRANSPORT_LED_NOTE_TO_ROLE = new Map<number, ParsedTransportRole>([
   [MCU_MESSAGE_MAP.transport.cycle.led.data1, 'cycle'],
 ]);
 
+type McuLcdRow = 'upper' | 'lower';
+
+type ParsedMcuLcdFeedback = Readonly<{
+  slot: number;
+  row: McuLcdRow;
+  text: string | null;
+}>;
+
+type ParsedMcuSelectFeedback = Readonly<{
+  stripIndex: number;
+  selected: boolean;
+}>;
+
+type McuStripLcdState = Readonly<{
+  upper: string | null;
+  lower: string | null;
+}>;
+
+const LCD_SLOT_WIDTH_CANDIDATES = [7, 6, 5] as const;
+
+const createStripLcdStates = (): McuStripLcdState[] => {
+  return Array.from({ length: MCU_MESSAGE_MAP.protocol.stripCount }, () => ({
+    upper: null,
+    lower: null,
+  }));
+};
+
+const normalizeLcdText = (text: string): string | null => {
+  const normalized = text.replace(/\s+/g, ' ').trim();
+  return normalized.length ? normalized : null;
+};
+
+const bytesToLcdText = (bytes: number[]): string => {
+  return bytes
+    .map((byte) => {
+      if (byte >= 32 && byte <= 126) {
+        return String.fromCharCode(byte);
+      }
+
+      return ' ';
+    })
+    .join('');
+};
+
+const getSysexEndIndex = (bytes: number[]): number => {
+  const lastByteIndex = bytes.length - 1;
+  return bytes[lastByteIndex] === MCU_MESSAGE_MAP.protocol.sysexEnd ? lastByteIndex : bytes.length;
+};
+
+const isMcuLcdSysexMessage = (bytes: number[]): boolean => {
+  const manufacturerId = MCU_MESSAGE_MAP.protocol.manufacturerId;
+
+  return (
+    bytes.length >= 8 &&
+    bytes[0] === MCU_MESSAGE_MAP.protocol.sysexStatus &&
+    bytes[1] === manufacturerId[0] &&
+    bytes[2] === manufacturerId[1] &&
+    bytes[3] === manufacturerId[2] &&
+    bytes[5] === MCU_MESSAGE_MAP.protocol.lcdSysexCommand
+  );
+};
+
+const inferLcdSlotWidth = (rowOffset: number, textLength: number): number => {
+  if (textLength >= 5 && textLength <= 7 && rowOffset % textLength === 0) {
+    return textLength;
+  }
+
+  const exactSpanWidth = LCD_SLOT_WIDTH_CANDIDATES.find((slotWidth) => {
+    return rowOffset % slotWidth === 0 && textLength % slotWidth === 0;
+  });
+
+  if (exactSpanWidth) {
+    return exactSpanWidth;
+  }
+
+  return LCD_SLOT_WIDTH_CANDIDATES.find((slotWidth) => rowOffset % slotWidth === 0) ?? 7;
+};
+
+export const parseMcuLcdSysexFeedback = (bytes: number[]): ParsedMcuLcdFeedback[] => {
+  if (!isMcuLcdSysexMessage(bytes)) {
+    return [];
+  }
+
+  const offset = bytes[6];
+
+  if (typeof offset !== 'number' || offset < 0 || offset > 127) {
+    return [];
+  }
+
+  const lowerRowOffset = MCU_MESSAGE_MAP.protocol.lcdLowerRowOffset;
+  const row: McuLcdRow = offset >= lowerRowOffset ? 'lower' : 'upper';
+  const rowOffset = row === 'lower' ? offset - lowerRowOffset : offset;
+
+  if (rowOffset < 0 || rowOffset >= lowerRowOffset) {
+    return [];
+  }
+
+  const payloadEndIndex = getSysexEndIndex(bytes);
+  const rawText = bytesToLcdText(bytes.slice(7, payloadEndIndex));
+
+  if (!rawText.length) {
+    return [];
+  }
+
+  const slotWidth = inferLcdSlotWidth(rowOffset, rawText.length);
+  const updates: ParsedMcuLcdFeedback[] = [];
+  let textOffset = 0;
+
+  while (textOffset < rawText.length) {
+    const absoluteRowOffset = rowOffset + textOffset;
+
+    if (absoluteRowOffset >= lowerRowOffset) {
+      break;
+    }
+
+    const slot = Math.floor(absoluteRowOffset / slotWidth);
+
+    if (slot < 0 || slot >= MCU_MESSAGE_MAP.protocol.stripCount) {
+      break;
+    }
+
+    const offsetWithinSlot = absoluteRowOffset - slot * slotWidth;
+    const chunkLength = Math.min(slotWidth - offsetWithinSlot, rawText.length - textOffset);
+    const chunk = rawText.slice(textOffset, textOffset + chunkLength);
+
+    if (offsetWithinSlot === 0) {
+      updates.push({
+        slot,
+        row,
+        text: normalizeLcdText(chunk),
+      });
+    }
+
+    textOffset += chunkLength;
+  }
+
+  return updates;
+};
+
+export const parseMcuSelectLedFeedback = (bytes: number[]): ParsedMcuSelectFeedback | null => {
+  const [status, data1, data2] = bytes;
+
+  if (
+    status !== MCU_MESSAGE_MAP.protocol.noteStatus ||
+    typeof data1 !== 'number' ||
+    typeof data2 !== 'number'
+  ) {
+    return null;
+  }
+
+  const selectLedOffset = MCU_MESSAGE_MAP.stripFamilies.ledOffsets.select;
+  const stripIndex = data1 - selectLedOffset;
+
+  if (stripIndex < 0 || stripIndex >= MCU_MESSAGE_MAP.protocol.stripCount) {
+    return null;
+  }
+
+  return {
+    stripIndex,
+    selected: data2 > 0,
+  };
+};
+
 export class McuService {
   private readonly options: McuServiceOptions;
   private readonly logger: Pick<Console, 'log' | 'error'>;
@@ -133,6 +296,8 @@ export class McuService {
   private virtualMidiAdapter: RtMidiVirtualPortAdapter | null = null;
   private transport = createTransportState();
   private focusedTrack = createFocusedTrackState();
+  private selectedStripIndex: number | null = null;
+  private stripLcdStates = createStripLcdStates();
   private mcu = createMcuState();
 
   constructor(options: McuServiceOptions = {}) {
@@ -287,6 +452,51 @@ export class McuService {
     };
 
     this.applyTransportFeedback(message);
+    this.applyFocusedTrackFeedback(message);
+  }
+
+  private applyFocusedTrackFeedback(message: RawMidiMessage): void {
+    const lcdUpdates = parseMcuLcdSysexFeedback(message.bytes);
+
+    if (lcdUpdates.length > 0) {
+      this.applyLcdFeedback(lcdUpdates, message.receivedAt);
+    }
+
+    const selectFeedback = parseMcuSelectLedFeedback(message.bytes);
+
+    if (selectFeedback?.selected) {
+      this.applySelectedStripFeedback(selectFeedback.stripIndex, message.receivedAt);
+    }
+  }
+
+  private applyLcdFeedback(updates: ParsedMcuLcdFeedback[], receivedAt: string): void {
+    for (const update of updates) {
+      this.stripLcdStates[update.slot] = {
+        ...this.stripLcdStates[update.slot],
+        [update.row]: update.text,
+      };
+
+      if (update.row === 'upper' && update.slot === this.selectedStripIndex) {
+        this.focusedTrack = {
+          ...this.focusedTrack,
+          index: update.slot,
+          name: update.text,
+          source: 'mcu',
+          updatedAt: receivedAt,
+        };
+      }
+    }
+  }
+
+  private applySelectedStripFeedback(stripIndex: number, receivedAt: string): void {
+    this.selectedStripIndex = stripIndex;
+    this.focusedTrack = {
+      ...this.focusedTrack,
+      index: stripIndex,
+      name: this.stripLcdStates[stripIndex]?.upper ?? null,
+      source: 'mcu',
+      updatedAt: receivedAt,
+    };
   }
 
   private applyTransportFeedback(message: RawMidiMessage): void {

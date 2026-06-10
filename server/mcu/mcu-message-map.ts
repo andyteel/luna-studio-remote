@@ -2,6 +2,11 @@ const MCU_NOTE_STATUS = 144; // 0x90
 const MCU_CONTROL_CHANGE_STATUS = 176; // 0xB0
 const MCU_CHANNEL_PRESSURE_STATUS_BASE = 208; // 0xD0
 const MCU_PITCH_BEND_STATUS_BASE = 224; // 0xE0
+const MCU_SYSEX_STATUS = 240; // 0xF0
+const MCU_SYSEX_END = 247; // 0xF7
+const MCU_MANUFACTURER_ID = [0, 0, 102] as const; // 00 00 66
+const MCU_LCD_SYSEX_COMMAND = 18; // 0x12
+const MCU_LCD_LOWER_ROW_OFFSET = 56; // 0x38
 
 const MCU_STRIP_COUNT = 8;
 const MCU_MAIN_FADER_INDEX = 8;
@@ -126,6 +131,11 @@ export const MCU_MESSAGE_MAP = {
     controlChangeStatus: MCU_CONTROL_CHANGE_STATUS,
     channelPressureStatusBase: MCU_CHANNEL_PRESSURE_STATUS_BASE,
     pitchBendStatusBase: MCU_PITCH_BEND_STATUS_BASE,
+    sysexStatus: MCU_SYSEX_STATUS,
+    sysexEnd: MCU_SYSEX_END,
+    manufacturerId: MCU_MANUFACTURER_ID,
+    lcdSysexCommand: MCU_LCD_SYSEX_COMMAND,
+    lcdLowerRowOffset: MCU_LCD_LOWER_ROW_OFFSET,
     stripCount: MCU_STRIP_COUNT,
     mainFaderIndex: MCU_MAIN_FADER_INDEX,
   },
