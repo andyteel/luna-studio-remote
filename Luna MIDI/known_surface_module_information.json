@@ -1,0 +1,77 @@
+{
+    "header": {
+        "version": "1.0"
+    },
+    "known_single_fader_device_names": ["PreSonus FP2", "X-Touch One", "X-TOUCH MINI", "X-Touch One", "FaderPort", "PlatformNano"],
+    "known_16_fader_device_names": ["PreSonus FP16"],
+    "known_surface_device_names": ["MCU Pro", "PreSonus FP2", "PreSonus FP8", "PreSonus FP8 MIDI Mode", "PreSonus FP16", "PreSonus FP16 MIDI Mode", "SSL V-MIDI", "X-Touch INT", "X-Touch EXT", "X-Touch One", "X-TOUCH COMPACT", "X-Touch-Ext X-TOUCH_INT", "X-TOUCH MINI", "FaderPort", "V-Control"],
+    "surface_fader_taper_maps": {
+        "MCU Pro": "mackie_v1",
+        "PreSonus FP2": "presonus_v1",
+        "PreSonus FP8": "presonus_v2",
+        "PreSonus FP8 MIDI Mode": "presonus_v2",
+        "PreSonus FP16": "presonus_v2",
+        "PreSonus FP16 MIDI Mode": "presonus_v2",
+        "FaderPort": "presonus_v2",
+        "SSL V-MIDI": "ssl_v1",
+        "X-Touch INT": "behringer_v1",
+        "X-Touch EXT": "behringer_v1",
+        "X-Touch One": "behringer_v2",
+        "X-TOUCH COMPACT": "behringer_v1",
+        "X-TOUCH MINI": "behringer_v1",
+        "X-Touch-Ext X-TOUCH_INT": "behringer_v1",
+        "V-Control": "vcontrol_v1",
+        "default": "mackie_v1"
+    },
+    "surface_fader_tapers": {
+        "behringer_v1": {
+            "taper_db_values": [12.0, 5.0, 0.0, -5.0, -10.0, -20.0, -30.0, -40.0, -50.0, -60.0, -144.0],
+            "taper_fader_position": [0.999023, 0.889404, 0.765381, 0.634200, 0.511719, 0.383545, 0.254395, 0.189209, 0.123047, 0.054932, 0.000000]
+        },
+        "behringer_v2": {
+            "taper_db_values": [12.0, 5.0, 0.0, -5.0, -10.0, -20.0, -30.0, -40.0, -50.0, -60.0, -144.0],
+            "taper_fader_position": [0.999756, 0.889160, 0.762690, 0.634290, 0.510032, 0.382560, 0.254160, 0.183850, 0.122550, 0.051100, 0.000000]
+        },
+        "mackie_v1": {
+            "taper_db_values": [12.0, 5.0, 0.0, -5.0, -10.0, -20.0, -30.0, -40.0, -50.0, -60.0, -144.0],
+            "taper_fader_position": [0.999023, 0.901367, 0.782227, 0.665086, 0.492188, 0.339844, 0.253906, 0.157227, 0.090820, 0.020508, 0.000000]
+        },
+        "vcontrol_v1": {
+            "taper_db_values": [12.0, 6.0, 0.0, -5.0, -10.0, -20.0, -40.0, -90.0, -144.0],
+            "taper_fader_position": [0.999939, 0.882812, 0.757019, 0.640503, 0.515137, 0.291077, 0.150208, 0.047058, 0.000000]            
+        },
+        "presonus_v1": {
+            "taper_db_values": [12.0, 10.0, 5.0, 0.0, -5.0, -10.0, -20.0, -30.0, -40.0, -50.0, -60.0, -144.0],
+            "taper_fader_position": [0.999023, 0.983398, 0.872070, 0.748047, 0.606445, 0.444336, 0.315430, 0.231445, 0.142578, 0.090820, 0.039062, 0.000000]
+        },
+        "presonus_v2": {
+            "taper_db_values": [12.0, 10.0, 5.0, 0.0, -5.0, -10.0, -20.0, -30.0, -40.0, -50.0, -60.0, -144.0],
+            "taper_fader_position": [0.999023, 0.990234, 0.872400, 0.741211, 0.608600, 0.487600, 0.376850, 0.262250, 0.148600, 0.103000, 0.058000, 0.000000]
+
+        },
+        "ssl_v1": {
+            "taper_db_values": [12.0, 6.0, 0.0, -5.0, -10.0, -20.0, -30.0, -40.0, -60.0, -144.0],
+            "taper_fader_position": [0.999023, 0.905273, 0.753906, 0.625000, 0.459961, 0.320312, 0.242188, 0.156250, 0.026367, 0.000000]
+        }
+    },
+    "known_module_display_widths": {
+        "5_character": ["MCU Pro"],
+        "6_character": ["default_strip_display_width"],
+        "7_character": ["X-Touch INT", "X-Touch EXT", "X-Touch-Ext X-TOUCH_INT", "SSL V-MIDI", "PreSonus FP8", "PreSonus FP8 MIDI Mode", "PreSonus FP16", "PreSonus FP16 MIDI Mode", "V-Control", "X-Touch One"]
+    },
+    "surface_knob_velocity_maps": {
+        "X-Touch INT": "behringer_v1",
+        "X-Touch EXT": "behringer_v1",
+        "X-Touch One": "behringer_v1",
+        "X-TOUCH COMPACT": "behringer_v1",
+        "X-TOUCH MINI": "behringer_v1",
+        "X-Touch-Ext X-TOUCH_INT": "behringer_v1",
+        "default": "behringer_v1"
+    },
+    "surface_knob_velocity_scales": {
+        "behringer_v1": {
+            "knob_normalized_increment": [0.005, 0.025, 0.045, 0.075, 0.115]
+        }
+    },
+    "devices_needing_fader_touch_gen": ["Arturia"]
+}
