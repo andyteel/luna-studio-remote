@@ -33,8 +33,10 @@ type TabId = 'tracking' | 'navigate' | 'settings';
 const showDebugTools = false;
 
 const shortcutKeyOptions: Array<{ value: BaseKey; label: string }> = [
+  { value: 'backslash', label: '\\' },
   { value: 'digit0', label: '0' },
   { value: 'a', label: 'A' },
+  { value: 'd', label: 'D' },
   { value: 'e', label: 'E' },
   { value: 'k', label: 'K' },
   { value: 'l', label: 'L' },
@@ -82,6 +84,12 @@ const commandVisuals: Record<
   { icon: string; label: string; tone?: 'record' | 'danger' | 'primary' | 'neutral'; helper?: string }
 > = {
   record: { icon: 'record', label: 'Record', tone: 'record' },
+  focusedTrackRecordArm: { icon: 'record', label: 'Focused Arm', tone: 'record' },
+  focusedTrackSolo: { icon: 'view', label: 'Focused Solo' },
+  focusedTrackMute: { icon: 'view', label: 'Focused Mute' },
+  newTrackVersion: { icon: 'view', label: 'New Version' },
+  duplicateTrack: { icon: 'view', label: 'Duplicate Track' },
+  duplicateTrackWithoutContent: { icon: 'view', label: 'Duplicate No Content' },
   playStop: { icon: 'play', label: 'Play', tone: 'primary' },
   stop: { icon: 'stop', label: 'Stop / Pause' },
   returnToZero: { icon: 'rtz', label: 'RTZ' },
@@ -120,8 +128,10 @@ const commandVisuals: Record<
 
 const formatShortcutLabel = (key: BaseKey, modifiers: ModifierKey[]): string => {
   const keyLabels: Record<BaseKey, string> = {
+    backslash: '\\',
     digit0: '0',
     a: 'A',
+    d: 'D',
     e: 'E',
     k: 'K',
     l: 'L',
@@ -180,8 +190,10 @@ const resolveShortcutKeyAction = (key: BaseKey, modifiers: ModifierKey[]): strin
   };
 
   const keystrokes: Partial<Record<BaseKey, string>> = {
+    backslash: '\\',
     digit0: '0',
     a: 'a',
+    d: 'd',
     e: 'e',
     k: 'k',
     l: 'l',

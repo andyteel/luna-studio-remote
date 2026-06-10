@@ -71,8 +71,10 @@ const normalizePin = (value: unknown): string => {
 
 const validModifierKeys: ModifierKey[] = ['command', 'shift', 'control', 'option'];
 const validBaseKeys: BaseKey[] = [
+  'backslash',
   'digit0',
   'a',
+  'd',
   'e',
   'k',
   'l',
@@ -98,8 +100,10 @@ const validBaseKeys: BaseKey[] = [
 
 const formatShortcutLabel = (key: BaseKey, modifiers: ModifierKey[]): string => {
   const keyLabels: Record<BaseKey, string> = {
+    backslash: '\\',
     digit0: '0',
     a: 'A',
+    d: 'D',
     e: 'E',
     k: 'K',
     l: 'L',
@@ -427,13 +431,38 @@ export const startRemoteServer = async (options: RemoteServerOptions = {}): Prom
         return;
       }
 
-      const description = `${command.id} -> ${command.keys.join('+')}`;
-      const keyAction = buildKeyAction(command);
-      const script = buildAppleScript(config.lunaAppName, command);
+      const description = command.mcuControl
+        ? `${command.id} -> MCU focused ${command.mcuControl}`
+        : `${command.id} -> ${command.keys.join('+')}`;
+      let keyAction: string | null = command.mcuControl
+        ? `MCU focused ${command.mcuControl}`
+        : buildKeyAction(command);
+      const script = command.mcuControl ? null : buildAppleScript(config.lunaAppName, command);
       state.lastKeyAction = keyAction;
       state.lastAppleScript = script;
 
-      if (config.testMode || !config.enableKeystrokes) {
+      if (command.mcuControl) {
+        if (config.testMode || !config.enableMcu || !config.enableMidi) {
+          logger.log(`[TEST MODE] ${description}`);
+          logCommandEvent({
+            commandId: command.id,
+            keyAction,
+            script,
+            success: true,
+          });
+        } else {
+          const result = await mcuService.sendFocusedTrackControl(command.mcuControl);
+          keyAction = `MCU strip ${result.stripIndex + 1} ${result.role}: ${result.pressMessage.join(' ')} / ${result.releaseMessage.join(' ')}`;
+          state.lastKeyAction = keyAction;
+          logger.log(`[SENT] ${description}`);
+          logCommandEvent({
+            commandId: command.id,
+            keyAction,
+            script,
+            success: true,
+          });
+        }
+      } else if (config.testMode || !config.enableKeystrokes) {
         logger.log(`[TEST MODE] ${description}`);
         logCommandEvent({
           commandId: command.id,

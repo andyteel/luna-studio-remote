@@ -5,6 +5,7 @@ import type {
   TransportState,
   V2RemoteState,
 } from '../../shared/v2-state.js';
+import type { FocusedTrackMcuControlRole } from '../../shared/commands.js';
 import { JzzMidiAdapter, type RawMidiMessage } from './midi-adapter.js';
 import { MCU_MESSAGE_MAP } from './mcu-message-map.js';
 import { RtMidiVirtualPortAdapter, type VirtualMidiAdapterSnapshot } from './virtual-midi-adapter.js';
@@ -24,6 +25,16 @@ export interface McuServiceOptions {
 
 const DEFAULT_VIRTUAL_INPUT_NAME = 'LUNA Studio Remote MCU In';
 const DEFAULT_VIRTUAL_OUTPUT_NAME = 'LUNA Studio Remote MCU Out';
+const MCU_BUTTON_PRESS_VELOCITY = 127;
+const MCU_BUTTON_RELEASE_VELOCITY = 0;
+const MCU_BUTTON_RELEASE_DELAY_MS = 20;
+
+export interface FocusedTrackControlResult {
+  role: FocusedTrackMcuControlRole;
+  stripIndex: number;
+  pressMessage: number[];
+  releaseMessage: number[];
+}
 
 const createTransportState = (): TransportState => ({
   playing: null,
@@ -91,6 +102,16 @@ const createEmptyVirtualMidiSnapshot = (): VirtualMidiAdapterSnapshot => ({
 const combineErrors = (...errors: Array<string | null | undefined>): string | null => {
   const presentErrors = errors.filter((error): error is string => Boolean(error));
   return presentErrors.length ? presentErrors.join('; ') : null;
+};
+
+const serializeError = (error: unknown): string => {
+  return error instanceof Error ? error.message : String(error);
+};
+
+const delay = (milliseconds: number): Promise<void> => {
+  return new Promise((resolve) => {
+    setTimeout(resolve, milliseconds);
+  });
 };
 
 const createVirtualInputPort = (name: string): McuPortState => ({
@@ -443,6 +464,77 @@ export class McuService {
 
   private getVirtualOutputName(): string {
     return this.options.virtualOutputName?.trim() || DEFAULT_VIRTUAL_OUTPUT_NAME;
+  }
+
+  async sendFocusedTrackControl(role: FocusedTrackMcuControlRole): Promise<FocusedTrackControlResult> {
+    const stripIndex = this.focusedTrack.index;
+
+    if (
+      !Number.isInteger(stripIndex) ||
+      stripIndex === null ||
+      stripIndex < 0 ||
+      stripIndex >= MCU_MESSAGE_MAP.protocol.stripCount
+    ) {
+      throw new Error('No focused MCU strip is available');
+    }
+
+    const note = MCU_MESSAGE_MAP.stripFamilies.switchOffsets[role] + stripIndex;
+    const pressMessage = [MCU_MESSAGE_MAP.protocol.noteStatus, note, MCU_BUTTON_PRESS_VELOCITY];
+    const releaseMessage = [MCU_MESSAGE_MAP.protocol.noteStatus, note, MCU_BUTTON_RELEASE_VELOCITY];
+
+    try {
+      await this.sendRawMcuMessage(pressMessage);
+      await delay(MCU_BUTTON_RELEASE_DELAY_MS);
+      await this.sendRawMcuMessage(releaseMessage);
+    } catch (error) {
+      this.mcu = {
+        ...this.mcu,
+        lastError: serializeError(error),
+      };
+      throw error;
+    }
+
+    return {
+      role,
+      stripIndex,
+      pressMessage,
+      releaseMessage,
+    };
+  }
+
+  private async sendRawMcuMessage(bytes: number[]): Promise<void> {
+    const hasManualOutputSelection = Boolean(this.options.selectedOutputId || this.options.selectedOutputName);
+
+    if (hasManualOutputSelection) {
+      if (!this.midiAdapter) {
+        throw new Error('Configured MCU output port is not available');
+      }
+
+      await this.midiAdapter.sendRawMessage(bytes);
+      return;
+    }
+
+    const sendErrors: string[] = [];
+
+    if (this.virtualMidiAdapter) {
+      try {
+        await this.virtualMidiAdapter.sendRawMessage(bytes);
+        return;
+      } catch (error) {
+        sendErrors.push(serializeError(error));
+      }
+    }
+
+    if (this.midiAdapter) {
+      try {
+        await this.midiAdapter.sendRawMessage(bytes);
+        return;
+      } catch (error) {
+        sendErrors.push(serializeError(error));
+      }
+    }
+
+    throw new Error(sendErrors.length ? sendErrors.join('; ') : 'No MCU output port is available');
   }
 
   private handleRawMidiMessage(message: RawMidiMessage): void {

@@ -1,6 +1,7 @@
 export type ModifierKey = 'command' | 'shift' | 'control' | 'option';
 
 export type BaseKey =
+  | 'backslash'
   | 'digit0'
   | 'space'
   | 'return'
@@ -21,9 +22,12 @@ export type BaseKey =
   | 'rightBracket'
   | 'equals'
   | 'a'
+  | 'd'
   | 'e'
   | 'q'
   | 'w';
+
+export type FocusedTrackMcuControlRole = 'recordEnable' | 'solo' | 'mute';
 
 export type CommandId =
   | 'record'
@@ -52,12 +56,19 @@ export type CommandId =
   | 'autoScroll'
   | 'scrollLeftSelection'
   | 'scrollRightSelection'
-  | 'toggleTimelineMixer';
+  | 'toggleTimelineMixer'
+  | 'focusedTrackRecordArm'
+  | 'focusedTrackSolo'
+  | 'focusedTrackMute'
+  | 'newTrackVersion'
+  | 'duplicateTrack'
+  | 'duplicateTrackWithoutContent';
 
 export interface CommandDefinition {
   id: CommandId;
   label: string;
   keys: Array<ModifierKey | BaseKey>;
+  mcuControl?: FocusedTrackMcuControlRole;
   danger?: boolean;
   confirm?: boolean;
   placeholder?: boolean;
@@ -107,6 +118,45 @@ export const commandRegistry: CommandDefinition[] = [
   { id: 'scrollLeftSelection', label: 'Scroll Left Selection', keys: ['shift', 'leftArrow'], accent: 'neutral' },
   { id: 'scrollRightSelection', label: 'Scroll Right Selection', keys: ['shift', 'rightArrow'], accent: 'neutral' },
   { id: 'toggleTimelineMixer', label: 'Toggle Timeline/Mixer', keys: ['command', 'equals'], accent: 'neutral' },
+  {
+    id: 'focusedTrackRecordArm',
+    label: 'Focused Track Record Arm',
+    keys: [],
+    mcuControl: 'recordEnable',
+    accent: 'record',
+  },
+  {
+    id: 'focusedTrackSolo',
+    label: 'Focused Track Solo',
+    keys: [],
+    mcuControl: 'solo',
+    accent: 'neutral',
+  },
+  {
+    id: 'focusedTrackMute',
+    label: 'Focused Track Mute',
+    keys: [],
+    mcuControl: 'mute',
+    accent: 'neutral',
+  },
+  {
+    id: 'newTrackVersion',
+    label: 'New Track Version',
+    keys: ['control', 'backslash'],
+    accent: 'neutral',
+  },
+  {
+    id: 'duplicateTrack',
+    label: 'Duplicate Track',
+    keys: ['option', 'd'],
+    accent: 'neutral',
+  },
+  {
+    id: 'duplicateTrackWithoutContent',
+    label: 'Duplicate Without Content',
+    keys: ['shift', 'option', 'd'],
+    accent: 'neutral',
+  },
   {
     id: 'abortRecording',
     label: 'Discard Recording',

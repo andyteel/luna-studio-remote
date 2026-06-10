@@ -12,7 +12,11 @@ interface MidiInputLike extends MidiPortLike {
   close?: () => Promise<unknown>;
 }
 
-interface MidiOutputLike extends MidiPortLike {}
+interface MidiOutputLike extends MidiPortLike {
+  send?: (data: number[] | Uint8Array) => void | Promise<void>;
+  open?: () => Promise<unknown>;
+  close?: () => Promise<unknown>;
+}
 
 interface MidiAccessLike {
   inputs: ReadonlyMap<string, MidiInputLike>;
@@ -114,6 +118,7 @@ export class JzzMidiAdapter {
   private jzz: JzzLike | null = null;
   private access: MidiAccessLike | null = null;
   private openedInput: MidiInputLike | null = null;
+  private openedOutput: MidiOutputLike | null = null;
   private snapshot = emptySnapshot();
 
   constructor(options: MidiAdapterOptions) {
@@ -183,6 +188,16 @@ export class JzzMidiAdapter {
     }
 
     try {
+      if (this.openedOutput) {
+        try {
+          await this.openedOutput.close?.();
+        } catch (error) {
+          this.logger.error(`MCU MIDI output close failed: ${serializeError(error)}`);
+        }
+
+        this.openedOutput = null;
+      }
+
       this.jzz?.close?.();
     } catch (error) {
       this.logger.error(`MCU MIDI engine close failed: ${serializeError(error)}`);
@@ -198,6 +213,27 @@ export class JzzMidiAdapter {
       inputPorts: [...this.snapshot.inputPorts],
       outputPorts: [...this.snapshot.outputPorts],
     };
+  }
+
+  async sendRawMessage(bytes: number[]): Promise<void> {
+    const selectedOutputId = this.snapshot.selectedOutputId;
+
+    if (!selectedOutputId) {
+      throw new Error('No MCU output port is selected');
+    }
+
+    const output = this.access?.outputs.get(selectedOutputId);
+
+    if (!output?.send) {
+      throw new Error('Selected MCU output port could not be opened');
+    }
+
+    if (this.openedOutput !== output) {
+      await output.open?.();
+      this.openedOutput = output;
+    }
+
+    await output.send(bytes);
   }
 
   private getSelectionErrors(

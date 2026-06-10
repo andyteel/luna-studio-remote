@@ -9,6 +9,7 @@ interface RtMidiInput {
 
 interface RtMidiOutput {
   openVirtualPort: (name: string) => void;
+  sendMessage: (message: number[]) => void;
   closePort: () => void;
 }
 
@@ -23,6 +24,10 @@ type WorkerInboundMessage =
       inputName: string;
       outputName: string;
       debugRawMessages: boolean;
+    }
+  | {
+      type: 'send';
+      bytes: number[];
     }
   | {
       type: 'shutdown';
@@ -149,6 +154,27 @@ const startVirtualMidi = (message: Extract<WorkerInboundMessage, { type: 'start'
 process.on('message', (message: WorkerInboundMessage) => {
   if (message.type === 'start') {
     startVirtualMidi(message);
+    return;
+  }
+
+  if (message.type === 'send') {
+    if (!virtualOutput) {
+      sendMessage({
+        type: 'error',
+        error: 'Virtual MIDI output is not available',
+      });
+      return;
+    }
+
+    try {
+      virtualOutput.sendMessage(message.bytes);
+    } catch (error) {
+      sendMessage({
+        type: 'error',
+        error: `Virtual MIDI send failed: ${serializeError(error)}`,
+      });
+    }
+
     return;
   }
 

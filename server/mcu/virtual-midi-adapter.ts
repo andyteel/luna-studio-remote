@@ -142,6 +142,14 @@ export class RtMidiVirtualPortAdapter {
         }
 
         if (message.type === 'error') {
+          if (settled) {
+            this.snapshot = {
+              ...this.snapshot,
+              lastError: message.error,
+            };
+            return;
+          }
+
           if (this.worker === worker) {
             this.worker = null;
           }
@@ -242,6 +250,17 @@ export class RtMidiVirtualPortAdapter {
     return {
       ...this.snapshot,
     };
+  }
+
+  sendRawMessage(bytes: number[]): void {
+    if (!this.worker?.connected || !this.snapshot.outputCreated) {
+      throw new Error('Virtual MCU output port is not available');
+    }
+
+    this.worker.send({
+      type: 'send',
+      bytes,
+    });
   }
 
   private handleRawMessage(bytes: number[], receivedAt: string): void {
