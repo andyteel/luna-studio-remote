@@ -566,6 +566,41 @@ const App = () => {
     return () => window.clearInterval(timer);
   }, []);
 
+  useEffect(() => {
+    const transport = state?.transport;
+
+    if (!transport || transport.source !== 'mcu') {
+      return;
+    }
+
+    setTrackingUiState((current) => {
+      const next = {
+        ...current,
+        playing: transport.playing ?? (transport.stopped === true ? false : current.playing),
+        recording: transport.recording ?? current.recording,
+        loop: transport.loop ?? current.loop,
+        click: transport.click ?? current.click,
+      };
+
+      return (
+        next.playing === current.playing &&
+        next.recording === current.recording &&
+        next.loop === current.loop &&
+        next.click === current.click
+      )
+        ? current
+        : next;
+    });
+  }, [
+    state?.transport.source,
+    state?.transport.updatedAt,
+    state?.transport.playing,
+    state?.transport.stopped,
+    state?.transport.recording,
+    state?.transport.loop,
+    state?.transport.click,
+  ]);
+
   const pulseCommand = (commandId: CommandId) => {
     setFlashCommand(commandId);
     window.setTimeout(() => {

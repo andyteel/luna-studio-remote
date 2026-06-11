@@ -641,16 +641,45 @@ export const startRemoteServer = async (options: RemoteServerOptions = {}): Prom
         return;
       }
 
-      const description = command.mcuControl
+      const keyboardDescription = `${command.id} -> ${command.keys.join('+')}`;
+      const focusedMcuDescription = command.mcuControl
         ? `${command.id} -> MCU focused ${command.mcuControl}`
-        : `${command.id} -> ${command.keys.join('+')}`;
+        : null;
       let keyAction: string | null = command.mcuControl
         ? `MCU focused ${command.mcuControl}`
         : buildKeyAction(command);
-      const script = command.mcuControl ? null : buildAppleScript(config.lunaAppName, command);
+      let script = command.mcuControl ? null : buildAppleScript(config.lunaAppName, command);
       state.lastKeyAction = keyAction;
       state.lastAppleScript = script;
       let responseWarning: string | undefined;
+      let usedMcuTransport = false;
+
+      const sendKeyboardAutomation = async (): Promise<void> => {
+        keyAction = buildKeyAction(command);
+        script = buildAppleScript(config.lunaAppName, command);
+        state.lastKeyAction = keyAction;
+        state.lastAppleScript = script;
+
+        if (config.testMode || !config.enableKeystrokes) {
+          logger.log(`[TEST MODE] ${keyboardDescription}`);
+          logCommandEvent({
+            commandId: command.id,
+            keyAction,
+            script,
+            success: true,
+          });
+          return;
+        }
+
+        await triggerLunaCommand(config.lunaAppName, command);
+        logger.log(`[SENT] ${keyboardDescription}`);
+        logCommandEvent({
+          commandId: command.id,
+          keyAction,
+          script,
+          success: true,
+        });
+      };
 
       if (command.mcuControl) {
         const currentRemoteState = await getState();
@@ -673,7 +702,7 @@ export const startRemoteServer = async (options: RemoteServerOptions = {}): Prom
         }
 
         if (config.testMode || !config.enableMcu || !config.enableMidi) {
-          logger.log(`[TEST MODE] ${description}`);
+          logger.log(`[TEST MODE] ${focusedMcuDescription}`);
           logCommandEvent({
             commandId: command.id,
             keyAction,
@@ -684,7 +713,7 @@ export const startRemoteServer = async (options: RemoteServerOptions = {}): Prom
           const result = await mcuService.sendFocusedTrackControl(command.mcuControl);
           keyAction = `MCU strip ${result.stripIndex + 1} ${result.role}: ${result.pressMessage.join(' ')} / ${result.releaseMessage.join(' ')}`;
           state.lastKeyAction = keyAction;
-          logger.log(`[SENT] ${description}`);
+          logger.log(`[SENT] ${focusedMcuDescription}`);
           logCommandEvent({
             commandId: command.id,
             keyAction,
@@ -692,30 +721,74 @@ export const startRemoteServer = async (options: RemoteServerOptions = {}): Prom
             success: true,
           });
         }
-      } else if (config.testMode || !config.enableKeystrokes) {
-        logger.log(`[TEST MODE] ${description}`);
-        logCommandEvent({
-          commandId: command.id,
-          keyAction,
-          script,
-          success: true,
-        });
+      } else if (command.mcuTransport && config.mcuTransportMode !== 'keyboard') {
+        const mcuDescription = `${command.id} -> MCU transport ${command.mcuTransport}`;
+        keyAction = `MCU transport ${command.mcuTransport}`;
+        script = null;
+        state.lastKeyAction = keyAction;
+        state.lastAppleScript = script;
+
+        if (config.testMode) {
+          logger.log(`[TEST MODE] ${mcuDescription}`);
+          logCommandEvent({
+            commandId: command.id,
+            keyAction,
+            script,
+            success: true,
+          });
+        } else if (!config.enableMcu || !config.enableMidi) {
+          const mcuError = 'MCU transport is disabled by configuration';
+
+          if (config.mcuTransportMode === 'mcu-only') {
+            state.lastError = mcuError;
+            logCommandEvent({
+              commandId: command.id,
+              keyAction,
+              script,
+              success: false,
+              error: state.lastError,
+            });
+            response.status(409).json({ ok: false, error: state.lastError, state: await getState() });
+            return;
+          }
+
+          responseWarning = `${mcuError}; used keyboard fallback.`;
+          logger.log(`[FALLBACK] ${mcuDescription}: ${mcuError}`);
+          await sendKeyboardAutomation();
+        } else {
+          try {
+            const result = await mcuService.sendTransportControl(command.mcuTransport);
+            usedMcuTransport = true;
+            keyAction = `MCU transport ${result.role}: ${result.pressMessage.join(' ')} / ${result.releaseMessage.join(' ')}`;
+            state.lastKeyAction = keyAction;
+            logger.log(`[SENT] ${mcuDescription}`);
+            logCommandEvent({
+              commandId: command.id,
+              keyAction,
+              script,
+              success: true,
+            });
+          } catch (error) {
+            const mcuError = error instanceof Error ? error.message : 'Failed to send MCU transport command';
+
+            if (config.mcuTransportMode === 'mcu-only') {
+              throw error;
+            }
+
+            responseWarning = `MCU transport failed, used keyboard fallback: ${mcuError}`;
+            logger.log(`[FALLBACK] ${mcuDescription}: ${mcuError}`);
+            await sendKeyboardAutomation();
+          }
+        }
       } else {
-        await triggerLunaCommand(config.lunaAppName, command);
-        logger.log(`[SENT] ${description}`);
-        logCommandEvent({
-          commandId: command.id,
-          keyAction,
-          script,
-          success: true,
-        });
+        await sendKeyboardAutomation();
       }
 
       state.lastCommand = command.id;
       state.lastCommandAt = new Date().toISOString();
       state.lastError = null;
 
-      if (!command.mcuControl) {
+      if (!command.mcuControl && !usedMcuTransport) {
         mcuService.preserveSnapshot(mcuSnapshotBeforeCommand);
       }
 
@@ -1095,6 +1168,7 @@ export const startRemoteServer = async (options: RemoteServerOptions = {}): Prom
   logger.log(`MCU enabled: ${config.enableMcu ? 'yes' : 'no'}`);
   logger.log(`MIDI enabled: ${config.enableMidi ? 'yes' : 'no'}`);
   logger.log(`MIDI mode: ${config.midiMode}`);
+  logger.log(`MCU transport mode: ${config.mcuTransportMode}`);
   logger.log(`Expected IAC input: ${config.expectedIacInputName}`);
   logger.log(`Expected IAC output: ${config.expectedIacOutputName}`);
   logger.log(`Virtual MIDI enabled: ${config.enableVirtualMidi ? 'yes' : 'no'}`);

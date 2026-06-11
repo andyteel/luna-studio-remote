@@ -8,7 +8,7 @@ import type {
   TransportState,
   V2RemoteState,
 } from '../../shared/v2-state.js';
-import type { FocusedTrackMcuControlRole } from '../../shared/commands.js';
+import type { FocusedTrackMcuControlRole, McuTransportControlRole } from '../../shared/commands.js';
 import { JzzMidiAdapter, type RawMidiMessage } from './midi-adapter.js';
 import { MCU_MESSAGE_MAP } from './mcu-message-map.js';
 import { RtMidiVirtualPortAdapter, type VirtualMidiAdapterSnapshot } from './virtual-midi-adapter.js';
@@ -33,12 +33,19 @@ const FOCUSED_TRACK_NOT_SELECTED_ERROR =
   'Focused track is not selected yet. Select a track in LUNA or wait for MCU select feedback.';
 const MCU_BUTTON_PRESS_VELOCITY = 127;
 const MCU_BUTTON_RELEASE_VELOCITY = 0;
+const MCU_NOTE_OFF_STATUS = 128; // 0x80
 const MCU_BUTTON_RELEASE_DELAY_MS = 20;
 const MAX_RECENT_MCU_DIAGNOSTIC_MESSAGES = 12;
 
 export interface FocusedTrackControlResult {
   role: FocusedTrackMcuControlRole;
   stripIndex: number;
+  pressMessage: number[];
+  releaseMessage: number[];
+}
+
+export interface TransportControlResult {
+  role: McuTransportControlRole;
   pressMessage: number[];
   releaseMessage: number[];
 }
@@ -649,6 +656,30 @@ export class McuService {
     };
   }
 
+  async sendTransportControl(role: McuTransportControlRole): Promise<TransportControlResult> {
+    const address = MCU_MESSAGE_MAP.transport[role].input;
+    const pressMessage = [address.status, address.data1, MCU_BUTTON_PRESS_VELOCITY];
+    const releaseMessage = [address.status, address.data1, MCU_BUTTON_RELEASE_VELOCITY];
+
+    try {
+      await this.sendRawMcuMessage(pressMessage);
+      await delay(MCU_BUTTON_RELEASE_DELAY_MS);
+      await this.sendRawMcuMessage(releaseMessage);
+    } catch (error) {
+      this.mcu = {
+        ...this.mcu,
+        lastError: serializeError(error),
+      };
+      throw error;
+    }
+
+    return {
+      role,
+      pressMessage,
+      releaseMessage,
+    };
+  }
+
   preserveSnapshot(snapshot: V2RemoteState): void {
     this.rememberPreservedSnapshot(snapshot);
     this.restorePreservedSnapshot();
@@ -767,11 +798,11 @@ export class McuService {
   private getTransportFeedbackRole(bytes: number[]): ParsedTransportRole | null {
     const [status, data1, data2] = bytes;
 
-    if (
-      status !== MCU_MESSAGE_MAP.protocol.noteStatus ||
-      typeof data1 !== 'number' ||
-      typeof data2 !== 'number'
-    ) {
+    if (typeof data1 !== 'number' || typeof data2 !== 'number') {
+      return null;
+    }
+
+    if (status !== MCU_MESSAGE_MAP.protocol.noteStatus && status !== MCU_NOTE_OFF_STATUS) {
       return null;
     }
 
@@ -936,8 +967,8 @@ export class McuService {
       return;
     }
 
-    const data2 = message.bytes[2] ?? 0;
-    const isOn = data2 > 0;
+    const [status, , data2 = 0] = message.bytes;
+    const isOn = status === MCU_MESSAGE_MAP.protocol.noteStatus && data2 > 0;
     const nextTransport: TransportState = {
       ...this.transport,
       source: 'mcu',

@@ -28,6 +28,7 @@ export type BaseKey =
   | 'w';
 
 export type FocusedTrackMcuControlRole = 'recordEnable' | 'solo' | 'mute';
+export type McuTransportControlRole = 'play' | 'stop' | 'record' | 'cycle' | 'click';
 
 export type CommandId =
   | 'record'
@@ -69,6 +70,7 @@ export interface CommandDefinition {
   label: string;
   keys: Array<ModifierKey | BaseKey>;
   mcuControl?: FocusedTrackMcuControlRole;
+  mcuTransport?: McuTransportControlRole;
   danger?: boolean;
   confirm?: boolean;
   placeholder?: boolean;
@@ -77,9 +79,9 @@ export interface CommandDefinition {
 }
 
 export const commandRegistry: CommandDefinition[] = [
-  { id: 'record', label: 'Record', keys: ['numpad3'], accent: 'record' },
-  { id: 'playStop', label: 'Play / Stop', keys: ['space'], accent: 'neutral' },
-  { id: 'stop', label: 'Stop', keys: ['space'], accent: 'neutral' },
+  { id: 'record', label: 'Record', keys: ['numpad3'], mcuTransport: 'record', accent: 'record' },
+  { id: 'playStop', label: 'Play / Stop', keys: ['space'], mcuTransport: 'play', accent: 'neutral' },
+  { id: 'stop', label: 'Stop', keys: ['space'], mcuTransport: 'stop', accent: 'neutral' },
   { id: 'returnToZero', label: 'Return to Zero', keys: ['return'], accent: 'neutral' },
   {
     id: 'goToEnd',
@@ -87,8 +89,8 @@ export const commandRegistry: CommandDefinition[] = [
     keys: ['control', 'digit0'],
     accent: 'neutral',
   },
-  { id: 'loop', label: 'Loop', keys: ['control', 'l'], accent: 'neutral' },
-  { id: 'click', label: 'Click', keys: ['k'], accent: 'neutral' },
+  { id: 'loop', label: 'Loop', keys: ['control', 'l'], mcuTransport: 'cycle', accent: 'neutral' },
+  { id: 'click', label: 'Click', keys: ['k'], mcuTransport: 'click', accent: 'neutral' },
   { id: 'countIn', label: 'Count In', keys: ['shift', 'k'], accent: 'neutral' },
   { id: 'undo', label: 'Undo Last', keys: ['command', 'z'], accent: 'neutral' },
   { id: 'redo', label: 'Redo', keys: ['shift', 'command', 'z'], accent: 'neutral' },
