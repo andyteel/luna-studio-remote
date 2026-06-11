@@ -1,5 +1,5 @@
 export type FeedbackSource = 'unknown' | 'mcu' | 'keystrokeFallback';
-export type MidiMode = 'iac' | 'virtual';
+export type MidiMode = 'iac';
 
 export interface TransportState {
   playing: boolean | null;
@@ -70,7 +70,7 @@ export interface McuDiagnosticsState {
 }
 
 export type McuLifecycleState = 'disabled' | 'idle' | 'starting' | 'connected' | 'error';
-export type McuDriverState = 'noop' | 'jzz' | 'rtmidi';
+export type McuDriverState = 'noop' | 'jzz';
 
 export interface McuState {
   enabled: boolean;
@@ -84,8 +84,6 @@ export interface McuState {
   selectedInputName: string | null;
   selectedOutputId: string | null;
   selectedOutputName: string | null;
-  virtualInputName: string | null;
-  virtualOutputName: string | null;
   lastMessageAt: string | null;
   lastError: string | null;
 }

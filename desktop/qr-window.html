@@ -103,17 +103,9 @@
             </div>
 
             <div class="midi-setup-scroll">
-              <div class="midi-setup-grid">
-                <section class="midi-setup-block">
-                  <h3>MIDI MODE</h3>
-                  <div class="mode-row">
-                    <span id="midi-mode-iac" class="mode-pill active">IAC DRIVER <small>RECOMMENDED</small></span>
-                    <span id="midi-mode-virtual" class="mode-pill">VIRTUAL MIDI <small>DEVELOPER</small></span>
-                  </div>
-                </section>
-
-                <section class="midi-setup-block">
-                  <h3>EXPECTED PORTS</h3>
+              <section class="midi-setup-block midi-connection-block">
+                <h3>IAC MIDI CONNECTION</h3>
+                <div class="midi-port-grid">
                   <div class="midi-port-row">
                     <span>INPUT TO APP</span>
                     <strong id="expected-iac-input">LUNA REMOTE FROM LUNA</strong>
@@ -130,8 +122,8 @@
                     <span>SELECTED OUTPUT</span>
                     <strong id="selected-midi-output">NONE</strong>
                   </div>
-                </section>
-              </div>
+                </div>
+              </section>
 
               <section class="midi-setup-block">
                 <h3>PORT STATUS</h3>
@@ -155,8 +147,8 @@
                 <h3>ACTIONS</h3>
                 <div class="midi-action-grid">
                   <button id="open-audio-midi-setup" class="hardware-button hardware-button-blue" type="button"><span class="button-text">OPEN AUDIO MIDI SETUP</span></button>
-                  <button id="refresh-midi" class="hardware-button hardware-button-neutral" type="button"><span class="button-text">REFRESH MIDI PORTS</span></button>
-                  <button id="test-midi" class="hardware-button hardware-button-amber" type="button"><span class="button-text">TEST CONNECTION</span></button>
+                  <button id="refresh-midi" class="hardware-button hardware-button-neutral" type="button"><span class="button-text">RECONNECT MIDI</span></button>
+                  <button id="test-midi" class="hardware-button hardware-button-amber" type="button"><span class="button-text">CHECK MIDI STATUS</span></button>
                 </div>
               </section>
 

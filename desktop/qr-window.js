@@ -11,8 +11,6 @@ const midiStatusTitle = document.getElementById('midi-status-title');
 const midiStatusDetail = document.getElementById('midi-status-detail');
 const midiSetupPanel = document.getElementById('midi-setup-panel');
 const midiSetupSummary = document.getElementById('midi-setup-summary');
-const midiModeIac = document.getElementById('midi-mode-iac');
-const midiModeVirtual = document.getElementById('midi-mode-virtual');
 const expectedIacInput = document.getElementById('expected-iac-input');
 const expectedIacOutput = document.getElementById('expected-iac-output');
 const selectedMidiInput = document.getElementById('selected-midi-input');
@@ -140,7 +138,6 @@ const renderMidiDiagnostics = (diagnostics = {}) => {
 };
 
 const renderMidiStatus = (midi = {}) => {
-  const midiMode = midi.midiMode === 'virtual' ? 'virtual' : 'iac';
   const expectedInput = midi.expectedIacInputName ?? 'LUNA Remote From LUNA';
   const expectedOutput = midi.expectedIacOutputName ?? 'LUNA Remote To LUNA';
   const warnings = Array.isArray(midi.setupWarnings) ? midi.setupWarnings : [];
@@ -150,8 +147,6 @@ const renderMidiStatus = (midi = {}) => {
   midiSetupSummary.textContent = toUpperUi(midi.detail ?? 'MIDI status has not been checked yet.');
   setOrbState(midiStatusOrb, midi.state);
 
-  midiModeIac.classList.toggle('active', midiMode === 'iac');
-  midiModeVirtual.classList.toggle('active', midiMode === 'virtual');
   expectedIacInput.textContent = toUpperUi(expectedInput);
   expectedIacOutput.textContent = toUpperUi(expectedOutput);
   selectedMidiInput.textContent = toUpperUi(midi.selectedInputName ?? 'none');

@@ -7,7 +7,8 @@ Luna Studio Remote is a standalone macOS app for controlling Universal Audio LUN
 - Starts its own bundled production server automatically
 - Detects the Mac's LAN IP and shows a scannable QR code
 - Opens a single-screen touch remote that mirrors the final production Luna UI
-- Sends keystroke commands to LUNA through macOS Accessibility and Automation APIs
+- Uses the macOS IAC Driver for MCU transport, focused-track controls, and LUNA feedback
+- Keeps keyboard automation for commands that do not have a confirmed MCU mapping
 
 ## Downloads
 
@@ -39,7 +40,7 @@ Your iPhone or iPad must be on the same Wi-Fi or wired LAN as the Mac running Lu
 
 ## Required macOS Permissions
 
-Because Luna Studio Remote sends keystrokes to LUNA, macOS may prompt for:
+Because Luna Studio Remote opens a local network remote and still uses keyboard automation for some non-MCU commands, macOS may prompt for:
 
 - Accessibility permission
 - Automation permission
@@ -47,18 +48,41 @@ Because Luna Studio Remote sends keystrokes to LUNA, macOS may prompt for:
 
 If prompted, allow access so the remote can detect the network URL and send commands correctly.
 
+## MIDI Setup
+
+Luna Studio Remote is IAC-only. It does not create custom virtual MIDI ports.
+
+In Audio MIDI Setup, enable the IAC Driver and create or rename buses exactly:
+
+- `LUNA Remote To LUNA`
+- `LUNA Remote From LUNA`
+
+In LUNA's MIDI Control Surfaces setup:
+
+- Input device: `LUNA Remote To LUNA`
+- Output device: `LUNA Remote From LUNA`
+
+The app expects:
+
+- Input to app: `LUNA Remote From LUNA`
+- Output from app: `LUNA Remote To LUNA`
+
+## Troubleshooting
+
+If Luna Studio Remote connects to the IAC ports but the MIDI Setup screen does not yet show MCU Receiving, Focused Track Selected, Track Name Received, or Focused Track Hydrated, return to LUNA and select a track. LUNA may wait for the track selection to change before sending fresh MCU focus and track-name state. Selecting a track should hydrate the remote.
+
 ## Important Limitations
 
-- This app is a keystroke remote, not a mixer or hardware control surface.
-- It does not receive transport or state feedback directly from LUNA.
+- This app is a focused tracking remote, not a full mixer or hardware control surface.
+- Play, Stop, Record, Loop/Cycle, Click, focused-track record arm, focused-track solo, and focused-track mute use MCU.
+- LUNA sends MCU transport, select, and LCD feedback when available; already-open sessions may not resend LCD track names until LUNA initializes the control surface again.
 - If LUNA focus changes, some shortcuts may behave differently until LUNA is active again.
-- Record/transport behavior depends on LUNA's own shortcut handling and macOS permission state.
+- Commands without a confirmed MCU mapping still depend on LUNA's keyboard shortcut handling and macOS permission state.
 
 ## Operational Notes
 
 - Same Wi-Fi is required for phone and tablet access.
-- Pre-roll or post-roll workflows may require an extra stop press in some cases.
-- If macOS Spotlight still owns `Command+Space`, remap that shortcut so Record reaches LUNA.
+- Pre-roll, post-roll, marker, navigation, zoom, and edit workflows use keyboard automation unless explicitly implemented through MCU.
 
 ## Local Development
 

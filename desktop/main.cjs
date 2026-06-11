@@ -236,7 +236,7 @@ const getMidiStatusTitle = (state) => {
     return 'Ports connected';
   }
 
-  if (state.midiMode === 'iac' && (!state.expectedIacInputFound || !state.expectedIacOutputFound)) {
+  if (!state.expectedIacInputFound || !state.expectedIacOutputFound) {
     return 'Required IAC ports were not found';
   }
 
@@ -256,7 +256,7 @@ const getMidiStatusState = (state) => {
     return 'connected';
   }
 
-  if (state.midiMode === 'iac' && (!state.expectedIacInputFound || !state.expectedIacOutputFound)) {
+  if (!state.expectedIacInputFound || !state.expectedIacOutputFound) {
     return 'setup-required';
   }
 
@@ -284,7 +284,7 @@ const getMidiStatusDetail = (state) => {
     return 'Waiting for MCU feedback from LUNA. Press Play/Stop or select a track in LUNA.';
   }
 
-  if (state.midiMode === 'iac' && (!state.expectedIacInputFound || !state.expectedIacOutputFound)) {
+  if (!state.expectedIacInputFound || !state.expectedIacOutputFound) {
     return 'Required IAC ports were not found.';
   }
 
@@ -329,7 +329,7 @@ const getMidiSetupWarnings = (state) => {
     state.expectedIacOutputName,
   ) || Boolean(state.expectedIacOutputFound);
 
-  if (state.midiMode === 'iac' && (!expectedIacInputFound || !expectedIacOutputFound)) {
+  if (!expectedIacInputFound || !expectedIacOutputFound) {
     return [
       `Required IAC ports were not found. Expected input: ${state.expectedIacInputName}. Expected output: ${state.expectedIacOutputName}.`,
     ];

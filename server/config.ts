@@ -10,10 +10,6 @@ const parseBoolean = (value: string | undefined, fallback: boolean): boolean => 
   return value.toLowerCase() === 'true';
 };
 
-const parseMidiMode = (value: string | undefined): 'iac' | 'virtual' => {
-  return value?.trim().toLowerCase() === 'virtual' ? 'virtual' : 'iac';
-};
-
 const parseMcuTransportMode = (value: string | undefined): 'keyboard' | 'prefer-mcu' | 'mcu-only' => {
   const normalized = value?.trim().toLowerCase();
 
@@ -30,8 +26,7 @@ export const config = {
   isDev: process.env.NODE_ENV !== 'production',
   enableMcu: parseBoolean(process.env.ENABLE_MCU, true),
   enableMidi: parseBoolean(process.env.ENABLE_MIDI, true),
-  midiMode: parseMidiMode(process.env.MIDI_MODE ?? process.env.MCU_MIDI_MODE),
-  enableVirtualMidi: parseBoolean(process.env.ENABLE_VIRTUAL_MIDI, true),
+  midiMode: 'iac' as const,
   debugMcuMidi: parseBoolean(process.env.MCU_DEBUG_MIDI, false),
   mcuTransportMode: parseMcuTransportMode(process.env.MCU_TRANSPORT_MODE),
   expectedIacInputName: process.env.MCU_IAC_INPUT_NAME?.trim() || 'LUNA Remote From LUNA',
@@ -40,6 +35,4 @@ export const config = {
   mcuInputName: process.env.MCU_INPUT_NAME?.trim() || '',
   mcuOutputId: process.env.MCU_OUTPUT_ID?.trim() || '',
   mcuOutputName: process.env.MCU_OUTPUT_NAME?.trim() || '',
-  mcuVirtualInputName: process.env.MCU_VIRTUAL_INPUT_NAME?.trim() || 'LUNA Studio Remote MCU In',
-  mcuVirtualOutputName: process.env.MCU_VIRTUAL_OUTPUT_NAME?.trim() || 'LUNA Studio Remote MCU Out',
 };

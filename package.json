@@ -21,7 +21,6 @@
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
     "jzz": "^1.9.6",
-    "midi": "^2.0.0",
     "qrcode": "^1.5.4",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
@@ -59,15 +58,10 @@
       "package.json",
       "luna-image-resources/misc/UniversalAudioIcon.png",
       "node_modules/jzz/**/*",
-      "node_modules/jazz-midi/**/*",
-      "node_modules/bindings/**/*",
-      "node_modules/file-uri-to-path/**/*",
-      "node_modules/nan/**/*",
-      "node_modules/midi/**/*"
+      "node_modules/jazz-midi/**/*"
     ],
     "asarUnpack": [
-      "node_modules/jazz-midi/**/*.node",
-      "node_modules/midi/**/*.node"
+      "node_modules/jazz-midi/**/*.node"
     ],
     "mac": {
       "icon": "Icon/LRC Exports/LRC.icon",

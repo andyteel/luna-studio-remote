@@ -335,31 +335,27 @@ const buildSetupWarnings = (snapshot: V2RemoteState, diagnostics: McuDiagnostics
   const focusedTrackNamed = snapshot.focusedTrack.source === 'mcu' && snapshot.focusedTrack.name !== null;
   const focusedTrackHydrated = focusedTrackSelected && focusedTrackNamed;
 
-  if (config.midiMode === 'iac') {
-    if (!expectedInputFound || !expectedOutputFound) {
-      warnings.push(
-        `Required IAC ports were not found. Create IAC buses named "${config.expectedIacOutputName}" and "${config.expectedIacInputName}" in Audio MIDI Setup.`,
-      );
-      return warnings;
-    }
+  if (!expectedInputFound || !expectedOutputFound) {
+    warnings.push(
+      `Required IAC ports were not found. Create IAC buses named "${config.expectedIacOutputName}" and "${config.expectedIacInputName}" in Audio MIDI Setup.`,
+    );
+    return warnings;
+  }
 
-    if (
-      expectedInputFound &&
-      snapshot.mcu.selectedInputName &&
-      !isExpectedPortSelected(snapshot.mcu.selectedInputName, config.expectedIacInputName)
-    ) {
-      warnings.push(`Select "${config.expectedIacInputName}" as this app's MCU input port.`);
-    }
+  if (
+    expectedInputFound &&
+    snapshot.mcu.selectedInputName &&
+    !isExpectedPortSelected(snapshot.mcu.selectedInputName, config.expectedIacInputName)
+  ) {
+    warnings.push(`Select "${config.expectedIacInputName}" as this app's MCU input port.`);
+  }
 
-    if (
-      expectedOutputFound &&
-      snapshot.mcu.selectedOutputName &&
-      !isExpectedPortSelected(snapshot.mcu.selectedOutputName, config.expectedIacOutputName)
-    ) {
-      warnings.push(`Select "${config.expectedIacOutputName}" as this app's MCU output port.`);
-    }
-  } else {
-    warnings.push('Virtual MIDI is a fallback/developer mode and may create new macOS endpoint identities after app restarts.');
+  if (
+    expectedOutputFound &&
+    snapshot.mcu.selectedOutputName &&
+    !isExpectedPortSelected(snapshot.mcu.selectedOutputName, config.expectedIacOutputName)
+  ) {
+    warnings.push(`Select "${config.expectedIacOutputName}" as this app's MCU output port.`);
   }
 
   if (!midiConnected) {
@@ -383,34 +379,34 @@ const buildMidiTestMessage = (currentState: RemoteState): string => {
   const diagnostics = currentState.mcuDiagnostics;
 
   if (!currentState.midiConnected) {
-    return 'Test Connection checked current state: MIDI input/output ports are not connected yet.';
+    return 'Check MIDI Status: MIDI input/output ports are not connected yet.';
   }
 
   if (!currentState.mcuReceiving) {
-    return 'Test Connection checked current state: MIDI ports are connected, but no MCU feedback has arrived yet. Press Play/Stop or select a track in LUNA.';
+    return 'Check MIDI Status: MIDI ports are connected, but no MCU feedback has arrived yet. Press Play/Stop or select a track in LUNA.';
   }
 
   if (currentState.focusedTrackHydrated) {
-    return 'Test Connection checked current state: MIDI feedback is arriving and focused track is hydrated.';
+    return 'Check MIDI Status: MIDI feedback is arriving and focused track is hydrated.';
   }
 
   if (currentState.focusedTrackReady && !currentState.focusedTrackNamed) {
-    return 'Test Connection checked current state: focused track is selected and controls are ready. Track name is pending from LUNA.';
+    return 'Check MIDI Status: focused track is selected and controls are ready. Track name is pending from LUNA.';
   }
 
   if (!diagnostics.lastLcdFeedbackAt && !diagnostics.lastSelectFeedbackAt) {
-    return 'Test Connection checked current state: MCU feedback is arriving, but no LCD/select focused-track feedback has been received since server start.';
+    return 'Check MIDI Status: MCU feedback is arriving, but no LCD/select focused-track feedback has been received since server start.';
   }
 
   if (diagnostics.lastSelectFeedbackAt && !diagnostics.lastLcdFeedbackAt) {
-    return 'Test Connection checked current state: MCU select feedback has arrived, but no LCD track-name feedback has been received since server start.';
+    return 'Check MIDI Status: MCU select feedback has arrived, but no LCD track-name feedback has been received since server start.';
   }
 
   if (diagnostics.lastLcdFeedbackAt && !diagnostics.lastSelectFeedbackAt) {
-    return 'Test Connection checked current state: MCU LCD track-name feedback has arrived, but no selected-strip feedback has been received since server start.';
+    return 'Check MIDI Status: MCU LCD track-name feedback has arrived, but no selected-strip feedback has been received since server start.';
   }
 
-  return 'Test Connection checked current state: MCU focused-track feedback has arrived, but the focused track is not fully hydrated yet.';
+  return 'Check MIDI Status: MCU focused-track feedback has arrived, but the focused track is not fully hydrated yet.';
 };
 
 const openAudioMidiSetup = (): void => {
@@ -428,19 +424,15 @@ export const startRemoteServer = async (options: RemoteServerOptions = {}): Prom
   const port = options.port ?? config.port;
   const state = defaultState();
   const app = express();
-  const configuredMcuInputName = config.mcuInputName || (config.midiMode === 'iac' ? config.expectedIacInputName : '');
-  const configuredMcuOutputName = config.mcuOutputName || (config.midiMode === 'iac' ? config.expectedIacOutputName : '');
+  const configuredMcuInputName = config.mcuInputName || config.expectedIacInputName;
+  const configuredMcuOutputName = config.mcuOutputName || config.expectedIacOutputName;
   const mcuService = new McuService({
     enabled: config.enableMcu && config.enableMidi,
-    midiMode: config.midiMode,
-    enableVirtualMidi: config.midiMode === 'virtual' && config.enableVirtualMidi,
     debugMidiMessages: config.debugMcuMidi,
     selectedInputId: config.mcuInputId,
     selectedInputName: configuredMcuInputName,
     selectedOutputId: config.mcuOutputId,
     selectedOutputName: configuredMcuOutputName,
-    virtualInputName: config.mcuVirtualInputName,
-    virtualOutputName: config.mcuVirtualOutputName,
     logger,
   });
 
@@ -574,7 +566,7 @@ export const startRemoteServer = async (options: RemoteServerOptions = {}): Prom
       await mcuService.start();
       response.json({ ok: true, state: await getState() });
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unable to refresh MIDI ports';
+      const message = error instanceof Error ? error.message : 'Unable to reconnect MIDI';
       state.lastError = message;
       response.status(500).json({ ok: false, error: message, state: await getState() });
     }
@@ -1171,9 +1163,6 @@ export const startRemoteServer = async (options: RemoteServerOptions = {}): Prom
   logger.log(`MCU transport mode: ${config.mcuTransportMode}`);
   logger.log(`Expected IAC input: ${config.expectedIacInputName}`);
   logger.log(`Expected IAC output: ${config.expectedIacOutputName}`);
-  logger.log(`Virtual MIDI enabled: ${config.enableVirtualMidi ? 'yes' : 'no'}`);
-  logger.log(`Virtual MCU input: ${config.mcuVirtualInputName}`);
-  logger.log(`Virtual MCU output: ${config.mcuVirtualOutputName}`);
   logger.log(`MCU raw MIDI logging: ${config.debugMcuMidi ? 'yes' : 'no'}`);
   logger.log(`LUNA app name: ${config.lunaAppName}`);
   logger.log(`PIN: ${config.appPin ? 'enabled' : 'disabled'}`);
