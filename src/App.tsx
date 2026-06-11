@@ -534,7 +534,6 @@ const App = () => {
   const [testKey, setTestKey] = useState<BaseKey>('e');
   const [testModifiers, setTestModifiers] = useState<ModifierKey[]>([]);
   const [testBusy, setTestBusy] = useState(false);
-  const [setupBusyAction, setSetupBusyAction] = useState<string | null>(null);
   const [showTestLab, setShowTestLab] = useState(false);
   const [labState, setLabState] = useState<ShortcutTestState>({
     shortcutLabel: null,
@@ -556,42 +555,6 @@ const App = () => {
     const response = await fetch('/api/state');
     const nextState = (await response.json()) as RemoteState;
     setState(nextState);
-  };
-
-  const runSetupAction = async (action: 'audio-midi' | 'refresh-midi' | 'test-midi') => {
-    const endpoints = {
-      'audio-midi': '/api/open-audio-midi-setup',
-      'refresh-midi': '/api/midi/refresh',
-      'test-midi': '/api/midi/test',
-    };
-
-    setSetupBusyAction(action);
-    setMessage(null);
-
-    try {
-      const response = await fetch(endpoints[action], {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-      });
-      const payload = (await response.json()) as {
-        ok?: boolean;
-        message?: string;
-        error?: string;
-        state?: RemoteState;
-      };
-
-      if (payload.state) {
-        setState(payload.state);
-      } else {
-        await fetchState();
-      }
-
-      setMessage(payload.message ?? payload.error ?? (response.ok ? 'Setup action complete' : 'Setup action failed'));
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Setup action failed');
-    } finally {
-      setSetupBusyAction(null);
-    }
   };
 
   useEffect(() => {
@@ -658,7 +621,7 @@ const App = () => {
       }
 
       setState(payload.state);
-      setMessage(`${command.label} sent`);
+      setMessage(payload.warning ? `${command.label} sent. ${payload.warning}` : `${command.label} sent`);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'Command failed');
     } finally {
@@ -909,16 +872,6 @@ const App = () => {
     }
   };
 
-  const renderSetupCheck = (label: string, ready: boolean, detail?: string): ReactNode => (
-    <div className={`setup-check ${ready ? 'ready' : 'waiting'}`}>
-      <span className={`status-dot ${ready ? 'online' : 'offline'}`} aria-hidden="true" />
-      <div>
-        <strong>{label}</strong>
-        {detail ? <span>{detail}</span> : null}
-      </div>
-    </div>
-  );
-
   const renderCommandButton = (command: CommandDefinition, className: string) => {
     const visual = commandVisuals[command.id];
     const isPressed = flashCommand === command.id;
@@ -1002,11 +955,6 @@ const App = () => {
   };
 
   const lastCommandLabel = state?.lastCommand ? commandVisuals[state.lastCommand]?.label ?? commandLookup.get(state.lastCommand)?.label : 'None';
-  const iacPortsVisible = Boolean(state?.expectedIacInputFound && state?.expectedIacOutputFound);
-  const lunaConnected = Boolean(state?.lunaDetected && state?.midiConnected);
-  const inputPortLabel = state?.mcu.selectedInputName ?? 'No input selected';
-  const outputPortLabel = state?.mcu.selectedOutputName ?? 'No output selected';
-  const modeLabel = state?.midiMode === 'virtual' ? 'Virtual MIDI' : 'IAC Driver';
 
   return (
     <main className="app-shell">
@@ -1069,117 +1017,6 @@ const App = () => {
               </div>
             </section>
           ) : null}
-
-          <section className="panel-card setup-panel" aria-label="MIDI setup status">
-            <div className="setup-header">
-              <div>
-                <p className="status-caption">MIDI Setup</p>
-                <h2>{modeLabel}</h2>
-              </div>
-              <div className={`setup-readiness ${state?.focusedTrackReady ? 'ready' : 'waiting'}`}>
-                <span className={`status-dot ${state?.focusedTrackReady ? 'online' : 'offline'}`} aria-hidden="true" />
-                <strong>{state?.focusedTrackReady ? 'Focused Track Ready' : 'Focused Track Pending'}</strong>
-              </div>
-            </div>
-
-            <div className="setup-grid">
-              <div className="setup-section">
-                <h3>MIDI Mode</h3>
-                <div className="mode-selector" aria-label="Configured MIDI mode">
-                  <span className={`mode-option ${state?.midiMode !== 'virtual' ? 'active' : ''}`}>
-                    IAC Driver <small>Recommended</small>
-                  </span>
-                  <span className={`mode-option ${state?.midiMode === 'virtual' ? 'active' : ''}`}>
-                    Virtual MIDI <small>Fallback / Developer</small>
-                  </span>
-                </div>
-              </div>
-
-              <div className="setup-section">
-                <h3>Ports</h3>
-                <div className="port-row">
-                  <span>Input Port</span>
-                  <strong>{inputPortLabel}</strong>
-                </div>
-                <div className="port-row">
-                  <span>Output Port</span>
-                  <strong>{outputPortLabel}</strong>
-                </div>
-                <div className="port-found-row">
-                  <span className={`mini-status ${state?.expectedIacInputFound ? 'ready' : 'waiting'}`}>
-                    Input {state?.expectedIacInputFound ? 'found' : 'missing'}
-                  </span>
-                  <span className={`mini-status ${state?.expectedIacOutputFound ? 'ready' : 'waiting'}`}>
-                    Output {state?.expectedIacOutputFound ? 'found' : 'missing'}
-                  </span>
-                </div>
-              </div>
-
-              <div className="setup-section">
-                <h3>Setup Status</h3>
-                <div className="setup-check-list">
-                  {renderSetupCheck('IAC ports visible', state?.midiMode === 'virtual' || iacPortsVisible)}
-                  {renderSetupCheck('LUNA connected', lunaConnected)}
-                  {renderSetupCheck('MCU receiving', Boolean(state?.mcuReceiving), formatTimestamp(state?.mcu.lastMessageAt ?? null))}
-                  {renderSetupCheck('Focused track hydrated', Boolean(state?.focusedTrackHydrated), state?.focusedTrack.name ?? undefined)}
-                </div>
-              </div>
-            </div>
-
-            <div className="setup-actions" aria-label="MIDI setup actions">
-              <button
-                className="panel-toggle setup-action-button"
-                disabled={setupBusyAction !== null}
-                onClick={() => void runSetupAction('audio-midi')}
-                type="button"
-              >
-                Open Audio MIDI Setup
-              </button>
-              <button
-                className="panel-toggle setup-action-button"
-                disabled={setupBusyAction !== null}
-                onClick={() => void runSetupAction('refresh-midi')}
-                type="button"
-              >
-                Refresh MIDI Ports
-              </button>
-              <button
-                className="panel-toggle setup-action-button"
-                disabled={setupBusyAction !== null}
-                onClick={() => void runSetupAction('test-midi')}
-                type="button"
-              >
-                Test Connection
-              </button>
-            </div>
-
-            <div className="setup-guidance">
-              <div>
-                <h3>Audio MIDI Setup</h3>
-                <p>Enable IAC Driver. Create or rename two buses: {state?.expectedIacOutputName ?? 'LUNA Remote To LUNA'} and {state?.expectedIacInputName ?? 'LUNA Remote From LUNA'}.</p>
-              </div>
-              <div>
-                <h3>LUNA Control Surface</h3>
-                <p>Input Device: {state?.expectedIacOutputName ?? 'LUNA Remote To LUNA'}. Output Device: {state?.expectedIacInputName ?? 'LUNA Remote From LUNA'}.</p>
-              </div>
-              <div>
-                <h3>This App</h3>
-                <p>Input Port: {state?.expectedIacInputName ?? 'LUNA Remote From LUNA'}. Output Port: {state?.expectedIacOutputName ?? 'LUNA Remote To LUNA'}.</p>
-              </div>
-            </div>
-
-            {state?.setupWarnings.length ? (
-              <div className="setup-warnings">
-                {state.setupWarnings.map((warning) => (
-                  <p key={warning}>{warning}</p>
-                ))}
-              </div>
-            ) : (
-              <p className="panel-note setup-healthy">Setup status is healthy.</p>
-            )}
-
-            {message ? <p className="feedback-strong setup-feedback">{message}</p> : null}
-          </section>
 
           {showDebugTools && currentTab === 'navigate' ? (
             <section className="tab-panel" aria-label="Navigation controls">

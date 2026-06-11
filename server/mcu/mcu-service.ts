@@ -29,8 +29,8 @@ export interface McuServiceOptions {
 
 const DEFAULT_VIRTUAL_INPUT_NAME = 'LUNA Studio Remote MCU In';
 const DEFAULT_VIRTUAL_OUTPUT_NAME = 'LUNA Studio Remote MCU Out';
-const FOCUSED_TRACK_NOT_HYDRATED_ERROR =
-  'Focused track is not hydrated yet. Select a track in LUNA or wait for MCU LCD/select feedback.';
+const FOCUSED_TRACK_NOT_SELECTED_ERROR =
+  'Focused track is not selected yet. Select a track in LUNA or wait for MCU select feedback.';
 const MCU_BUTTON_PRESS_VELOCITY = 127;
 const MCU_BUTTON_RELEASE_VELOCITY = 0;
 const MCU_BUTTON_RELEASE_DELAY_MS = 20;
@@ -183,8 +183,8 @@ const hasFocusedTrackFeedback = (focusedTrack: FocusedTrackState): boolean => {
   );
 };
 
-const isFocusedTrackHydrated = (focusedTrack: FocusedTrackState): boolean => {
-  return focusedTrack.source === 'mcu' && focusedTrack.index !== null && focusedTrack.name !== null;
+const isFocusedTrackSelected = (focusedTrack: FocusedTrackState): boolean => {
+  return focusedTrack.source === 'mcu' && focusedTrack.index !== null;
 };
 
 const hasMcuConnectivityState = (mcu: McuState): boolean => {
@@ -610,8 +610,8 @@ export class McuService {
   async sendFocusedTrackControl(role: FocusedTrackMcuControlRole): Promise<FocusedTrackControlResult> {
     this.restorePreservedSnapshot();
 
-    if (!isFocusedTrackHydrated(this.focusedTrack)) {
-      throw new Error(FOCUSED_TRACK_NOT_HYDRATED_ERROR);
+    if (!isFocusedTrackSelected(this.focusedTrack)) {
+      throw new Error(FOCUSED_TRACK_NOT_SELECTED_ERROR);
     }
 
     const stripIndex = this.focusedTrack.index;

@@ -41,6 +41,8 @@ export interface RemoteState extends V2RemoteState {
   expectedIacOutputFound: boolean;
   midiConnected: boolean;
   mcuReceiving: boolean;
+  focusedTrackSelected: boolean;
+  focusedTrackNamed: boolean;
   focusedTrackHydrated: boolean;
   focusedTrackReady: boolean;
   mcuDiagnostics: McuDiagnosticsState;
@@ -59,6 +61,7 @@ export interface CommandResponse {
   ok: boolean;
   command?: CommandId;
   state?: RemoteState;
+  warning?: string;
   error?: string;
 }
 

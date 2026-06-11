@@ -284,8 +284,10 @@ const isEntrypoint = (): boolean => {
   return path.resolve(entryPath) === fileURLToPath(import.meta.url);
 };
 
-const FOCUSED_TRACK_NOT_HYDRATED_ERROR =
-  'Focused track is not hydrated yet. Select a track in LUNA or wait for MCU LCD/select feedback.';
+const FOCUSED_TRACK_NOT_SELECTED_ERROR =
+  'Focused track is not selected yet. Select a track in LUNA or wait for MCU select feedback.';
+const FOCUSED_TRACK_NAME_PENDING_WARNING =
+  'Focused track name is pending, using selected strip index.';
 
 const normalizeMidiPortName = (name: string): string => name.trim().toLowerCase().replace(/\s+/g, ' ');
 
@@ -329,10 +331,9 @@ const buildSetupWarnings = (snapshot: V2RemoteState, diagnostics: McuDiagnostics
     snapshot.mcu.lastMessageAt ||
       (snapshot.transport.source === 'mcu' && snapshot.transport.updatedAt),
   );
-  const focusedTrackHydrated =
-    snapshot.focusedTrack.source === 'mcu' &&
-    snapshot.focusedTrack.index !== null &&
-    snapshot.focusedTrack.name !== null;
+  const focusedTrackSelected = snapshot.focusedTrack.source === 'mcu' && snapshot.focusedTrack.index !== null;
+  const focusedTrackNamed = snapshot.focusedTrack.source === 'mcu' && snapshot.focusedTrack.name !== null;
+  const focusedTrackHydrated = focusedTrackSelected && focusedTrackNamed;
 
   if (config.midiMode === 'iac') {
     if (!expectedInputFound || !expectedOutputFound) {
@@ -365,12 +366,14 @@ const buildSetupWarnings = (snapshot: V2RemoteState, diagnostics: McuDiagnostics
     warnings.push('MIDI ports are not connected yet.');
   } else if (!mcuReceiving) {
     warnings.push('Waiting for MCU feedback from LUNA. Press Play/Stop or select a track in LUNA.');
-  } else if (!focusedTrackHydrated) {
+  } else if (!focusedTrackSelected) {
     if (!diagnostics.lastLcdFeedbackAt && !diagnostics.lastSelectFeedbackAt) {
       warnings.push('MCU feedback is arriving, but no LCD/select focused-track feedback has been received since server start.');
     } else {
-      warnings.push('Select a track in LUNA to hydrate focused-track controls.');
+      warnings.push('Select a track in LUNA to enable focused-track controls.');
     }
+  } else if (!focusedTrackNamed) {
+    warnings.push('Track name pending from LUNA. Focused-track controls are available.');
   }
 
   return warnings;
@@ -389,6 +392,10 @@ const buildMidiTestMessage = (currentState: RemoteState): string => {
 
   if (currentState.focusedTrackHydrated) {
     return 'Test Connection checked current state: MIDI feedback is arriving and focused track is hydrated.';
+  }
+
+  if (currentState.focusedTrackReady && !currentState.focusedTrackNamed) {
+    return 'Test Connection checked current state: focused track is selected and controls are ready. Track name is pending from LUNA.';
   }
 
   if (!diagnostics.lastLcdFeedbackAt && !diagnostics.lastSelectFeedbackAt) {
@@ -489,10 +496,13 @@ export const startRemoteServer = async (options: RemoteServerOptions = {}): Prom
       mcuSnapshot.mcu.lastMessageAt ||
         (mcuSnapshot.transport.source === 'mcu' && mcuSnapshot.transport.updatedAt),
     );
-    const focusedTrackHydrated =
+    const focusedTrackSelected =
       mcuSnapshot.focusedTrack.source === 'mcu' &&
-      mcuSnapshot.focusedTrack.index !== null &&
+      mcuSnapshot.focusedTrack.index !== null;
+    const focusedTrackNamed =
+      mcuSnapshot.focusedTrack.source === 'mcu' &&
       mcuSnapshot.focusedTrack.name !== null;
+    const focusedTrackHydrated = focusedTrackSelected && focusedTrackNamed;
 
     try {
       lunaDetected = await isLunaRunning(config.lunaAppName);
@@ -513,8 +523,10 @@ export const startRemoteServer = async (options: RemoteServerOptions = {}): Prom
       expectedIacOutputFound,
       midiConnected,
       mcuReceiving,
+      focusedTrackSelected,
+      focusedTrackNamed,
       focusedTrackHydrated,
-      focusedTrackReady: focusedTrackHydrated,
+      focusedTrackReady: focusedTrackSelected,
       mcuDiagnostics,
       setupWarnings: buildSetupWarnings(mcuSnapshot, mcuDiagnostics),
       lastCommand: state.lastCommand,
@@ -638,12 +650,13 @@ export const startRemoteServer = async (options: RemoteServerOptions = {}): Prom
       const script = command.mcuControl ? null : buildAppleScript(config.lunaAppName, command);
       state.lastKeyAction = keyAction;
       state.lastAppleScript = script;
+      let responseWarning: string | undefined;
 
       if (command.mcuControl) {
         const currentRemoteState = await getState();
 
         if (!currentRemoteState.focusedTrackReady) {
-          state.lastError = FOCUSED_TRACK_NOT_HYDRATED_ERROR;
+          state.lastError = FOCUSED_TRACK_NOT_SELECTED_ERROR;
           logCommandEvent({
             commandId: command.id,
             keyAction,
@@ -653,6 +666,10 @@ export const startRemoteServer = async (options: RemoteServerOptions = {}): Prom
           });
           response.status(409).json({ ok: false, error: state.lastError, state: await getState() });
           return;
+        }
+
+        if (!currentRemoteState.focusedTrackNamed) {
+          responseWarning = FOCUSED_TRACK_NAME_PENDING_WARNING;
         }
 
         if (config.testMode || !config.enableMcu || !config.enableMidi) {
@@ -705,6 +722,7 @@ export const startRemoteServer = async (options: RemoteServerOptions = {}): Prom
       response.json({
         ok: true,
         command: command.id,
+        warning: responseWarning,
         state: await getState(),
       });
     } catch (error) {

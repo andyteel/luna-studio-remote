@@ -18,8 +18,8 @@ const DEFAULT_ENV = {
 };
 
 const WINDOW_BOUNDS = {
-  width: 500,
-  height: 640,
+  width: 680,
+  height: 720,
 };
 
 let tray = null;
@@ -58,6 +58,8 @@ const createDefaultMidiStatus = () => ({
   expectedIacOutputFound: false,
   midiConnected: false,
   mcuReceiving: false,
+  focusedTrackSelected: false,
+  focusedTrackNamed: false,
   focusedTrackHydrated: false,
   focusedTrackReady: false,
   selectedInputName: null,
@@ -67,6 +69,7 @@ const createDefaultMidiStatus = () => ({
   setupWarnings: ['Start the server to check MIDI setup.'],
   lastMessageAt: null,
   focusedTrackName: null,
+  focusedTrackFallbackName: null,
   mcuDiagnostics: createDefaultMcuDiagnostics(),
   actionMessage: null,
   checkedAt: null,
@@ -205,13 +208,24 @@ const updateStatus = (partial) => {
   broadcastStatus();
 };
 
-const getMidiStatusTitle = (state) => {
-  if (state.focusedTrackReady) {
-    return state.focusedTrack?.name ? `Focused Track: ${state.focusedTrack.name}` : 'Focused track ready';
+const formatFocusedTrackFallbackName = (focusedTrack) => {
+  const index = focusedTrack?.index;
+
+  if (!Number.isInteger(index) || index < 0) {
+    return null;
   }
 
+  return `Track ${index + 1}`;
+};
+
+const getMidiStatusTitle = (state) => {
   if (state.focusedTrackHydrated) {
     return state.focusedTrack?.name ? `Focused Track: ${state.focusedTrack.name}` : 'Focused track hydrated';
+  }
+
+  if (state.focusedTrackSelected) {
+    const fallbackName = formatFocusedTrackFallbackName(state.focusedTrack);
+    return fallbackName ? `Focused track selected: ${fallbackName}` : 'Focused track selected';
   }
 
   if (state.mcuReceiving) {
@@ -250,8 +264,12 @@ const getMidiStatusState = (state) => {
 };
 
 const getMidiStatusDetail = (state) => {
-  if (state.focusedTrackReady) {
+  if (state.focusedTrackHydrated) {
     return 'Focused-track controls are available.';
+  }
+
+  if (state.focusedTrackSelected) {
+    return 'Track name pending from LUNA. Focused-track controls are available.';
   }
 
   if (state.mcuReceiving) {
@@ -259,7 +277,7 @@ const getMidiStatusDetail = (state) => {
       return 'MCU feedback is arriving, but no LCD/select focused-track feedback has been seen yet.';
     }
 
-    return 'Select a track in LUNA to hydrate focused-track controls.';
+    return 'Select a track in LUNA to enable focused-track controls.';
   }
 
   if (state.midiConnected) {
@@ -325,12 +343,16 @@ const getMidiSetupWarnings = (state) => {
     return ['Waiting for MCU feedback from LUNA. Press Play/Stop or select a track in LUNA.'];
   }
 
-  if (!state.focusedTrackHydrated) {
+  if (!state.focusedTrackSelected) {
     if (state.mcuDiagnostics && !state.mcuDiagnostics.lastLcdFeedbackAt && !state.mcuDiagnostics.lastSelectFeedbackAt) {
       return ['MCU feedback is arriving, but no LCD/select focused-track feedback has been received since server start.'];
     }
 
-    return ['Select a track in LUNA to hydrate focused-track controls.'];
+    return ['Select a track in LUNA to enable focused-track controls.'];
+  }
+
+  if (!state.focusedTrackNamed) {
+    return ['Track name pending from LUNA. Focused-track controls are available.'];
   }
 
   return [];
@@ -394,6 +416,8 @@ const toMidiStatus = (state) => {
     expectedIacOutputFound,
     midiConnected: Boolean(state.midiConnected),
     mcuReceiving: Boolean(state.mcuReceiving),
+    focusedTrackSelected: Boolean(state.focusedTrackSelected),
+    focusedTrackNamed: Boolean(state.focusedTrackNamed),
     focusedTrackHydrated: Boolean(state.focusedTrackHydrated),
     focusedTrackReady: Boolean(state.focusedTrackReady),
     selectedInputName,
@@ -403,6 +427,7 @@ const toMidiStatus = (state) => {
     setupWarnings: getMidiSetupWarnings(normalizedState),
     lastMessageAt: state.mcu?.lastMessageAt ?? null,
     focusedTrackName: state.focusedTrack?.name ?? null,
+    focusedTrackFallbackName: formatFocusedTrackFallbackName(state.focusedTrack),
     mcuDiagnostics: state.mcuDiagnostics ?? createDefaultMcuDiagnostics(),
     checkedAt: new Date().toISOString(),
   };

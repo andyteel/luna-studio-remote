@@ -140,6 +140,8 @@
                   <div class="midi-check" id="check-output-found"><span class="status-dot"></span><strong>EXPECTED OUTPUT FOUND</strong></div>
                   <div class="midi-check" id="check-midi-connected"><span class="status-dot"></span><strong>MIDI CONNECTED</strong></div>
                   <div class="midi-check" id="check-mcu-receiving"><span class="status-dot"></span><strong>MCU RECEIVING</strong></div>
+                  <div class="midi-check" id="check-focused-selected"><span class="status-dot"></span><strong>FOCUSED TRACK SELECTED</strong></div>
+                  <div class="midi-check" id="check-focused-named"><span class="status-dot"></span><strong>TRACK NAME RECEIVED</strong></div>
                   <div class="midi-check" id="check-focused-hydrated"><span class="status-dot"></span><strong>FOCUSED TRACK HYDRATED</strong></div>
                 </div>
               </section>
@@ -147,22 +149,6 @@
               <section id="midi-warning-block" class="midi-warning-block hidden">
                 <h3>SETUP WARNING</h3>
                 <div id="midi-warnings" class="midi-warning-list"></div>
-              </section>
-
-              <section class="midi-setup-block">
-                <h3>LUNA SETUP INSTRUCTIONS</h3>
-                <div class="instruction-grid">
-                  <div>
-                    <strong>AUDIO MIDI SETUP</strong>
-                    <p>1. ENABLE IAC DRIVER</p>
-                    <p>2. CREATE OR RENAME BUSES: LUNA REMOTE TO LUNA AND LUNA REMOTE FROM LUNA</p>
-                  </div>
-                  <div>
-                    <strong>LUNA MIDI CONTROL SURFACES</strong>
-                    <p>INPUT DEVICE: LUNA REMOTE TO LUNA</p>
-                    <p>OUTPUT DEVICE: LUNA REMOTE FROM LUNA</p>
-                  </div>
-                </div>
               </section>
 
               <section class="midi-setup-block midi-actions-block">
@@ -220,6 +206,22 @@
                   <p id="diag-recent-messages" class="detected-port-list">NONE RECEIVED</p>
                 </div>
               </details>
+
+              <section class="midi-setup-block midi-instructions-block">
+                <h3>LUNA SETUP INSTRUCTIONS</h3>
+                <div class="instruction-grid">
+                  <div>
+                    <strong>AUDIO MIDI SETUP</strong>
+                    <p>1. ENABLE IAC DRIVER</p>
+                    <p>2. CREATE OR RENAME BUSES: LUNA REMOTE TO LUNA AND LUNA REMOTE FROM LUNA</p>
+                  </div>
+                  <div>
+                    <strong>LUNA MIDI CONTROL SURFACES</strong>
+                    <p>INPUT DEVICE: LUNA REMOTE TO LUNA</p>
+                    <p>OUTPUT DEVICE: LUNA REMOTE FROM LUNA</p>
+                  </div>
+                </div>
+              </section>
             </div>
           </section>
         </section>

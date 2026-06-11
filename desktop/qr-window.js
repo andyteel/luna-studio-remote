@@ -161,6 +161,8 @@ const renderMidiStatus = (midi = {}) => {
   setCheck('check-output-found', midi.expectedIacOutputFound ? 'green' : 'red');
   setCheck('check-midi-connected', midi.midiConnected ? 'green' : 'red');
   setCheck('check-mcu-receiving', midi.mcuReceiving ? 'green' : 'yellow');
+  setCheck('check-focused-selected', midi.focusedTrackSelected ? 'green' : 'yellow');
+  setCheck('check-focused-named', midi.focusedTrackNamed ? 'green' : 'yellow');
   setCheck('check-focused-hydrated', midi.focusedTrackHydrated ? 'green' : 'yellow');
 
   if (warnings.length > 0) {
