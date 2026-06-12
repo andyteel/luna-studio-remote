@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { commandRegistry, type BaseKey, type CommandDefinition, type CommandId, type ModifierKey } from '../shared/commands';
 import type { CommandResponse, RemoteState, ShortcutTestState, TestShortcutResponse } from './types';
 import playIcon from '../luna-image-resources/buttons/icon_transport_play.png';
@@ -27,8 +27,20 @@ import undoIcon from '../luna-image-resources/buttons/icon_undo_drk.png';
 import redoIcon from '../luna-image-resources/buttons/icon_redo_drk.png';
 import uaDiamondOn from '../luna-image-resources/buttons/ua_diamond_on.png';
 import uaDiamondMouseover from '../luna-image-resources/buttons/ua_diamond_mouseover.png';
+import focusedTrackPanel from '../assets_v2/track-panel@2x.png';
+import focusedFaderPanel from '../assets_v2/fader-panel@2x.png';
+import focusedFaderTrack from '../assets_v2/fader-track@2x.png';
+import focusedFaderCap from '../assets_v2/fader_cap@2x.png';
+import focusedMeterBg from '../assets_v2/meter_channer_bg@2x.png';
+import focusedMeterOn from '../assets_v2/meter_channel_on@2x.png';
+import focusedMeterClip from '../assets_v2/meter_channel_clip_on@2x.png';
+import focusedScribbleStrip from '../assets_v2/scribble-strip@2x.png';
+import focusedSwitchNeutral from '../assets_v2/switch_fader@2x.png';
+import focusedSwitchBlue from '../assets_v2/switch_fader_blu@2x.png';
+import focusedSwitchRed from '../assets_v2/switch_fader_red@2x.png';
+import focusedSwitchYellow from '../assets_v2/switch_fader_yel@2x.png';
 
-const statusPollMs = 3000;
+const statusPollMs = 100;
 type TabId = 'tracking' | 'navigate' | 'settings';
 const showDebugTools = false;
 
@@ -87,6 +99,10 @@ const commandVisuals: Record<
   focusedTrackRecordArm: { icon: 'record', label: 'Focused Arm', tone: 'record' },
   focusedTrackSolo: { icon: 'view', label: 'Focused Solo' },
   focusedTrackMute: { icon: 'view', label: 'Focused Mute' },
+  focusedBankLeft: { icon: 'markerLeft', label: 'Bank Left' },
+  focusedChannelLeft: { icon: 'markerLeft', label: 'Channel Left' },
+  focusedChannelRight: { icon: 'markerRight', label: 'Channel Right' },
+  focusedBankRight: { icon: 'markerRight', label: 'Bank Right' },
   newTrackVersion: { icon: 'view', label: 'New Version' },
   duplicateTrack: { icon: 'view', label: 'Duplicate Track' },
   duplicateTrackWithoutContent: { icon: 'view', label: 'Duplicate No Content' },
@@ -265,6 +281,57 @@ const momentaryTrackingCommands: CommandId[] = [
   'previousMarker',
   'nextMarker',
 ];
+
+type FocusedStripButtonPosition = 'record' | 'solo' | 'mute' | 'version';
+type FocusedStripIcon = FocusedStripButtonPosition | 'bankLeft' | 'channelLeft' | 'channelRight' | 'bankRight';
+
+const focusedStripButtonAssets: Record<FocusedStripButtonPosition, string> = {
+  record: focusedSwitchRed,
+  solo: focusedSwitchYellow,
+  mute: focusedSwitchNeutral,
+  version: focusedSwitchBlue,
+};
+
+const focusedStripNormalButtons: Array<{
+  position: FocusedStripButtonPosition;
+  commandId: CommandId;
+  icon: FocusedStripIcon;
+}> = [
+  { position: 'record', commandId: 'focusedTrackRecordArm', icon: 'record' },
+  { position: 'solo', commandId: 'focusedTrackSolo', icon: 'solo' },
+  { position: 'mute', commandId: 'focusedTrackMute', icon: 'mute' },
+  { position: 'version', commandId: 'newTrackVersion', icon: 'version' },
+];
+
+const focusedStripNavigationButtons: Array<{
+  position: FocusedStripButtonPosition;
+  commandId: CommandId;
+  icon: FocusedStripIcon;
+}> = [
+  { position: 'record', commandId: 'focusedBankLeft', icon: 'bankLeft' },
+  { position: 'solo', commandId: 'focusedChannelLeft', icon: 'channelLeft' },
+  { position: 'mute', commandId: 'focusedChannelRight', icon: 'channelRight' },
+  { position: 'version', commandId: 'focusedBankRight', icon: 'bankRight' },
+];
+
+const focusedFaderTrackLeftPercent = 15.58;
+const focusedFaderTrackTopPercent = 64.6;
+const focusedFaderTrackWidthPercent = 69.75;
+const focusedFaderTrackHeightPercent = 6.61;
+const focusedFaderCapWidthPercent = 28.44;
+const focusedFaderCapHeightPercent = 34.24;
+
+const clamp01 = (value: number | null | undefined): number => {
+  if (typeof value !== 'number' || Number.isNaN(value)) {
+    return 0;
+  }
+
+  return Math.max(0, Math.min(1, value));
+};
+
+const formatFocusedFaderGainDb = (gainDbText: string | null | undefined): string => {
+  return gainDbText ?? '--.- dB';
+};
 const trackingTransportGlyphCommands: CommandId[] = [
   'record',
   'playStop',
@@ -515,6 +582,49 @@ const renderTrackingTextLabel = (commandId: CommandId, fallbackLabel: string): R
   }
 };
 
+const renderFocusedStripButtonIcon = (icon: FocusedStripIcon): ReactNode => {
+  switch (icon) {
+    case 'record':
+      return <span className="focused-strip-record-dot" aria-hidden="true" />;
+    case 'solo':
+      return <span className="focused-strip-letter" aria-hidden="true">S</span>;
+    case 'mute':
+      return <span className="focused-strip-letter" aria-hidden="true">M</span>;
+    case 'version':
+      return <span className="focused-strip-plus" aria-hidden="true">+</span>;
+    case 'bankLeft':
+      return (
+        <svg className="focused-strip-nav-icon focused-strip-nav-icon-bank" viewBox="0 0 64 64" aria-hidden="true">
+          <path d="M35 16 20 32l15 16" />
+          <path d="M49 16 34 32l15 16" />
+          <path d="M14 14v36" />
+        </svg>
+      );
+    case 'channelLeft':
+      return (
+        <svg className="focused-strip-nav-icon" viewBox="0 0 64 64" aria-hidden="true">
+          <path d="M40 16 24 32l16 16" />
+        </svg>
+      );
+    case 'channelRight':
+      return (
+        <svg className="focused-strip-nav-icon" viewBox="0 0 64 64" aria-hidden="true">
+          <path d="m24 16 16 16-16 16" />
+        </svg>
+      );
+    case 'bankRight':
+      return (
+        <svg className="focused-strip-nav-icon focused-strip-nav-icon-bank" viewBox="0 0 64 64" aria-hidden="true">
+          <path d="m29 16 15 16-15 16" />
+          <path d="m15 16 15 16-15 16" />
+          <path d="M50 14v36" />
+        </svg>
+      );
+    default:
+      return null;
+  }
+};
+
 const App = () => {
   const [state, setState] = useState<RemoteState | null>(null);
   const [pin, setPin] = useState('');
@@ -531,6 +641,7 @@ const App = () => {
     countIn: false,
     playFromStopLocation: false,
   });
+  const [focusedStripNavMode, setFocusedStripNavMode] = useState(false);
   const [testKey, setTestKey] = useState<BaseKey>('e');
   const [testModifiers, setTestModifiers] = useState<ModifierKey[]>([]);
   const [testBusy, setTestBusy] = useState(false);
@@ -548,13 +659,24 @@ const App = () => {
   const [labRequestJson, setLabRequestJson] = useState('Waiting');
   const [labResponseJson, setLabResponseJson] = useState('Waiting');
   const holdAnimationRef = useRef<number | null>(null);
+  const stateFetchInFlightRef = useRef(false);
   const currentTab: TabId = 'tracking';
   const isProductionRemote = true;
 
-  const fetchState = async () => {
-    const response = await fetch('/api/state');
-    const nextState = (await response.json()) as RemoteState;
-    setState(nextState);
+  const fetchState = async (force = false) => {
+    if (stateFetchInFlightRef.current && !force) {
+      return;
+    }
+
+    stateFetchInFlightRef.current = true;
+
+    try {
+      const response = await fetch('/api/state');
+      const nextState = (await response.json()) as RemoteState;
+      setState(nextState);
+    } finally {
+      stateFetchInFlightRef.current = false;
+    }
   };
 
   useEffect(() => {
@@ -651,7 +773,7 @@ const App = () => {
 
       if (!payload.ok || !payload.state) {
         setMessage(payload.error ?? 'Command failed');
-        await fetchState();
+        await fetchState(true);
         return;
       }
 
@@ -715,7 +837,7 @@ const App = () => {
         return;
       }
 
-      await fetchState();
+      await fetchState(true);
       setLabState({
         shortcutLabel: formatShortcutLabel(payload.shortcut?.key ?? key, payload.shortcut?.modifiers ?? modifiers),
         key: payload.shortcut?.key ?? key,
@@ -989,6 +1111,121 @@ const App = () => {
     );
   };
 
+  const renderFocusedChannelStrip = () => {
+    const focusedTrack = state?.focusedTrack;
+    const faderPosition = clamp01(focusedTrack?.fader.normalized ?? 0.5);
+    const meterLevel = clamp01(focusedTrack?.meter.normalized);
+    const hasMeterClip = focusedTrack?.meter.clip === true;
+    const trackName = focusedTrack?.name ?? (state?.focusedTrackReady ? 'TRACK' : 'NO TRACK');
+    const faderGainDb = formatFocusedFaderGainDb(focusedTrack?.fader.gainDbText);
+    const buttonSpecs = focusedStripNavMode ? focusedStripNavigationButtons : focusedStripNormalButtons;
+    const faderCapLeft =
+      focusedFaderTrackLeftPercent -
+      focusedFaderCapWidthPercent / 2 +
+      faderPosition * focusedFaderTrackWidthPercent;
+    const faderCapTop =
+      focusedFaderTrackTopPercent +
+      focusedFaderTrackHeightPercent / 2 -
+      focusedFaderCapHeightPercent / 2;
+    const stripStyle = {
+      '--focused-fader-left': `${faderCapLeft}%`,
+      '--focused-fader-top': `${faderCapTop}%`,
+      '--focused-meter-level': `${meterLevel * 100}%`,
+    } as CSSProperties;
+
+    const isNormalButtonActive = (position: FocusedStripButtonPosition): boolean => {
+      if (focusedStripNavMode) {
+        return false;
+      }
+
+      switch (position) {
+        case 'record':
+          return focusedTrack?.arm === true;
+        case 'solo':
+          return focusedTrack?.solo === true;
+        case 'mute':
+          return focusedTrack?.mute === true;
+        default:
+          return false;
+      }
+    };
+
+    return (
+      <div
+        className={`focused-channel-strip ${focusedStripNavMode ? 'is-navigation-mode' : ''}`}
+        style={stripStyle}
+        aria-label="Focused channel strip"
+      >
+        <img src={focusedTrackPanel} alt="" className="focused-strip-panel focused-strip-track-panel" aria-hidden="true" />
+        <img src={focusedFaderPanel} alt="" className="focused-strip-panel focused-strip-fader-panel" aria-hidden="true" />
+
+        <div className="focused-strip-buttons" aria-label="Focused channel controls">
+          {buttonSpecs.map((spec) => {
+            const command = commandLookup.get(spec.commandId);
+
+            if (!command) {
+              return null;
+            }
+
+            const isDisabled =
+              busyCommand !== null ||
+              Boolean(command.mcuControl && !state?.focusedTrackReady) ||
+              Boolean(command.mcuNavigation && !state?.midiConnected);
+            const isPressed = flashCommand === command.id;
+            const isActive = isNormalButtonActive(spec.position);
+
+            return (
+              <button
+                key={spec.position}
+                className={`focused-strip-button focused-strip-button-${spec.position} ${isPressed ? 'is-pressed' : ''} ${isActive ? 'is-active' : ''}`}
+                disabled={isDisabled}
+                onClick={() => void sendCommand(command)}
+                type="button"
+                aria-label={command.label}
+                aria-pressed={!focusedStripNavMode && spec.position !== 'version' ? isActive : undefined}
+                title={command.label}
+              >
+                <img src={focusedStripButtonAssets[spec.position]} alt="" aria-hidden="true" />
+                <span className="focused-strip-button-icon">
+                  {renderFocusedStripButtonIcon(spec.icon)}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        <button
+          className="focused-strip-scribble"
+          onClick={() => setFocusedStripNavMode((current) => !current)}
+          type="button"
+          aria-label="Toggle focused channel navigation"
+          aria-pressed={focusedStripNavMode}
+        >
+          <img src={focusedScribbleStrip} alt="" aria-hidden="true" />
+          <span className="focused-strip-fader-gain">{faderGainDb}</span>
+          <span className="focused-strip-name">{trackName}</span>
+        </button>
+
+        <img src={focusedFaderTrack} alt="" className="focused-strip-fader-track" aria-hidden="true" />
+        <img src={focusedFaderCap} alt="" className="focused-strip-fader-cap" aria-hidden="true" />
+
+        <div className="focused-strip-meter" aria-hidden="true">
+          <img src={focusedMeterBg} alt="" className="focused-strip-meter-bg" />
+          <span className="focused-strip-meter-active-region">
+            <span className="focused-strip-meter-fill-mask">
+              <img src={focusedMeterOn} alt="" className="focused-strip-meter-fill-image" />
+            </span>
+            <img
+              src={focusedMeterClip}
+              alt=""
+              className={`focused-strip-meter-clip ${hasMeterClip ? 'is-visible' : ''}`}
+            />
+          </span>
+        </div>
+      </div>
+    );
+  };
+
   const lastCommandLabel = state?.lastCommand ? commandVisuals[state.lastCommand]?.label ?? commandLookup.get(state.lastCommand)?.label : 'None';
 
   return (
@@ -1013,6 +1250,9 @@ const App = () => {
         <div className="remote-stage">
           {currentTab === 'tracking' ? (
             <section className="tab-panel" aria-label="Tracking controls">
+              <div className="focused-channel-strip-row">
+                {renderFocusedChannelStrip()}
+              </div>
               <div className="panel-group">
                 <div className="tracking-console-layout">
                   {productionTrackingRows.map((row) => (

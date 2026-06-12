@@ -380,6 +380,312 @@ button:focus-visible {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
+.focused-channel-strip-row {
+  display: grid;
+  place-items: center;
+  overflow-x: auto;
+  padding: 0.05rem 0 0.25rem;
+}
+
+.focused-channel-strip {
+  --focused-fader-left: 36.25%;
+  --focused-fader-top: 50.785%;
+  --focused-meter-level: 0%;
+  position: relative;
+  width: min(100%, 661px);
+  aspect-ratio: 1322 / 514;
+  flex: 0 0 auto;
+  isolation: isolate;
+  container-type: inline-size;
+}
+
+.focused-channel-strip img {
+  display: block;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+.focused-strip-panel,
+.focused-strip-fader-track,
+.focused-strip-fader-cap,
+.focused-strip-meter,
+.focused-strip-buttons,
+.focused-strip-scribble {
+  position: absolute;
+}
+
+.focused-strip-track-panel {
+  left: 2.57%;
+  top: 4.67%;
+  width: 95.16%;
+  height: 91.05%;
+  z-index: 1;
+}
+
+.focused-strip-fader-panel {
+  left: 3.93%;
+  top: 8.56%;
+  width: 92.28%;
+  height: 83.66%;
+  z-index: 2;
+}
+
+.focused-strip-buttons {
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+}
+
+.focused-strip-button {
+  position: absolute;
+  width: 11.2%;
+  height: 28.8%;
+  top: 15.55%;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #151515;
+  pointer-events: auto;
+  transition:
+    filter 90ms ease,
+    transform 90ms ease,
+    opacity 90ms ease;
+}
+
+.focused-strip-button:disabled {
+  cursor: default;
+  filter: grayscale(0.35) brightness(0.68);
+  opacity: 0.72;
+}
+
+.focused-strip-button.is-pressed,
+.focused-strip-button:active:not(:disabled) {
+  transform: translateY(1px);
+  filter: brightness(0.9);
+}
+
+.focused-strip-button.is-active:not(:disabled) {
+  filter: brightness(1.08) saturate(1.06);
+}
+
+.focused-strip-button img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.focused-strip-button-record {
+  left: 6.66%;
+}
+
+.focused-strip-button-solo {
+  left: 19.36%;
+}
+
+.focused-strip-button-mute {
+  left: 32.07%;
+}
+
+.focused-strip-button-version {
+  left: 44.78%;
+}
+
+.focused-strip-button-icon {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 70%;
+  height: 70%;
+  line-height: 1;
+}
+
+.focused-strip-record-dot {
+  width: 55%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: #b70000;
+}
+
+.focused-strip-letter,
+.focused-strip-plus {
+  font-family: "Luna Oxygen Bold", "Avenir Next", sans-serif;
+  font-weight: 700;
+  line-height: 0.9;
+  color: #161616;
+  text-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.2),
+    0 -1px 0 rgba(0, 0, 0, 0.14);
+}
+
+.focused-strip-letter {
+  font-size: clamp(1.95rem, 8.8cqi, 3.75rem);
+  transform: translateY(2%) scaleX(0.92);
+}
+
+.focused-strip-plus {
+  font-size: clamp(2.4rem, 9cqi, 4.4rem);
+  transform: translateY(-2%);
+}
+
+.focused-strip-nav-icon {
+  width: 76%;
+  height: 76%;
+  fill: none;
+  stroke: #141414;
+  stroke-width: 7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.focused-strip-nav-icon-bank {
+  width: 82%;
+  height: 82%;
+}
+
+.focused-strip-scribble {
+  left: 58.4%;
+  top: 15.55%;
+  width: 36.01%;
+  height: 28.4%;
+  z-index: 6;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #9aa6ad;
+  text-align: left;
+  overflow: hidden;
+}
+
+.focused-strip-scribble img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.focused-strip-fader-gain,
+.focused-strip-name {
+  position: absolute;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  font-family: "Luna Oxygen Bold", "Avenir Next", sans-serif;
+  line-height: 1;
+  letter-spacing: 0;
+  color: #a4b1b8;
+  text-transform: uppercase;
+}
+
+.focused-strip-fader-gain {
+  left: 7.5%;
+  right: 7.5%;
+  top: 13%;
+  height: 28%;
+  justify-content: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: clamp(0.72rem, 3.5cqi, 1.42rem);
+}
+
+.focused-strip-name {
+  left: 7.5%;
+  right: 7.5%;
+  bottom: 11%;
+  height: 41%;
+  justify-content: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: clamp(0.9rem, 4.35cqi, 1.82rem);
+}
+
+.focused-strip-fader-track {
+  left: 15.58%;
+  top: 64.6%;
+  width: 69.75%;
+  height: 6.61%;
+  z-index: 3;
+}
+
+.focused-strip-fader-cap {
+  left: var(--focused-fader-left);
+  top: var(--focused-fader-top);
+  width: 28.44%;
+  height: 34.24%;
+  z-index: 4;
+  transform: translateZ(0);
+}
+
+.focused-strip-meter {
+  left: 6.5%;
+  top: 82.49%;
+  width: 87.6%;
+  height: 7.78%;
+  z-index: 5;
+  overflow: hidden;
+}
+
+.focused-strip-meter-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+}
+
+.focused-strip-meter-active-region {
+  position: absolute;
+  left: 3.1088%;
+  top: 17.5%;
+  width: 93.7824%;
+  height: 65%;
+  z-index: 1;
+  container-type: inline-size;
+}
+
+.focused-strip-meter-fill-mask {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: var(--focused-meter-level);
+  height: 100%;
+  overflow: hidden;
+  will-change: width;
+  z-index: 1;
+}
+
+.focused-strip-meter-fill-image {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100cqw;
+  height: 100%;
+  object-fit: contain;
+}
+
+.focused-strip-meter-clip {
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 2.3941%;
+  height: 100%;
+  object-fit: contain;
+  z-index: 3;
+  opacity: 0;
+  filter: brightness(1.15);
+  pointer-events: none;
+}
+
+.focused-strip-meter-clip.is-visible {
+  opacity: 1;
+}
+
 .utility-grid,
 .zoom-grid {
   grid-template-columns: repeat(2, minmax(0, 1fr));

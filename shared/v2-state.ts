@@ -16,6 +16,7 @@ export interface FocusedTrackMeterState {
   raw: number | null;
   normalized: number | null;
   peak: number | null;
+  clip: boolean | null;
   source: FeedbackSource;
   updatedAt: string | null;
 }
@@ -24,6 +25,7 @@ export interface FocusedTrackFaderState {
   raw14: number | null;
   signed: number | null;
   normalized: number | null;
+  gainDbText: string | null;
   source: FeedbackSource;
   updatedAt: string | null;
 }

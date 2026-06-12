@@ -22,6 +22,7 @@ export type McuPitchBendAddress = Readonly<{
 
 export type McuChannelPressureAddress = Readonly<{
   status: number;
+  data1: number;
 }>;
 
 export type McuLcdAddress = Readonly<{
@@ -56,8 +57,9 @@ const pitchBend = (status: number): McuPitchBendAddress => ({
   status,
 });
 
-const channelPressure = (status: number): McuChannelPressureAddress => ({
+const channelPressure = (status: number, data1: number): McuChannelPressureAddress => ({
   status,
+  data1,
 });
 
 const lcd = (slot: number, row: 'upper' | 'lower'): McuLcdAddress => ({
@@ -117,7 +119,7 @@ const stripFaderAddress = (stripIndex: StripIndex): McuPitchBendAddress => {
 
 const stripMeterAddress = (stripIndex: StripIndex): McuChannelPressureAddress => {
   assertStripIndex(stripIndex);
-  return channelPressure(MCU_CHANNEL_PRESSURE_STATUS_BASE + stripIndex);
+  return channelPressure(MCU_CHANNEL_PRESSURE_STATUS_BASE, stripIndex);
 };
 
 const stripLcdAddress = (stripIndex: StripIndex, row: 'upper' | 'lower'): McuLcdAddress => {

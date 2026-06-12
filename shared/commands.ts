@@ -29,6 +29,7 @@ export type BaseKey =
 
 export type FocusedTrackMcuControlRole = 'recordEnable' | 'solo' | 'mute';
 export type McuTransportControlRole = 'play' | 'stop' | 'record' | 'cycle' | 'click';
+export type McuNavigationControlRole = 'channelLeft' | 'channelRight' | 'bankLeft' | 'bankRight';
 
 export type CommandId =
   | 'record'
@@ -61,6 +62,10 @@ export type CommandId =
   | 'focusedTrackRecordArm'
   | 'focusedTrackSolo'
   | 'focusedTrackMute'
+  | 'focusedBankLeft'
+  | 'focusedChannelLeft'
+  | 'focusedChannelRight'
+  | 'focusedBankRight'
   | 'newTrackVersion'
   | 'duplicateTrack'
   | 'duplicateTrackWithoutContent';
@@ -71,6 +76,7 @@ export interface CommandDefinition {
   keys: Array<ModifierKey | BaseKey>;
   mcuControl?: FocusedTrackMcuControlRole;
   mcuTransport?: McuTransportControlRole;
+  mcuNavigation?: McuNavigationControlRole;
   danger?: boolean;
   confirm?: boolean;
   placeholder?: boolean;
@@ -139,6 +145,34 @@ export const commandRegistry: CommandDefinition[] = [
     label: 'Focused Track Mute',
     keys: [],
     mcuControl: 'mute',
+    accent: 'neutral',
+  },
+  {
+    id: 'focusedBankLeft',
+    label: 'Bank Left',
+    keys: [],
+    mcuNavigation: 'bankLeft',
+    accent: 'neutral',
+  },
+  {
+    id: 'focusedChannelLeft',
+    label: 'Channel Left',
+    keys: [],
+    mcuNavigation: 'channelLeft',
+    accent: 'neutral',
+  },
+  {
+    id: 'focusedChannelRight',
+    label: 'Channel Right',
+    keys: [],
+    mcuNavigation: 'channelRight',
+    accent: 'neutral',
+  },
+  {
+    id: 'focusedBankRight',
+    label: 'Bank Right',
+    keys: [],
+    mcuNavigation: 'bankRight',
     accent: 'neutral',
   },
   {

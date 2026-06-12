@@ -288,6 +288,7 @@ const FOCUSED_TRACK_NOT_SELECTED_ERROR =
   'Focused track is not selected yet. Select a track in LUNA or wait for MCU select feedback.';
 const FOCUSED_TRACK_NAME_PENDING_WARNING =
   'Focused track name is pending, using selected strip index.';
+const LUNA_DETECTION_CACHE_MS = 2000;
 
 const normalizeMidiPortName = (name: string): string => name.trim().toLowerCase().replace(/\s+/g, ' ');
 
@@ -440,6 +441,8 @@ export const startRemoteServer = async (options: RemoteServerOptions = {}): Prom
   const clientIndexPath = path.join(clientDistPath, 'index.html');
   const clientDistExists = fs.existsSync(clientDistPath);
   const clientIndexExists = fs.existsSync(clientIndexPath);
+  let cachedLunaDetected = false;
+  let cachedLunaDetectedAt = 0;
 
   await mcuService.start();
 
@@ -473,6 +476,19 @@ export const startRemoteServer = async (options: RemoteServerOptions = {}): Prom
     }
   };
 
+  const getCachedLunaDetected = async (): Promise<boolean> => {
+    const now = Date.now();
+
+    if (now - cachedLunaDetectedAt < LUNA_DETECTION_CACHE_MS) {
+      return cachedLunaDetected;
+    }
+
+    cachedLunaDetectedAt = now;
+    cachedLunaDetected = await isLunaRunning(config.lunaAppName);
+
+    return cachedLunaDetected;
+  };
+
   const getState = async (): Promise<RemoteState> => {
     let lunaDetected = false;
     const mcuSnapshot = mcuService.getSnapshot();
@@ -497,7 +513,7 @@ export const startRemoteServer = async (options: RemoteServerOptions = {}): Prom
     const focusedTrackHydrated = focusedTrackSelected && focusedTrackNamed;
 
     try {
-      lunaDetected = await isLunaRunning(config.lunaAppName);
+      lunaDetected = await getCachedLunaDetected();
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unable to detect LUNA';
       state.lastError = message;
@@ -645,6 +661,7 @@ export const startRemoteServer = async (options: RemoteServerOptions = {}): Prom
       state.lastAppleScript = script;
       let responseWarning: string | undefined;
       let usedMcuTransport = false;
+      let usedMcuNavigation = false;
 
       const sendKeyboardAutomation = async (): Promise<void> => {
         keyAction = buildKeyAction(command);
@@ -706,6 +723,45 @@ export const startRemoteServer = async (options: RemoteServerOptions = {}): Prom
           keyAction = `MCU strip ${result.stripIndex + 1} ${result.role}: ${result.pressMessage.join(' ')} / ${result.releaseMessage.join(' ')}`;
           state.lastKeyAction = keyAction;
           logger.log(`[SENT] ${focusedMcuDescription}`);
+          logCommandEvent({
+            commandId: command.id,
+            keyAction,
+            script,
+            success: true,
+          });
+        }
+      } else if (command.mcuNavigation) {
+        const mcuDescription = `${command.id} -> MCU navigation ${command.mcuNavigation}`;
+        keyAction = `MCU navigation ${command.mcuNavigation}`;
+        script = null;
+        state.lastKeyAction = keyAction;
+        state.lastAppleScript = script;
+
+        if (config.testMode) {
+          logger.log(`[TEST MODE] ${mcuDescription}`);
+          logCommandEvent({
+            commandId: command.id,
+            keyAction,
+            script,
+            success: true,
+          });
+        } else if (!config.enableMcu || !config.enableMidi) {
+          state.lastError = 'MCU navigation is disabled by configuration';
+          logCommandEvent({
+            commandId: command.id,
+            keyAction,
+            script,
+            success: false,
+            error: state.lastError,
+          });
+          response.status(409).json({ ok: false, error: state.lastError, state: await getState() });
+          return;
+        } else {
+          const result = await mcuService.sendNavigationControl(command.mcuNavigation);
+          usedMcuNavigation = true;
+          keyAction = `MCU navigation ${result.role}: ${result.pressMessage.join(' ')} / ${result.releaseMessage.join(' ')}`;
+          state.lastKeyAction = keyAction;
+          logger.log(`[SENT] ${mcuDescription}`);
           logCommandEvent({
             commandId: command.id,
             keyAction,
@@ -780,7 +836,7 @@ export const startRemoteServer = async (options: RemoteServerOptions = {}): Prom
       state.lastCommandAt = new Date().toISOString();
       state.lastError = null;
 
-      if (!command.mcuControl && !usedMcuTransport) {
+      if (!command.mcuControl && !usedMcuTransport && !usedMcuNavigation) {
         mcuService.preserveSnapshot(mcuSnapshotBeforeCommand);
       }
 
