@@ -80,6 +80,7 @@ button:focus-visible {
 }
 
 .app-shell {
+  position: relative;
   width: min(1320px, 100%);
   margin: 0 auto;
   padding: max(0.8rem, env(safe-area-inset-top)) 0.8rem max(1rem, env(safe-area-inset-bottom));
@@ -628,7 +629,7 @@ button:focus-visible {
   width: 87.6%;
   height: 7.78%;
   z-index: 5;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .focused-strip-meter-bg {
@@ -647,6 +648,126 @@ button:focus-visible {
   height: 65%;
   z-index: 1;
   container-type: inline-size;
+  overflow: visible;
+}
+
+.focused-strip-meter-css-shell {
+  position: absolute;
+  left: 3.1088%;
+  top: 17.5%;
+  width: 93.7824%;
+  height: 65%;
+  z-index: 1;
+}
+
+.focused-strip-meter-css-track {
+  position: absolute;
+  inset: 0 10px 0 0;
+  display: grid;
+  grid-template-columns: repeat(32, minmax(0, 1fr));
+  gap: 1px;
+  align-items: stretch;
+  border: 1px solid rgba(20, 24, 26, 0.98);
+  border-radius: 4px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.045) 0%, rgba(255, 255, 255, 0) 32%, rgba(0, 0, 0, 0.18) 100%),
+    linear-gradient(180deg, #151a1b 0%, #080a0b 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.4),
+    inset 0 0 0 1px rgba(0, 0, 0, 0.28),
+    0 1px 0 rgba(255, 255, 255, 0.02);
+  overflow: hidden;
+}
+
+.focused-strip-meter-led {
+  position: relative;
+  min-width: 0;
+  border-radius: 2px;
+  background: linear-gradient(180deg, #1c2223 0%, #090b0c 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.03),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.26);
+}
+
+.focused-strip-meter-led::after {
+  content: "";
+  position: absolute;
+  inset: 1px;
+  border-radius: 1px;
+  opacity: 0;
+  transition: opacity 70ms linear;
+}
+
+.focused-strip-meter-led.is-live-on::after,
+.focused-strip-meter-led.is-peak-hold-on::after {
+  opacity: 1;
+}
+
+.focused-strip-meter-led-1::after,
+.focused-strip-meter-led-2::after,
+.focused-strip-meter-led-3::after,
+.focused-strip-meter-led-4::after,
+.focused-strip-meter-led-5::after,
+.focused-strip-meter-led-6::after,
+.focused-strip-meter-led-7::after,
+.focused-strip-meter-led-8::after,
+.focused-strip-meter-led-9::after,
+.focused-strip-meter-led-10::after,
+.focused-strip-meter-led-11::after,
+.focused-strip-meter-led-12::after,
+.focused-strip-meter-led-13::after,
+.focused-strip-meter-led-14::after,
+.focused-strip-meter-led-15::after,
+.focused-strip-meter-led-16::after,
+.focused-strip-meter-led-17::after,
+.focused-strip-meter-led-18::after,
+.focused-strip-meter-led-19::after,
+.focused-strip-meter-led-20::after,
+.focused-strip-meter-led-21::after,
+.focused-strip-meter-led-22::after,
+.focused-strip-meter-led-23::after,
+.focused-strip-meter-led-24::after {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0.02) 34%, rgba(0, 0, 0, 0.16) 100%),
+    linear-gradient(180deg, #24cb5e 0%, #149c3d 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.16),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.18),
+    0 0 4px rgba(37, 201, 93, 0.24);
+}
+
+.focused-strip-meter-led-25::after,
+.focused-strip-meter-led-26::after,
+.focused-strip-meter-led-27::after,
+.focused-strip-meter-led-28::after,
+.focused-strip-meter-led-29::after,
+.focused-strip-meter-led-30::after,
+.focused-strip-meter-led-31::after {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0.02) 34%, rgba(0, 0, 0, 0.18) 100%),
+    linear-gradient(180deg, #f0cb47 0%, #d97a1f 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 249, 220, 0.16),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.2),
+    0 0 4px rgba(241, 170, 46, 0.24);
+}
+
+.focused-strip-meter-led-32::after {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.22) 0%, rgba(255, 255, 255, 0.03) 32%, rgba(0, 0, 0, 0.18) 100%),
+    linear-gradient(180deg, #ff8c59 0%, #c41406 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 241, 230, 0.18),
+    inset 0 -1px 0 rgba(79, 9, 0, 0.22),
+    0 0 4px rgba(255, 84, 38, 0.18);
+}
+
+.focused-strip-meter-led-32.is-peak-hold-on::after {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 241, 230, 0.22),
+    inset 0 -1px 0 rgba(79, 9, 0, 0.22),
+    0 0 7px rgba(255, 87, 40, 0.48);
 }
 
 .focused-strip-meter-fill-mask {
@@ -672,18 +793,32 @@ button:focus-visible {
 .focused-strip-meter-clip {
   position: absolute;
   right: 0;
-  top: 0;
-  width: 2.3941%;
-  height: 100%;
-  object-fit: contain;
-  z-index: 3;
+  top: 10%;
+  width: 8px;
+  height: 80%;
+  min-height: 8px;
+  border-radius: 999px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.22) 0%, rgba(255, 255, 255, 0.04) 24%, rgba(255, 255, 255, 0) 25%),
+    linear-gradient(180deg, #ffbe73 0%, #ff5d26 38%, #c61407 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 245, 232, 0.3),
+    inset 0 -1px 0 rgba(73, 8, 0, 0.35),
+    0 0 0 1px rgba(69, 10, 0, 0.82),
+    0 0 5px rgba(255, 77, 24, 0.18);
+  z-index: 5;
   opacity: 0;
-  filter: brightness(1.15);
+  transform: translateZ(0);
   pointer-events: none;
 }
 
 .focused-strip-meter-clip.is-visible {
   opacity: 1;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 245, 232, 0.34),
+    inset 0 -1px 0 rgba(73, 8, 0, 0.35),
+    0 0 0 1px rgba(69, 10, 0, 0.82),
+    0 0 7px rgba(255, 81, 25, 0.42);
 }
 
 .utility-grid,

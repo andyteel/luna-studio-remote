@@ -12,6 +12,12 @@ import { buildAppleScript, buildKeyAction, isLunaRunning, triggerLunaCommand, tr
 import { McuService } from './mcu/mcu-service.js';
 import type { RemoteState, TestShortcutDebug } from './types.js';
 
+interface RemoteStateStreamEvent {
+  reason: string;
+  emittedAt: string;
+  state: RemoteState;
+}
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 interface ServerState {
@@ -425,6 +431,7 @@ export const startRemoteServer = async (options: RemoteServerOptions = {}): Prom
   const port = options.port ?? config.port;
   const state = defaultState();
   const app = express();
+  const stateStreamClients = new Set<express.Response>();
   const configuredMcuInputName = config.mcuInputName || config.expectedIacInputName;
   const configuredMcuOutputName = config.mcuOutputName || config.expectedIacOutputName;
   const mcuService = new McuService({
@@ -435,6 +442,9 @@ export const startRemoteServer = async (options: RemoteServerOptions = {}): Prom
     selectedOutputId: config.mcuOutputId,
     selectedOutputName: configuredMcuOutputName,
     logger,
+    onStateChange: (details) => {
+      void broadcastStateUpdate(details.reason, details.emittedAt);
+    },
   });
 
   const clientDistPath = resolveClientDistPath(options.clientDistPath);
@@ -555,10 +565,57 @@ export const startRemoteServer = async (options: RemoteServerOptions = {}): Prom
     };
   };
 
+  const writeStateStreamEvent = (response: express.Response, payload: RemoteStateStreamEvent): void => {
+    response.write(`event: state\n`);
+    response.write(`data: ${JSON.stringify(payload)}\n\n`);
+  };
+
+  const broadcastStateUpdate = async (reason: string, emittedAt = new Date().toISOString()): Promise<void> => {
+    if (stateStreamClients.size === 0) {
+      return;
+    }
+
+    const nextState = await getState();
+    if (config.debugMcuMidi && nextState.focusedTrack.meter.clip === true) {
+      logger.log(
+        `[${new Date().toISOString()}] [focused-meter-clip-debug] server pushes state with focusedTrack.meter.clip=true reason=${reason} meterUpdatedAt=${nextState.focusedTrack.meter.updatedAt ?? 'null'} clients=${stateStreamClients.size}`,
+      );
+    }
+    const payload: RemoteStateStreamEvent = {
+      reason,
+      emittedAt,
+      state: nextState,
+    };
+
+    for (const client of stateStreamClients) {
+      writeStateStreamEvent(client, payload);
+    }
+  };
+
   app.use(express.json());
 
   app.get('/api/state', async (_request, response) => {
     response.json(await getState());
+  });
+
+  app.get('/api/state/stream', async (request, response) => {
+    response.setHeader('Content-Type', 'text/event-stream');
+    response.setHeader('Cache-Control', 'no-cache, no-transform');
+    response.setHeader('Connection', 'keep-alive');
+    response.setHeader('X-Accel-Buffering', 'no');
+    response.flushHeaders();
+    response.write('retry: 1000\n\n');
+    stateStreamClients.add(response);
+    writeStateStreamEvent(response, {
+      reason: 'stream-connected',
+      emittedAt: new Date().toISOString(),
+      state: await getState(),
+    });
+
+    request.on('close', () => {
+      stateStreamClients.delete(response);
+      response.end();
+    });
   });
 
   app.get('/api/commands', (_request, response) => {

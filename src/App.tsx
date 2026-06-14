@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { commandRegistry, type BaseKey, type CommandDefinition, type CommandId, type ModifierKey } from '../shared/commands';
-import type { CommandResponse, RemoteState, ShortcutTestState, TestShortcutResponse } from './types';
+import type { CommandResponse, RemoteState, RemoteStateStreamEvent, ShortcutTestState, TestShortcutResponse } from './types';
 import playIcon from '../luna-image-resources/buttons/icon_transport_play.png';
 import playIconOn from '../luna-image-resources/buttons/icon_transport_play_on.png';
 import stopIcon from '../luna-image-resources/buttons/icon_transport_stop.png';
@@ -43,6 +43,7 @@ import focusedSwitchYellow from '../assets_v2/switch_fader_yel@2x.png';
 const statusPollMs = 100;
 type TabId = 'tracking' | 'navigate' | 'settings';
 const showDebugTools = false;
+const useCssFocusedMeterTest = true;
 
 const shortcutKeyOptions: Array<{ value: BaseKey; label: string }> = [
   { value: 'backslash', label: '\\' },
@@ -660,23 +661,39 @@ const App = () => {
   const [labResponseJson, setLabResponseJson] = useState('Waiting');
   const holdAnimationRef = useRef<number | null>(null);
   const stateFetchInFlightRef = useRef(false);
+  const stateFetchPendingRef = useRef(false);
+  const activeStateFetchPromiseRef = useRef<Promise<void> | null>(null);
   const currentTab: TabId = 'tracking';
   const isProductionRemote = true;
 
-  const fetchState = async (force = false) => {
-    if (stateFetchInFlightRef.current && !force) {
-      return;
+  const applyIncomingState = (nextState: RemoteState) => {
+    setState(nextState);
+  };
+
+  const fetchState = async () => {
+    if (stateFetchInFlightRef.current) {
+      stateFetchPendingRef.current = true;
+      return activeStateFetchPromiseRef.current ?? Promise.resolve();
     }
 
-    stateFetchInFlightRef.current = true;
+    const run = (async () => {
+      stateFetchInFlightRef.current = true;
 
-    try {
-      const response = await fetch('/api/state');
-      const nextState = (await response.json()) as RemoteState;
-      setState(nextState);
-    } finally {
-      stateFetchInFlightRef.current = false;
-    }
+      try {
+        do {
+          stateFetchPendingRef.current = false;
+          const response = await fetch('/api/state');
+          const nextState = (await response.json()) as RemoteState;
+          applyIncomingState(nextState);
+        } while (stateFetchPendingRef.current);
+      } finally {
+        stateFetchInFlightRef.current = false;
+        activeStateFetchPromiseRef.current = null;
+      }
+    })();
+
+    activeStateFetchPromiseRef.current = run;
+    return run;
   };
 
   useEffect(() => {
@@ -684,8 +701,17 @@ const App = () => {
     const timer = window.setInterval(() => {
       void fetchState();
     }, statusPollMs);
+    const stateStream = new EventSource('/api/state/stream');
 
-    return () => window.clearInterval(timer);
+    stateStream.addEventListener('state', (event) => {
+      const payload = JSON.parse((event as MessageEvent<string>).data) as RemoteStateStreamEvent;
+      applyIncomingState(payload.state);
+    });
+
+    return () => {
+      window.clearInterval(timer);
+      stateStream.close();
+    };
   }, []);
 
   useEffect(() => {
@@ -773,7 +799,7 @@ const App = () => {
 
       if (!payload.ok || !payload.state) {
         setMessage(payload.error ?? 'Command failed');
-        await fetchState(true);
+        await fetchState();
         return;
       }
 
@@ -837,7 +863,7 @@ const App = () => {
         return;
       }
 
-      await fetchState(true);
+      await fetchState();
       setLabState({
         shortcutLabel: formatShortcutLabel(payload.shortcut?.key ?? key, payload.shortcut?.modifiers ?? modifiers),
         key: payload.shortcut?.key ?? key,
@@ -1115,7 +1141,8 @@ const App = () => {
     const focusedTrack = state?.focusedTrack;
     const faderPosition = clamp01(focusedTrack?.fader.normalized ?? 0.5);
     const meterLevel = clamp01(focusedTrack?.meter.normalized);
-    const hasMeterClip = focusedTrack?.meter.clip === true;
+    const hasPeakHoldLamp = focusedTrack?.meter.clip === true;
+    const liveMeterSegments = Math.max(0, Math.min(31, Math.round(meterLevel * 31)));
     const trackName = focusedTrack?.name ?? (state?.focusedTrackReady ? 'TRACK' : 'NO TRACK');
     const faderGainDb = formatFocusedFaderGainDb(focusedTrack?.fader.gainDbText);
     const buttonSpecs = focusedStripNavMode ? focusedStripNavigationButtons : focusedStripNormalButtons;
@@ -1210,17 +1237,37 @@ const App = () => {
         <img src={focusedFaderCap} alt="" className="focused-strip-fader-cap" aria-hidden="true" />
 
         <div className="focused-strip-meter" aria-hidden="true">
-          <img src={focusedMeterBg} alt="" className="focused-strip-meter-bg" />
-          <span className="focused-strip-meter-active-region">
-            <span className="focused-strip-meter-fill-mask">
-              <img src={focusedMeterOn} alt="" className="focused-strip-meter-fill-image" />
+          {useCssFocusedMeterTest ? (
+            <span className="focused-strip-meter-css-shell">
+              <span className="focused-strip-meter-css-track">
+                {Array.from({ length: 32 }, (_, index) => {
+                  const isFinalRedSegment = index === 31;
+                  const isLiveOn = isFinalRedSegment ? false : index < liveMeterSegments;
+                  const isPeakHoldOn = hasPeakHoldLamp && isFinalRedSegment;
+
+                  return (
+                    <span
+                      key={index}
+                      className={`focused-strip-meter-led focused-strip-meter-led-${index + 1} ${isLiveOn ? 'is-live-on' : ''} ${isPeakHoldOn ? 'is-peak-hold-on' : ''}`}
+                    />
+                  );
+                })}
+              </span>
             </span>
-            <img
-              src={focusedMeterClip}
-              alt=""
-              className={`focused-strip-meter-clip ${hasMeterClip ? 'is-visible' : ''}`}
-            />
-          </span>
+          ) : (
+            <>
+              <img src={focusedMeterBg} alt="" className="focused-strip-meter-bg" />
+              <span className="focused-strip-meter-active-region">
+                <span className="focused-strip-meter-fill-mask">
+                  <img src={focusedMeterOn} alt="" className="focused-strip-meter-fill-image" />
+                </span>
+                <span
+                  className={`focused-strip-meter-clip ${hasPeakHoldLamp ? 'is-visible' : ''}`}
+                  data-clip-asset={focusedMeterClip}
+                />
+              </span>
+            </>
+          )}
         </div>
       </div>
     );

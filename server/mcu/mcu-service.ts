@@ -23,6 +23,7 @@ export interface McuServiceOptions {
   selectedOutputId?: string;
   selectedOutputName?: string;
   logger?: Pick<Console, 'log' | 'error'>;
+  onStateChange?: (details: { reason: string; snapshot: V2RemoteState; emittedAt: string }) => void;
 }
 
 const FOCUSED_TRACK_NOT_SELECTED_ERROR =
@@ -37,7 +38,8 @@ const MCU_METER_FOCUSED_LEVEL_STATUS = MCU_MESSAGE_MAP.protocol.channelPressureS
 const MCU_METER_OBSERVED_MAX_RAW = 0x0c;
 const MCU_METER_UNKNOWN_HIGH_RAW_VALUES = new Set([0x0d, 0x0e]);
 const MCU_METER_CONFIRMED_CLIP_RAW = 0x0f;
-const MCU_METER_CLIP_HOLD_MS = 1500;
+const MCU_METER_CLIP_HOLD_MS = 3000;
+const MCU_METER_WARNING_THRESHOLD_RAW = 0x0c;
 
 type SurfaceFaderTaper = Readonly<{
   taper_db_values: number[];
@@ -706,6 +708,14 @@ export class McuService {
     };
   }
 
+  private logMeterDebug(message: string): void {
+    if (!this.options.debugMidiMessages) {
+      return;
+    }
+
+    this.logger.log(message);
+  }
+
   async start(): Promise<void> {
     if (this.options.enabled === false) {
       this.mcu = {
@@ -1144,6 +1154,10 @@ export class McuService {
       focusedTrackUpdated,
     });
     this.rememberPreservedSnapshot(this.buildCurrentSnapshot());
+
+    if (focusedTrackUpdated && this.focusedTrack.meter.clip === true) {
+      this.emitStateChange('meter-peak-hold-active');
+    }
   }
 
   private applyFocusedTrackFeedback(
@@ -1288,7 +1302,7 @@ export class McuService {
     const liveMeterNormalized = this.getCurrentMeterNormalized(stripIndex, feedback.normalized);
     const parsedMeterDetail = feedback.normalized === null ? 'unchanged' : feedback.normalized.toFixed(4);
 
-    this.logger.log(
+    this.logMeterDebug(
       `[focused-meter-debug] rawD0=${feedback.raw} parsedMeter=${parsedMeterDetail} liveMeter=${liveMeterNormalized.toFixed(4)} clip=${feedback.clip === true ? 'true' : feedback.clip === false ? 'false' : 'unchanged'} focusedStrip=${stripIndex === null ? '--' : stripIndex + 1} uiMeter=${liveMeterNormalized.toFixed(4)} encoding=${feedback.encoding}`,
     );
 
@@ -1297,21 +1311,21 @@ export class McuService {
     }
 
     if (feedback.raw === MCU_METER_CONFIRMED_CLIP_RAW) {
-      this.logger.log(
-        `[focused-meter-clip-debug] confirmed D0 clip raw=0F clip=true meterLevelUnchanged liveMeter=${liveMeterNormalized.toFixed(4)} focusedStrip=${stripIndex === null ? '--' : stripIndex + 1}`,
+      this.logMeterDebug(
+        `[${new Date().toISOString()}] [focused-meter-clip-debug] server received D0 0F raw=0F clip=true meterLevelUnchanged liveMeter=${liveMeterNormalized.toFixed(4)} focusedStrip=${stripIndex === null ? '--' : stripIndex + 1}`,
       );
       return;
     }
 
     if (MCU_METER_UNKNOWN_HIGH_RAW_VALUES.has(feedback.raw)) {
-      this.logger.log(
+      this.logMeterDebug(
         `[focused-meter-clip-debug] unconfirmed high D0 meter raw=${feedback.raw.toString(16).padStart(2, '0').toUpperCase()} meterLevelUnchanged liveMeter=${liveMeterNormalized.toFixed(4)} focusedStrip=${stripIndex === null ? '--' : stripIndex + 1}`,
       );
       return;
     }
 
     if (feedback.raw > MCU_METER_CONFIRMED_CLIP_RAW) {
-      this.logger.log(
+      this.logMeterDebug(
         `[focused-meter-clip-debug] unexpected D0 meter raw=${feedback.raw} meterLevelUnchanged liveMeter=${liveMeterNormalized.toFixed(4)} focusedStrip=${stripIndex === null ? '--' : stripIndex + 1}`,
       );
     }
@@ -1372,7 +1386,7 @@ export class McuService {
     const value = typeof data2 === 'number' ? data2 : data1;
 
     if (isShortMcuStatus && value >= MCU_BUTTON_PRESS_VELOCITY) {
-      this.logger.log(
+      this.logMeterDebug(
         `[focused-meter-clip-debug] unmapped high-value MIDI bytes=${formatMidiBytes(message.bytes)} value=${value}`,
       );
     }
@@ -1411,7 +1425,7 @@ export class McuService {
 
   private rememberMeterFeedback(feedback: ParsedMcuMeterFeedback, receivedAt: string, stripIndex: number): void {
     const current = this.stripFeedbackStates[stripIndex] ?? createStripFeedbackState();
-    const clip = this.resolveNextMeterClipState(feedback, current.meter.clip, stripIndex);
+    const clip = this.resolveNextMeterClipState(feedback, current.meter.clip, stripIndex, receivedAt);
     const normalized = feedback.normalized ?? current.meter.normalized;
     const peak =
       typeof normalized === 'number' && Number.isFinite(normalized)
@@ -1429,28 +1443,63 @@ export class McuService {
         updatedAt: receivedAt,
       },
     };
+
+    if (clip === true && current.meter.clip !== true) {
+      this.logMeterDebug(
+        `[${new Date().toISOString()}] [focused-meter-clip-debug] live meter set peak lamp=true strip=${stripIndex + 1} meterUpdatedAt=${receivedAt}`,
+      );
+    }
+  }
+
+  private isLivePeakTriggerFeedback(feedback: ParsedMcuMeterFeedback): boolean {
+    if (feedback.encoding === 'focused-level' && feedback.raw >= 0x0b && feedback.raw <= MCU_METER_OBSERVED_MAX_RAW) {
+      this.logMeterDebug(
+        `[${new Date().toISOString()}] [focused-meter-clip-debug] upper meter event raw=${feedback.raw.toString(16).padStart(2, '0').toUpperCase()} normalized=${feedback.normalized?.toFixed(4) ?? 'null'}`,
+      );
+    }
+
+    return (
+      feedback.encoding === 'focused-level' &&
+      feedback.raw >= MCU_METER_WARNING_THRESHOLD_RAW &&
+      feedback.raw <= MCU_METER_OBSERVED_MAX_RAW &&
+      typeof feedback.normalized === 'number' &&
+      feedback.normalized >= MCU_METER_WARNING_THRESHOLD_RAW / MCU_METER_OBSERVED_MAX_RAW
+    );
   }
 
   private resolveNextMeterClipState(
     feedback: ParsedMcuMeterFeedback,
     currentClip: boolean | null,
     stripIndex: number,
+    receivedAt: string,
   ): boolean | null {
-    if (feedback.clip === true) {
-      this.scheduleMeterClipClear(stripIndex);
+    if (this.isLivePeakTriggerFeedback(feedback)) {
+      this.scheduleMeterClipClear(stripIndex, 'live-meter');
       return true;
     }
 
-    if (feedback.clip === false) {
-      this.clearMeterClipTimer(stripIndex);
-      return false;
+    if (feedback.clip === true) {
+      this.logMeterDebug(
+        `[${new Date().toISOString()}] [focused-meter-clip-debug] received delayed D0 0F diagnostic strip=${stripIndex + 1} meterUpdatedAt=${receivedAt}`,
+      );
+
+      if (currentClip === true) {
+        this.scheduleMeterClipClear(stripIndex, 'd0-0f-refresh');
+      }
+
+      return currentClip;
     }
 
     return currentClip;
   }
 
-  private scheduleMeterClipClear(stripIndex: number): void {
+  private scheduleMeterClipClear(stripIndex: number, reason: 'live-meter' | 'd0-0f-refresh'): void {
+    const hadExistingTimer = this.meterClipClearTimers.has(stripIndex);
     this.clearMeterClipTimer(stripIndex);
+
+    this.logMeterDebug(
+      `[${new Date().toISOString()}] [focused-meter-clip-debug] ${hadExistingTimer ? 'refreshed' : 'started'} peak lamp hold strip=${stripIndex + 1} holdMs=${MCU_METER_CLIP_HOLD_MS} reason=${reason}`,
+    );
 
     const timer = setTimeout(() => {
       this.meterClipClearTimers.delete(stripIndex);
@@ -1499,6 +1548,10 @@ export class McuService {
       meter: nextMeter,
     };
 
+    this.logMeterDebug(
+      `[${new Date().toISOString()}] [focused-meter-clip-debug] peak lamp hold cleared strip=${stripIndex + 1} holdMs=${MCU_METER_CLIP_HOLD_MS}`,
+    );
+
     if (this.isFocusedStrip(stripIndex)) {
       this.focusedTrack = {
         ...this.focusedTrack,
@@ -1510,7 +1563,16 @@ export class McuService {
         updatedAt,
       };
       this.rememberPreservedSnapshot(this.buildCurrentSnapshot());
+      this.emitStateChange('meter-clip-clear');
     }
+  }
+
+  private emitStateChange(reason: string): void {
+    this.options.onStateChange?.({
+      reason,
+      snapshot: this.buildCurrentSnapshot(),
+      emittedAt: new Date().toISOString(),
+    });
   }
 
   private applyStripButtonFeedback(feedback: ParsedMcuStripButtonFeedback, receivedAt: string): void {

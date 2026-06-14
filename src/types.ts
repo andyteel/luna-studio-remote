@@ -57,6 +57,12 @@ export interface RemoteState extends V2RemoteState {
 
 export interface StateResponse extends RemoteState {}
 
+export interface RemoteStateStreamEvent {
+  reason: string;
+  emittedAt: string;
+  state: RemoteState;
+}
+
 export interface CommandResponse {
   ok: boolean;
   command?: CommandId;
