@@ -6,96 +6,56 @@ This checkpoint is for the focused-strip UX and navigation investigation phase o
 
 ## Working
 
-- Focused strip UI is implemented.
+- Focused strip UI is implemented and polished.
 - Focused track name and dB display update correctly.
 - Focused fader display and taper mapping are working.
-- Focused meter is rebuilt as a segmented LED-style display.
-- Integrated peak indicator behavior is working and held visually in the focused meter.
-- Record, Solo, Mute, and Plus button presentation has been polished.
-- Plus opens a full-screen action modal.
-- Action modal workflows are wired:
+- Focused meter is considered complete.
+- Meter parsing, rendering, masking, clearing, and peak-hold behavior are working.
+- Record, Solo, Mute, and Plus button behavior is working outside Navigation Mode.
+- Plus modal is completed for:
   - `New Track Version`
   - `Duplicate Track`
   - `Duplicate Without Content`
 - Scribble-strip tap toggles focused Navigation Mode.
-- Navigation Mode UI is present and visually improved.
+- Navigation Mode UI is completed with two secondary buttons for selected-track movement.
 
-## Focused Navigation Mode Investigation
+## Navigation Status
 
-### UI / Command Routing Status
+- Navigation commands are currently the next priority.
+- Live testing showed MCU channel/bank navigation can change the MCU/control-surface target and trigger LCD SysEx updates, but it does not reliably change LUNA's actual selected track.
+- Plus modal actions operate on LUNA's actual selected track, so Navigation Mode now uses keyboard selected-track movement instead of MCU bank/channel navigation.
+- Current Navigation Mode behavior:
+  - Track Up sends `P`
+  - Track Down sends `;`
+- The previous Channel Left and Channel Right secondary-row buttons have been removed.
+- Focused-sync investigation logs remain available behind `MCU_DEBUG_MIDI=true`.
 
-- Focused Navigation Mode buttons are wired from the UI to backend command IDs:
-  - `focusedBankLeft`
-  - `focusedChannelLeft`
-  - `focusedChannelRight`
-  - `focusedBankRight`
-- These commands are routed through the MCU navigation path, not keyboard `keyAction` fallback.
-- The backend now keeps a diagnostic navigation send-mode switch for live testing.
+## MCU Navigation Findings
 
-### Navigation Note Mapping Under Test
+- Tested MCU note formats:
+  - Channel Left: `90 2E 7F` then `90 2E 00` (`144 46 127`, `144 46 0`)
+  - Channel Right: `90 31 7F` then `90 31 00` (`144 49 127`, `144 49 0`)
+- LUNA reacts to those MCU messages by updating control-surface/LCD state.
+- That MCU response is not enough for Plus modal actions because the modal follows LUNA's actual selected track.
+- Transport mode is configured as keyboard, and transport actions continue to use keyboard behavior where configured.
 
-- Bank Left: `90 2E 7F`
-- Bank Right: `90 2F 7F`
-- Channel Left: `90 30 7F`
-- Channel Right: `90 31 7F`
+## Meter Findings
 
-These note numbers match the LUNA surface map entries:
+- `D0 00` through `D0 0C` = meter levels.
+- `D0 0F` = confirmed clip event.
+- `D0 0D` and `D0 0E` remain unconfirmed.
+- Clip should not drive meter fill.
+- Clip should only drive clip/peak lamp visibility.
 
-- `/control/control_assign/bank_left_switch`
-- `/control/control_assign/bank_right_switch`
-- `/control/control_assign/channel_left_switch`
-- `/control/control_assign/channel_right_switch`
+## Suggested Next Investigation
 
-### Tested Release Formats
-
-- `90 note 00`
-- `80 note 40`
-- long hold `300ms`
-
-### Tested Navigation Send Modes
-
-- `noteOnZeroRelease`
-- `noteOffRelease`
-- `longHoldNoteOff`
-
-Additional diagnostic modes remain available for future testing:
-
-- `noteOnOnly`
-- `longHoldNoteOnZero`
-
-Set with:
-
-```sh
-MCU_NAV_SEND_MODE=noteOffRelease npm run desktop:dev
-```
-
-### Observed Result
-
-- Backend logs show outbound MIDI is sent successfully to `IAC Luna Remote To Luna`.
-- Example logged sequences:
-  - Channel Right: `90 31 7F` then release
-  - Channel Left: `90 30 7F` then release
-  - Bank Left: `90 2E 7F` then release
-  - Bank Right: `90 2F 7F` then release
-- LUNA does not change focused track / bank.
-- No follow-up LUNA feedback is received after these navigation commands.
-
-### Current Conclusion
-
-- This is no longer a focused-strip UI problem.
-- It appears to be an MCU command acceptance / outbound control-path issue in how LUNA handles these navigation switch messages.
-- The frontend Navigation Mode UI should be kept intact while the outbound MCU behavior is investigated further.
-
-## MCU Navigation Debugging Notes
-
-- Startup logs report the selected navigation send mode.
-- Per-message outbound MIDI logging is available behind `MCU_DEBUG_MIDI=true`.
-- Outbound log format:
-
-```sh
-MIDI OUT to LUNA (IAC Luna Remote To Luna): 90 30 7F
-MIDI OUT to LUNA (IAC Luna Remote To Luna): 90 30 00
-```
+- Run `MCU_DEBUG_MIDI=true npm run desktop:dev`.
+- Enter Navigation Mode from the scribble strip.
+- Verify only two secondary navigation buttons appear.
+- Confirm Track Up sends `P` and moves LUNA's actual selected track.
+- Confirm Track Down sends `;` and moves LUNA's actual selected track.
+- Confirm Plus modal actions apply to the selected track reached by those navigation buttons.
+- Watch for any remaining mismatch between LUNA selected-track state and MCU focused-strip feedback.
 
 ## Useful Commands
 

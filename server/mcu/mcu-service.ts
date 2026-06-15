@@ -313,6 +313,14 @@ const isFocusedTrackSelected = (focusedTrack: FocusedTrackState): boolean => {
   return focusedTrack.source === 'mcu' && focusedTrack.index !== null;
 };
 
+const formatNullableStrip = (stripIndex: number | null): string => {
+  return stripIndex === null ? '--' : String(stripIndex + 1);
+};
+
+const formatNullableText = (text: string | null | undefined): string => {
+  return text ?? '--';
+};
+
 const hasMcuConnectivityState = (mcu: McuState): boolean => {
   return (
     mcu.connected ||
@@ -731,6 +739,10 @@ export class McuService {
     }
 
     this.logger.log(message);
+  }
+
+  private logFocusedSyncDebug(message: string): void {
+    this.logMidiDebug(message);
   }
 
   async start(): Promise<void> {
@@ -1156,6 +1168,12 @@ export class McuService {
     const stripButtonFeedback = parseMcuStripButtonLedFeedback(message.bytes);
     const faderFeedback = parseMcuFaderFeedback(message.bytes);
     const meterFeedback = parseMcuMeterFeedback(message.bytes);
+    const shouldLogFocusedSync = lcdUpdates.length > 0 || selectFeedback !== null;
+    const focusedBefore = {
+      index: this.focusedTrack.index,
+      name: this.focusedTrack.name,
+      selectedStripIndex: this.selectedStripIndex,
+    };
 
     this.logPotentialClipFeedbackMessage(message, {
       transportRole,
@@ -1165,6 +1183,12 @@ export class McuService {
       faderFeedback,
       meterFeedback,
     });
+
+    if (shouldLogFocusedSync) {
+      this.logFocusedSyncDebug(
+        `[focused-sync-debug] rx bytes=${formatMidiBytes(message.bytes)} lcdUpdates=${lcdUpdates.length} select=${selectFeedback ? `${selectFeedback.stripIndex + 1}:${selectFeedback.selected ? 'on' : 'off'}` : 'none'} beforeFocusedStrip=${formatNullableStrip(this.focusedTrack.index)} beforeFocusedName="${formatNullableText(this.focusedTrack.name)}" selectedStrip=${formatNullableStrip(this.selectedStripIndex)}`,
+      );
+    }
 
     this.mcu = {
       ...this.mcu,
@@ -1191,6 +1215,12 @@ export class McuService {
       focusedTrackUpdated,
     });
     this.rememberPreservedSnapshot(this.buildCurrentSnapshot());
+
+    if (shouldLogFocusedSync) {
+      this.logFocusedSyncDebug(
+        `[focused-sync-debug] result focusedUpdated=${focusedTrackUpdated ? 'yes' : 'no'} selectedStrip=${formatNullableStrip(focusedBefore.selectedStripIndex)}->${formatNullableStrip(this.selectedStripIndex)} focusedStrip=${formatNullableStrip(focusedBefore.index)}->${formatNullableStrip(this.focusedTrack.index)} focusedName="${formatNullableText(focusedBefore.name)}"->"${formatNullableText(this.focusedTrack.name)}"`,
+      );
+    }
 
     if (focusedTrackUpdated && this.focusedTrack.meter.clip === true) {
       this.emitStateChange('meter-peak-hold-active');
@@ -1256,12 +1286,21 @@ export class McuService {
     let focusedTrackUpdated = false;
 
     for (const update of updates) {
+      const previousText = this.stripLcdStates[update.slot]?.[update.row] ?? null;
+      const willUpdateFocusedTrack = update.row === 'upper' && update.slot === this.selectedStripIndex;
+
       this.stripLcdStates[update.slot] = {
         ...this.stripLcdStates[update.slot],
         [update.row]: update.text,
       };
 
-      if (update.row === 'upper' && update.slot === this.selectedStripIndex) {
+      this.logFocusedSyncDebug(
+        `[focused-sync-debug] lcd row=${update.row} strip=${update.slot + 1} text="${formatNullableText(update.text)}" previous="${formatNullableText(previousText)}" selectedStrip=${formatNullableStrip(this.selectedStripIndex)} focusedStrip=${formatNullableStrip(this.focusedTrack.index)} action=${willUpdateFocusedTrack ? 'update-focused-track' : 'cache-only'}`,
+      );
+
+      if (willUpdateFocusedTrack) {
+        const previousFocusedName = this.focusedTrack.name;
+
         this.focusedTrack = {
           ...this.focusedTrack,
           index: update.slot,
@@ -1270,6 +1309,10 @@ export class McuService {
           updatedAt: receivedAt,
         };
         focusedTrackUpdated = true;
+
+        this.logFocusedSyncDebug(
+          `[focused-sync-debug] focused-track lcd-update strip=${update.slot + 1} name="${formatNullableText(previousFocusedName)}"->"${formatNullableText(this.focusedTrack.name)}" at=${receivedAt}`,
+        );
       }
 
     }
@@ -1278,6 +1321,10 @@ export class McuService {
   }
 
   private applySelectedStripFeedback(stripIndex: number, receivedAt: string): void {
+    const previousSelectedStripIndex = this.selectedStripIndex;
+    const previousFocusedIndex = this.focusedTrack.index;
+    const previousFocusedName = this.focusedTrack.name;
+
     this.selectedStripIndex = stripIndex;
     const cachedFeedback = this.stripFeedbackStates[stripIndex] ?? createStripFeedbackState();
     const cachedLcd = this.stripLcdStates[stripIndex];
@@ -1298,6 +1345,10 @@ export class McuService {
       source: 'mcu',
       updatedAt: receivedAt,
     };
+
+    this.logFocusedSyncDebug(
+      `[focused-sync-debug] select-feedback strip=${stripIndex + 1} selectedStrip=${formatNullableStrip(previousSelectedStripIndex)}->${formatNullableStrip(this.selectedStripIndex)} focusedStrip=${formatNullableStrip(previousFocusedIndex)}->${formatNullableStrip(this.focusedTrack.index)} focusedName="${formatNullableText(previousFocusedName)}"->"${formatNullableText(this.focusedTrack.name)}" cachedLcdUpper="${formatNullableText(cachedLcd?.upper)}" at=${receivedAt}`,
+    );
   }
 
   private isFocusedStrip(stripIndex: number): boolean {

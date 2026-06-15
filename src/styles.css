@@ -495,6 +495,21 @@ button:focus-visible {
   left: 44.78%;
 }
 
+.focused-channel-strip.is-navigation-mode .focused-strip-button-record,
+.focused-channel-strip.is-navigation-mode .focused-strip-button-mute {
+  width: 17.8%;
+  height: 31.5%;
+  top: 14.2%;
+}
+
+.focused-channel-strip.is-navigation-mode .focused-strip-button-record {
+  left: 7.2%;
+}
+
+.focused-channel-strip.is-navigation-mode .focused-strip-button-mute {
+  left: 31.4%;
+}
+
 .focused-strip-button-icon {
   position: relative;
   z-index: 2;

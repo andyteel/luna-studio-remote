@@ -85,6 +85,8 @@ const shortcutPresets: Array<{ label: string; key: BaseKey; modifiers: ModifierK
   { label: 'Shift A', key: 'a', modifiers: ['shift'] },
   { label: 'Control Option L', key: 'l', modifiers: ['control', 'option'] },
   { label: "Control Option '", key: 'apostrophe', modifiers: ['control', 'option'] },
+  { label: 'P', key: 'p', modifiers: [] },
+  { label: ';', key: 'semicolon', modifiers: [] },
   { label: 'Return', key: 'return', modifiers: [] },
   { label: 'Keypad Enter', key: 'keypadEnter', modifiers: [] },
   { label: 'Numeric Keypad 3', key: 'numpad3', modifiers: [] },
@@ -100,10 +102,8 @@ const commandVisuals: Record<
   focusedTrackRecordArm: { icon: 'record', label: 'Focused Arm', tone: 'record' },
   focusedTrackSolo: { icon: 'view', label: 'Focused Solo' },
   focusedTrackMute: { icon: 'view', label: 'Focused Mute' },
-  focusedBankLeft: { icon: 'markerLeft', label: 'Bank Left' },
-  focusedChannelLeft: { icon: 'markerLeft', label: 'Channel Left' },
-  focusedChannelRight: { icon: 'markerRight', label: 'Channel Right' },
-  focusedBankRight: { icon: 'markerRight', label: 'Bank Right' },
+  focusedSelectedTrackUp: { icon: 'markerLeft', label: 'Track Up' },
+  focusedSelectedTrackDown: { icon: 'markerRight', label: 'Track Down' },
   newTrackVersion: { icon: 'view', label: 'New Version' },
   duplicateTrack: { icon: 'view', label: 'Duplicate Track' },
   duplicateTrackWithoutContent: { icon: 'view', label: 'Duplicate No Content' },
@@ -302,10 +302,8 @@ const focusedStripNavigationButtons: Array<{
   commandId: CommandId;
   icon: FocusedStripIcon;
 }> = [
-  { position: 'record', commandId: 'focusedBankLeft', icon: 'bankLeft' },
-  { position: 'solo', commandId: 'focusedChannelLeft', icon: 'channelLeft' },
-  { position: 'mute', commandId: 'focusedChannelRight', icon: 'channelRight' },
-  { position: 'version', commandId: 'focusedBankRight', icon: 'bankRight' },
+  { position: 'record', commandId: 'focusedSelectedTrackUp', icon: 'bankLeft' },
+  { position: 'mute', commandId: 'focusedSelectedTrackDown', icon: 'bankRight' },
 ];
 
 const focusedFaderTrackLeftPercent = 15.58;

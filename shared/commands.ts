@@ -11,7 +11,9 @@ export type BaseKey =
   | 'apostrophe'
   | 'k'
   | 'l'
+  | 'p'
   | 'r'
+  | 'semicolon'
   | 't'
   | 'z'
   | 'leftArrow'
@@ -62,10 +64,8 @@ export type CommandId =
   | 'focusedTrackRecordArm'
   | 'focusedTrackSolo'
   | 'focusedTrackMute'
-  | 'focusedBankLeft'
-  | 'focusedChannelLeft'
-  | 'focusedChannelRight'
-  | 'focusedBankRight'
+  | 'focusedSelectedTrackUp'
+  | 'focusedSelectedTrackDown'
   | 'newTrackVersion'
   | 'duplicateTrack'
   | 'duplicateTrackWithoutContent';
@@ -148,31 +148,15 @@ export const commandRegistry: CommandDefinition[] = [
     accent: 'neutral',
   },
   {
-    id: 'focusedBankLeft',
-    label: 'Bank Left',
-    keys: [],
-    mcuNavigation: 'bankLeft',
+    id: 'focusedSelectedTrackUp',
+    label: 'Selected Track Up',
+    keys: ['p'],
     accent: 'neutral',
   },
   {
-    id: 'focusedChannelLeft',
-    label: 'Channel Left',
-    keys: [],
-    mcuNavigation: 'channelLeft',
-    accent: 'neutral',
-  },
-  {
-    id: 'focusedChannelRight',
-    label: 'Channel Right',
-    keys: [],
-    mcuNavigation: 'channelRight',
-    accent: 'neutral',
-  },
-  {
-    id: 'focusedBankRight',
-    label: 'Bank Right',
-    keys: [],
-    mcuNavigation: 'bankRight',
+    id: 'focusedSelectedTrackDown',
+    label: 'Selected Track Down',
+    keys: ['semicolon'],
     accent: 'neutral',
   },
   {
