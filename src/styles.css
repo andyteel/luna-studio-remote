@@ -398,6 +398,7 @@ button:focus-visible {
   flex: 0 0 auto;
   isolation: isolate;
   container-type: inline-size;
+  overflow: hidden;
 }
 
 .focused-channel-strip img {
@@ -504,6 +505,38 @@ button:focus-visible {
   line-height: 1;
 }
 
+.focused-strip-glyph {
+  --glyph-offset-x: 0px;
+  --glyph-offset-y: -1px;
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  transform: translate(var(--glyph-offset-x), var(--glyph-offset-y));
+}
+
+.focused-strip-glyph-mark {
+  display: block;
+  line-height: 1;
+}
+
+.focused-strip-glyph-record {
+  --glyph-offset-y: -1px;
+}
+
+.focused-strip-glyph-solo {
+  --glyph-offset-y: -2px;
+}
+
+.focused-strip-glyph-mute {
+  --glyph-offset-y: -3px;
+}
+
+.focused-strip-glyph-version {
+  --glyph-offset-y: -5px;
+}
+
 .focused-strip-record-dot {
   width: 55%;
   aspect-ratio: 1;
@@ -515,7 +548,7 @@ button:focus-visible {
 .focused-strip-plus {
   font-family: "Luna Oxygen Bold", "Avenir Next", sans-serif;
   font-weight: 700;
-  line-height: 0.9;
+  line-height: 1;
   color: #161616;
   text-shadow:
     0 1px 0 rgba(255, 255, 255, 0.2),
@@ -524,12 +557,138 @@ button:focus-visible {
 
 .focused-strip-letter {
   font-size: clamp(1.95rem, 8.8cqi, 3.75rem);
-  transform: translateY(2%) scaleX(0.92);
+  transform: scaleX(0.92);
 }
 
 .focused-strip-plus {
   font-size: clamp(2.4rem, 9cqi, 4.4rem);
-  transform: translateY(-2%);
+}
+
+.focused-strip-button-version.is-primary-action:not(:disabled) {
+  filter: none;
+}
+
+.focused-strip-button-version.is-primary-action.is-pressed,
+.focused-strip-button-version.is-primary-action:active:not(:disabled) {
+  transform: none;
+  filter: none;
+}
+
+.focused-strip-action-sheet-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  padding: clamp(20px, 5vw, 40px);
+  background: rgba(6, 9, 11, 0.56);
+  backdrop-filter: blur(5px);
+}
+
+.focused-strip-action-sheet {
+  position: relative;
+  width: min(100%, 520px);
+  display: grid;
+  gap: 0;
+  padding: 18px;
+  border-radius: 18px;
+  background: #222222;
+  align-content: center;
+  box-shadow:
+    0 22px 60px rgba(0, 0, 0, 0.34),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.focused-strip-action-sheet-close {
+  position: absolute;
+  top: -18px;
+  right: -18px;
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.035);
+  color: #e5f6fe;
+  font-family: "Luna Oxygen Bold", "Avenir Next", sans-serif;
+  font-size: 0.92rem;
+  letter-spacing: 0.08em;
+  line-height: 1;
+  transition:
+    background-color 100ms ease,
+    color 100ms ease,
+    transform 100ms ease;
+}
+
+.focused-strip-action-sheet-close:hover:not(:disabled) {
+  background: rgba(229, 246, 254, 0.14);
+  color: #e5f6fe;
+}
+
+.focused-strip-action-sheet-close:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.focused-strip-action-sheet-actions {
+  display: grid;
+  gap: 10px;
+  align-content: center;
+}
+
+.focused-strip-action-sheet-button {
+  min-height: clamp(64px, 11vw, 78px);
+  display: grid;
+  place-items: center;
+  padding: 0 1.5rem;
+  border: 1px solid rgba(0, 0, 0, 0.18);
+  border-radius: 14px;
+  background:
+    linear-gradient(180deg, #a1a2a2 0%, #959696 54%, #8e8f8f 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.1);
+  color: #2a2a2a;
+  text-align: center;
+  transition:
+    background-color 100ms ease,
+    border-color 100ms ease,
+    box-shadow 100ms ease,
+    color 100ms ease,
+    transform 100ms ease;
+}
+
+.focused-strip-action-sheet-button:hover:not(:disabled) {
+  background:
+    linear-gradient(180deg, #abacac 0%, #a0a1a1 54%, #969797 100%);
+  border-color: rgba(0, 0, 0, 0.24);
+}
+
+.focused-strip-action-sheet-button.is-pressed,
+.focused-strip-action-sheet-button:active:not(:disabled) {
+  background:
+    linear-gradient(180deg, #8e8f8f 0%, #868787 54%, #7f8080 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.14);
+  transform: translateY(1px);
+}
+
+.focused-strip-action-sheet-button:disabled {
+  color: rgba(42, 42, 42, 0.45);
+}
+
+.focused-strip-action-sheet-label {
+  display: block;
+  font-family: "Luna Oxygen Bold", "Avenir Next", sans-serif;
+  font-size: clamp(0.9rem, 2vw, 1.08rem);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  line-height: 1.16;
+  color: #2a2a2a;
+  text-align: center;
+  text-transform: uppercase;
 }
 
 .focused-strip-nav-icon {

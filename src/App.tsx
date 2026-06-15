@@ -286,13 +286,6 @@ const momentaryTrackingCommands: CommandId[] = [
 type FocusedStripButtonPosition = 'record' | 'solo' | 'mute' | 'version';
 type FocusedStripIcon = FocusedStripButtonPosition | 'bankLeft' | 'channelLeft' | 'channelRight' | 'bankRight';
 
-const focusedStripButtonAssets: Record<FocusedStripButtonPosition, string> = {
-  record: focusedSwitchRed,
-  solo: focusedSwitchYellow,
-  mute: focusedSwitchNeutral,
-  version: focusedSwitchBlue,
-};
-
 const focusedStripNormalButtons: Array<{
   position: FocusedStripButtonPosition;
   commandId: CommandId;
@@ -321,6 +314,11 @@ const focusedFaderTrackWidthPercent = 69.75;
 const focusedFaderTrackHeightPercent = 6.61;
 const focusedFaderCapWidthPercent = 28.44;
 const focusedFaderCapHeightPercent = 34.24;
+const focusedStripVersionPanelCommands: CommandId[] = [
+  'newTrackVersion',
+  'duplicateTrack',
+  'duplicateTrackWithoutContent',
+];
 
 const clamp01 = (value: number | null | undefined): number => {
   if (typeof value !== 'number' || Number.isNaN(value)) {
@@ -586,13 +584,29 @@ const renderTrackingTextLabel = (commandId: CommandId, fallbackLabel: string): R
 const renderFocusedStripButtonIcon = (icon: FocusedStripIcon): ReactNode => {
   switch (icon) {
     case 'record':
-      return <span className="focused-strip-record-dot" aria-hidden="true" />;
+      return (
+        <span className="focused-strip-glyph focused-strip-glyph-record" aria-hidden="true">
+          <span className="focused-strip-glyph-mark focused-strip-record-dot" />
+        </span>
+      );
     case 'solo':
-      return <span className="focused-strip-letter" aria-hidden="true">S</span>;
+      return (
+        <span className="focused-strip-glyph focused-strip-glyph-solo" aria-hidden="true">
+          <span className="focused-strip-glyph-mark focused-strip-letter">S</span>
+        </span>
+      );
     case 'mute':
-      return <span className="focused-strip-letter" aria-hidden="true">M</span>;
+      return (
+        <span className="focused-strip-glyph focused-strip-glyph-mute" aria-hidden="true">
+          <span className="focused-strip-glyph-mark focused-strip-letter">M</span>
+        </span>
+      );
     case 'version':
-      return <span className="focused-strip-plus" aria-hidden="true">+</span>;
+      return (
+        <span className="focused-strip-glyph focused-strip-glyph-version" aria-hidden="true">
+          <span className="focused-strip-glyph-mark focused-strip-plus">+</span>
+        </span>
+      );
     case 'bankLeft':
       return (
         <svg className="focused-strip-nav-icon focused-strip-nav-icon-bank" viewBox="0 0 64 64" aria-hidden="true">
@@ -643,6 +657,8 @@ const App = () => {
     playFromStopLocation: false,
   });
   const [focusedStripNavMode, setFocusedStripNavMode] = useState(false);
+  const [focusedStripVersionPanelOpen, setFocusedStripVersionPanelOpen] = useState(false);
+  const [focusedStripVersionPressed, setFocusedStripVersionPressed] = useState(false);
   const [testKey, setTestKey] = useState<BaseKey>('e');
   const [testModifiers, setTestModifiers] = useState<ModifierKey[]>([]);
   const [testBusy, setTestBusy] = useState(false);
@@ -659,6 +675,7 @@ const App = () => {
   });
   const [labRequestJson, setLabRequestJson] = useState('Waiting');
   const [labResponseJson, setLabResponseJson] = useState('Waiting');
+  const focusedStripActionSheetRef = useRef<HTMLDivElement | null>(null);
   const holdAnimationRef = useRef<number | null>(null);
   const stateFetchInFlightRef = useRef(false);
   const stateFetchPendingRef = useRef(false);
@@ -713,6 +730,55 @@ const App = () => {
       stateStream.close();
     };
   }, []);
+
+  useEffect(() => {
+    if (!focusedStripVersionPanelOpen) {
+      return;
+    }
+
+    const handlePointerDown = (event: MouseEvent | TouchEvent) => {
+      const target = event.target;
+
+      if (!(target instanceof Node)) {
+        return;
+      }
+
+      if (focusedStripActionSheetRef.current?.contains(target)) {
+        return;
+      }
+
+      setFocusedStripVersionPanelOpen(false);
+      setFocusedStripVersionPressed(false);
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') {
+        return;
+      }
+
+      setFocusedStripVersionPanelOpen(false);
+      setFocusedStripVersionPressed(false);
+    };
+
+    window.addEventListener('mousedown', handlePointerDown);
+    window.addEventListener('touchstart', handlePointerDown);
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      window.removeEventListener('mousedown', handlePointerDown);
+      window.removeEventListener('touchstart', handlePointerDown);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [focusedStripVersionPanelOpen]);
+
+  useEffect(() => {
+    if (!focusedStripNavMode) {
+      return;
+    }
+
+    setFocusedStripVersionPanelOpen(false);
+    setFocusedStripVersionPressed(false);
+  }, [focusedStripNavMode]);
 
   useEffect(() => {
     const transport = state?.transport;
@@ -1137,6 +1203,45 @@ const App = () => {
     );
   };
 
+  const getFocusedStripButtonAsset = (
+    position: FocusedStripButtonPosition,
+    options: {
+      isActive: boolean;
+      isPressed: boolean;
+      isNavigationMode: boolean;
+    },
+  ): string => {
+    if (options.isNavigationMode) {
+      return focusedSwitchNeutral;
+    }
+
+    switch (position) {
+      case 'record':
+        return options.isActive || options.isPressed ? focusedSwitchRed : focusedSwitchNeutral;
+      case 'solo':
+        return options.isActive || options.isPressed ? focusedSwitchYellow : focusedSwitchNeutral;
+      case 'mute':
+        return options.isActive || options.isPressed ? focusedSwitchBlue : focusedSwitchNeutral;
+      case 'version':
+        return focusedSwitchBlue;
+      default:
+        return focusedSwitchNeutral;
+    }
+  };
+
+  const handleFocusedStripVersionAction = async (commandId: CommandId) => {
+    const command = commandLookup.get(commandId);
+
+    setFocusedStripVersionPanelOpen(false);
+    setFocusedStripVersionPressed(false);
+
+    if (!command) {
+      return;
+    }
+
+    await sendCommand(command);
+  };
+
   const renderFocusedChannelStrip = () => {
     const focusedTrack = state?.focusedTrack;
     const faderPosition = clamp01(focusedTrack?.fader.normalized ?? 0.5);
@@ -1185,7 +1290,6 @@ const App = () => {
       >
         <img src={focusedTrackPanel} alt="" className="focused-strip-panel focused-strip-track-panel" aria-hidden="true" />
         <img src={focusedFaderPanel} alt="" className="focused-strip-panel focused-strip-fader-panel" aria-hidden="true" />
-
         <div className="focused-strip-buttons" aria-label="Focused channel controls">
           {buttonSpecs.map((spec) => {
             const command = commandLookup.get(spec.commandId);
@@ -1200,19 +1304,34 @@ const App = () => {
               Boolean(command.mcuNavigation && !state?.midiConnected);
             const isPressed = flashCommand === command.id;
             const isActive = isNormalButtonActive(spec.position);
+            const isVersionMenuTrigger = !focusedStripNavMode && spec.position === 'version';
+            const showPressedState = isVersionMenuTrigger ? false : isPressed;
+            const buttonAsset = getFocusedStripButtonAsset(spec.position, {
+              isActive,
+              isPressed: showPressedState,
+              isNavigationMode: focusedStripNavMode,
+            });
 
             return (
               <button
                 key={spec.position}
-                className={`focused-strip-button focused-strip-button-${spec.position} ${isPressed ? 'is-pressed' : ''} ${isActive ? 'is-active' : ''}`}
+                className={`focused-strip-button focused-strip-button-${spec.position} ${showPressedState ? 'is-pressed' : ''} ${isActive ? 'is-active' : ''} ${isVersionMenuTrigger ? 'is-primary-action' : ''}`}
                 disabled={isDisabled}
-                onClick={() => void sendCommand(command)}
+                onClick={() => {
+                  if (isVersionMenuTrigger) {
+                    setFocusedStripVersionPanelOpen((current) => !current);
+                    setFocusedStripVersionPressed(false);
+                    return;
+                  }
+
+                  void sendCommand(command);
+                }}
                 type="button"
                 aria-label={command.label}
                 aria-pressed={!focusedStripNavMode && spec.position !== 'version' ? isActive : undefined}
                 title={command.label}
               >
-                <img src={focusedStripButtonAssets[spec.position]} alt="" aria-hidden="true" />
+                <img src={buttonAsset} alt="" aria-hidden="true" />
                 <span className="focused-strip-button-icon">
                   {renderFocusedStripButtonIcon(spec.icon)}
                 </span>
@@ -1338,6 +1457,62 @@ const App = () => {
                 </div>
               </div>
             </section>
+          ) : null}
+
+          {focusedStripVersionPanelOpen && !focusedStripNavMode ? (
+            <div
+              className="focused-strip-action-sheet-overlay"
+              onClick={() => {
+                setFocusedStripVersionPanelOpen(false);
+                setFocusedStripVersionPressed(false);
+              }}
+            >
+              <div
+                className="focused-strip-action-sheet"
+                ref={focusedStripActionSheetRef}
+                onClick={(event) => event.stopPropagation()}
+                role="dialog"
+                aria-modal="true"
+                aria-label="Focused strip actions"
+              >
+                <button
+                  className="focused-strip-action-sheet-close"
+                  onClick={() => {
+                    setFocusedStripVersionPanelOpen(false);
+                    setFocusedStripVersionPressed(false);
+                  }}
+                  type="button"
+                  aria-label="Close focused strip actions"
+                >
+                  <span aria-hidden="true">X</span>
+                </button>
+                <div className="focused-strip-action-sheet-actions">
+                  {focusedStripVersionPanelCommands.map((commandId) => {
+                    const command = commandLookup.get(commandId);
+
+                    if (!command) {
+                      return null;
+                    }
+
+                    const isDisabled =
+                      busyCommand !== null || Boolean(command.mcuControl && !state?.focusedTrackReady);
+                    const isPressed = flashCommand === command.id;
+
+                    return (
+                      <button
+                        key={commandId}
+                        className={`focused-strip-action-sheet-button ${isPressed ? 'is-pressed' : ''}`}
+                        disabled={isDisabled}
+                        onClick={() => void handleFocusedStripVersionAction(commandId)}
+                        type="button"
+                      >
+                        <span className="focused-strip-action-sheet-label">{command.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
           ) : null}
 
           {showDebugTools && currentTab === 'navigate' ? (
