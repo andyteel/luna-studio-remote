@@ -18,6 +18,7 @@ import { MCU_MESSAGE_MAP } from './mcu-message-map.js';
 export interface McuServiceOptions {
   enabled?: boolean;
   debugMidiMessages?: boolean;
+  navigationSendMode?: 'noteOnZeroRelease' | 'noteOffRelease' | 'noteOnOnly' | 'longHoldNoteOnZero' | 'longHoldNoteOff';
   selectedInputId?: string;
   selectedInputName?: string;
   selectedOutputId?: string;
@@ -32,6 +33,8 @@ const MCU_BUTTON_PRESS_VELOCITY = 127;
 const MCU_BUTTON_RELEASE_VELOCITY = 0;
 const MCU_NOTE_OFF_STATUS = 128; // 0x80
 const MCU_BUTTON_RELEASE_DELAY_MS = 20;
+const MCU_NAVIGATION_RELEASE_DELAY_MS = 100;
+const MCU_NAVIGATION_LONG_HOLD_DELAY_MS = 300;
 const MAX_RECENT_MCU_DIAGNOSTIC_MESSAGES = 12;
 const CURRENT_SURFACE_DEVICE_NAME = 'MCU Pro';
 const MCU_METER_FOCUSED_LEVEL_STATUS = MCU_MESSAGE_MAP.protocol.channelPressureStatusBase;
@@ -77,7 +80,9 @@ export interface TransportControlResult {
 export interface NavigationControlResult {
   role: McuNavigationControlRole;
   pressMessage: number[];
-  releaseMessage: number[];
+  releaseMessage: number[] | null;
+  delayMs: number;
+  mode: NonNullable<McuServiceOptions['navigationSendMode']>;
 }
 
 const createTransportState = (): TransportState => ({
@@ -708,7 +713,19 @@ export class McuService {
     };
   }
 
+  private getNavigationSendMode(): NonNullable<McuServiceOptions['navigationSendMode']> {
+    return this.options.navigationSendMode ?? 'noteOnZeroRelease';
+  }
+
   private logMeterDebug(message: string): void {
+    if (!this.options.debugMidiMessages) {
+      return;
+    }
+
+    this.logger.log(message);
+  }
+
+  private logMidiDebug(message: string): void {
     if (!this.options.debugMidiMessages) {
       return;
     }
@@ -781,6 +798,7 @@ export class McuService {
     this.logger.log(
       `MCU service initialized with ${inputPorts.length} MIDI input(s) and ${outputPorts.length} MIDI output(s)`,
     );
+    this.logger.log(`MCU navigation send mode: ${this.getNavigationSendMode()}`);
   }
 
   async stop(): Promise<void> {
@@ -864,13 +882,28 @@ export class McuService {
 
   async sendNavigationControl(role: McuNavigationControlRole): Promise<NavigationControlResult> {
     const address = MCU_MESSAGE_MAP.navigation[role].input;
+    const mode = this.getNavigationSendMode();
     const pressMessage = [address.status, address.data1, MCU_BUTTON_PRESS_VELOCITY];
-    const releaseMessage = [address.status, address.data1, MCU_BUTTON_RELEASE_VELOCITY];
+    const releaseMessage =
+      mode === 'noteOnOnly'
+        ? null
+        : mode === 'noteOffRelease' || mode === 'longHoldNoteOff'
+          ? [MCU_NOTE_OFF_STATUS, address.data1, 64]
+          : [address.status, address.data1, MCU_BUTTON_RELEASE_VELOCITY];
+    const delayMs =
+      mode === 'longHoldNoteOnZero' || mode === 'longHoldNoteOff'
+        ? MCU_NAVIGATION_LONG_HOLD_DELAY_MS
+        : MCU_NAVIGATION_RELEASE_DELAY_MS;
 
     try {
+      this.logMidiDebug(
+        `[MCU NAV] mode=${mode} role=${role} press=${formatMidiBytes(pressMessage)} release=${releaseMessage ? formatMidiBytes(releaseMessage) : 'none'} delayMs=${releaseMessage ? delayMs : 0}`,
+      );
       await this.sendRawMcuMessage(pressMessage);
-      await delay(MCU_BUTTON_RELEASE_DELAY_MS);
-      await this.sendRawMcuMessage(releaseMessage);
+      if (releaseMessage) {
+        await delay(delayMs);
+        await this.sendRawMcuMessage(releaseMessage);
+      }
     } catch (error) {
       this.mcu = {
         ...this.mcu,
@@ -883,6 +916,8 @@ export class McuService {
       role,
       pressMessage,
       releaseMessage,
+      delayMs: releaseMessage ? delayMs : 0,
+      mode,
     };
   }
 
@@ -966,6 +1001,8 @@ export class McuService {
 
   private async sendRawMcuMessage(bytes: number[]): Promise<void> {
     const hasManualOutputSelection = Boolean(this.options.selectedOutputId || this.options.selectedOutputName);
+    const outputPortName = this.mcu.selectedOutputName ?? this.mcu.selectedOutputId ?? 'unknown-output';
+    this.logMidiDebug(`MIDI OUT to LUNA (${outputPortName}): ${formatMidiBytes(bytes)}`);
 
     if (hasManualOutputSelection) {
       if (!this.midiAdapter) {

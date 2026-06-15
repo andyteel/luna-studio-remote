@@ -2,54 +2,109 @@
 
 ## Current Status
 
-This checkpoint is for the Focused Track UI phase on branch `v2-focused-track-remote`.
+This checkpoint is for the focused-strip UX and navigation investigation phase on branch `v2-focused-track-remote`.
 
 ## Working
 
-- Focused-channel strip implemented.
-- Track navigation mode implemented.
-- Fader gain display calibrated and working.
-- MCU fader taper mapping working.
-- Focused track name updating correctly.
-- Meter parsing working.
-- Meter rendering/masking working.
-- Meter clears correctly after playback stops.
-- dB formatting corrected.
-- Test signal generator created under:
-  - `tools/meter-calibration/`
+- Focused strip UI is implemented.
+- Focused track name and dB display update correctly.
+- Focused fader display and taper mapping are working.
+- Focused meter is rebuilt as a segmented LED-style display.
+- Integrated peak indicator behavior is working and held visually in the focused meter.
+- Record, Solo, Mute, and Plus button presentation has been polished.
+- Plus opens a full-screen action modal.
+- Action modal workflows are wired:
+  - `New Track Version`
+  - `Duplicate Track`
+  - `Duplicate Without Content`
+- Scribble-strip tap toggles focused Navigation Mode.
+- Navigation Mode UI is present and visually improved.
 
-## Current Open Issue
+## Focused Navigation Mode Investigation
 
-- Server detects clip correctly.
-- `D0 0F` confirmed as clip event.
-- Terminal logs show:
-  - `clip=true`
-  - confirmed `D0` clip
-- Meter fill behavior is correct.
-- Clip lamp was not visible in the UI during the confirmed hardware test.
-- Remaining issue appears to be frontend rendering/state propagation only.
+### UI / Command Routing Status
 
-Latest frontend work moved the clip lamp into the active meter region, keeps the clip image mounted, and toggles visibility with `focusedTrack.meter.clip === true`. A forced-visible browser check confirmed the asset path, dimensions, z-index, opacity, and position. The next session should re-test this against a live `D0 0F` event from LUNA.
+- Focused Navigation Mode buttons are wired from the UI to backend command IDs:
+  - `focusedBankLeft`
+  - `focusedChannelLeft`
+  - `focusedChannelRight`
+  - `focusedBankRight`
+- These commands are routed through the MCU navigation path, not keyboard `keyAction` fallback.
+- The backend now keeps a diagnostic navigation send-mode switch for live testing.
 
-## Recent Findings
+### Navigation Note Mapping Under Test
 
-- `D0 00` through `D0 0C` = meter levels.
-- `D0 0F` = confirmed clip event.
-- `D0 0D` and `D0 0E` remain unconfirmed.
-- Clip should not drive meter fill.
-- Clip should only drive clip lamp visibility.
+- Bank Left: `90 2E 7F`
+- Bank Right: `90 2F 7F`
+- Channel Left: `90 30 7F`
+- Channel Right: `90 31 7F`
 
-## Suggested Next Investigation
+These note numbers match the LUNA surface map entries:
 
-- Verify `focusedTrack.meter.clip` reaches React state during a live clipped playback test.
-- Verify clip lamp render condition.
-- Verify z-index, opacity, dimensions, overflow, and asset path.
-- Temporarily force clip lamp visible if necessary.
-- If live state does not reach React, inspect `/api/state` polling timing versus the clip hold/reset window.
+- `/control/control_assign/bank_left_switch`
+- `/control/control_assign/bank_right_switch`
+- `/control/control_assign/channel_left_switch`
+- `/control/control_assign/channel_right_switch`
+
+### Tested Release Formats
+
+- `90 note 00`
+- `80 note 40`
+- long hold `300ms`
+
+### Tested Navigation Send Modes
+
+- `noteOnZeroRelease`
+- `noteOffRelease`
+- `longHoldNoteOff`
+
+Additional diagnostic modes remain available for future testing:
+
+- `noteOnOnly`
+- `longHoldNoteOnZero`
+
+Set with:
+
+```sh
+MCU_NAV_SEND_MODE=noteOffRelease npm run desktop:dev
+```
+
+### Observed Result
+
+- Backend logs show outbound MIDI is sent successfully to `IAC Luna Remote To Luna`.
+- Example logged sequences:
+  - Channel Right: `90 31 7F` then release
+  - Channel Left: `90 30 7F` then release
+  - Bank Left: `90 2E 7F` then release
+  - Bank Right: `90 2F 7F` then release
+- LUNA does not change focused track / bank.
+- No follow-up LUNA feedback is received after these navigation commands.
+
+### Current Conclusion
+
+- This is no longer a focused-strip UI problem.
+- It appears to be an MCU command acceptance / outbound control-path issue in how LUNA handles these navigation switch messages.
+- The frontend Navigation Mode UI should be kept intact while the outbound MCU behavior is investigated further.
+
+## MCU Navigation Debugging Notes
+
+- Startup logs report the selected navigation send mode.
+- Per-message outbound MIDI logging is available behind `MCU_DEBUG_MIDI=true`.
+- Outbound log format:
+
+```sh
+MIDI OUT to LUNA (IAC Luna Remote To Luna): 90 30 7F
+MIDI OUT to LUNA (IAC Luna Remote To Luna): 90 30 00
+```
 
 ## Useful Commands
 
 ```sh
-MCU_DEBUG_MIDI=true npm run desktop:dev
 npm run build
+MCU_DEBUG_MIDI=true npm run desktop:dev
+MCU_NAV_SEND_MODE=noteOnZeroRelease npm run desktop:dev
+MCU_NAV_SEND_MODE=noteOffRelease npm run desktop:dev
+MCU_NAV_SEND_MODE=noteOnOnly npm run desktop:dev
+MCU_NAV_SEND_MODE=longHoldNoteOnZero npm run desktop:dev
+MCU_NAV_SEND_MODE=longHoldNoteOff npm run desktop:dev
 ```

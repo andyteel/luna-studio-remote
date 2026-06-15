@@ -608,33 +608,13 @@ const renderFocusedStripButtonIcon = (icon: FocusedStripIcon): ReactNode => {
         </span>
       );
     case 'bankLeft':
-      return (
-        <svg className="focused-strip-nav-icon focused-strip-nav-icon-bank" viewBox="0 0 64 64" aria-hidden="true">
-          <path d="M35 16 20 32l15 16" />
-          <path d="M49 16 34 32l15 16" />
-          <path d="M14 14v36" />
-        </svg>
-      );
+      return <img src={startIcon} alt="" className="focused-strip-nav-image focused-strip-nav-image-bank-left" aria-hidden="true" />;
     case 'channelLeft':
-      return (
-        <svg className="focused-strip-nav-icon" viewBox="0 0 64 64" aria-hidden="true">
-          <path d="M40 16 24 32l16 16" />
-        </svg>
-      );
+      return <img src={playIcon} alt="" className="focused-strip-nav-image focused-strip-nav-image-channel-left" aria-hidden="true" />;
     case 'channelRight':
-      return (
-        <svg className="focused-strip-nav-icon" viewBox="0 0 64 64" aria-hidden="true">
-          <path d="m24 16 16 16-16 16" />
-        </svg>
-      );
+      return <img src={playIcon} alt="" className="focused-strip-nav-image focused-strip-nav-image-channel-right" aria-hidden="true" />;
     case 'bankRight':
-      return (
-        <svg className="focused-strip-nav-icon focused-strip-nav-icon-bank" viewBox="0 0 64 64" aria-hidden="true">
-          <path d="m29 16 15 16-15 16" />
-          <path d="m15 16 15 16-15 16" />
-          <path d="M50 14v36" />
-        </svg>
-      );
+      return <img src={endIcon} alt="" className="focused-strip-nav-image focused-strip-nav-image-bank-right" aria-hidden="true" />;
     default:
       return null;
   }
@@ -1212,7 +1192,11 @@ const App = () => {
     },
   ): string => {
     if (options.isNavigationMode) {
-      return focusedSwitchNeutral;
+      if (!options.isPressed) {
+        return focusedSwitchNeutral;
+      }
+
+      return position === 'record' || position === 'version' ? focusedSwitchBlue : focusedSwitchRed;
     }
 
     switch (position) {
@@ -1306,16 +1290,17 @@ const App = () => {
             const isActive = isNormalButtonActive(spec.position);
             const isVersionMenuTrigger = !focusedStripNavMode && spec.position === 'version';
             const showPressedState = isVersionMenuTrigger ? false : isPressed;
+            const navPressedState = focusedStripNavMode ? isPressed : showPressedState;
             const buttonAsset = getFocusedStripButtonAsset(spec.position, {
               isActive,
-              isPressed: showPressedState,
+              isPressed: navPressedState,
               isNavigationMode: focusedStripNavMode,
             });
 
             return (
               <button
                 key={spec.position}
-                className={`focused-strip-button focused-strip-button-${spec.position} ${showPressedState ? 'is-pressed' : ''} ${isActive ? 'is-active' : ''} ${isVersionMenuTrigger ? 'is-primary-action' : ''}`}
+                className={`focused-strip-button focused-strip-button-${spec.position} ${navPressedState ? 'is-pressed' : ''} ${isActive ? 'is-active' : ''} ${isVersionMenuTrigger ? 'is-primary-action' : ''}`}
                 disabled={isDisabled}
                 onClick={() => {
                   if (isVersionMenuTrigger) {

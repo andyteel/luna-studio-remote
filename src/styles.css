@@ -691,19 +691,21 @@ button:focus-visible {
   text-transform: uppercase;
 }
 
-.focused-strip-nav-icon {
-  width: 76%;
-  height: 76%;
-  fill: none;
-  stroke: #141414;
-  stroke-width: 7;
-  stroke-linecap: round;
-  stroke-linejoin: round;
+.focused-strip-nav-image {
+  width: 62%;
+  height: 62%;
+  object-fit: contain;
+  image-rendering: -webkit-optimize-contrast;
 }
 
-.focused-strip-nav-icon-bank {
-  width: 82%;
-  height: 82%;
+.focused-strip-nav-image-bank-left,
+.focused-strip-nav-image-bank-right {
+  width: 67%;
+  height: 67%;
+}
+
+.focused-strip-nav-image-channel-left {
+  transform: scaleX(-1);
 }
 
 .focused-strip-scribble {

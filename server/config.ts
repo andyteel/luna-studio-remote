@@ -16,6 +16,23 @@ const parseMcuTransportMode = (value: string | undefined): 'keyboard' | 'prefer-
   return normalized === 'prefer-mcu' || normalized === 'mcu-only' ? normalized : 'keyboard';
 };
 
+const parseMcuNavSendMode = (
+  value: string | undefined,
+): 'noteOnZeroRelease' | 'noteOffRelease' | 'noteOnOnly' | 'longHoldNoteOnZero' | 'longHoldNoteOff' => {
+  const normalized = value?.trim();
+
+  switch (normalized) {
+    case 'noteOffRelease':
+    case 'noteOnOnly':
+    case 'longHoldNoteOnZero':
+    case 'longHoldNoteOff':
+      return normalized;
+    case 'noteOnZeroRelease':
+    default:
+      return 'noteOnZeroRelease';
+  }
+};
+
 export const config = {
   host: process.env.HOST?.trim() || '0.0.0.0',
   port: Number(process.env.PORT ?? 3000),
@@ -29,6 +46,7 @@ export const config = {
   midiMode: 'iac' as const,
   debugMcuMidi: parseBoolean(process.env.MCU_DEBUG_MIDI, false),
   mcuTransportMode: parseMcuTransportMode(process.env.MCU_TRANSPORT_MODE),
+  mcuNavSendMode: parseMcuNavSendMode(process.env.MCU_NAV_SEND_MODE),
   expectedIacInputName: process.env.MCU_IAC_INPUT_NAME?.trim() || 'LUNA Remote From LUNA',
   expectedIacOutputName: process.env.MCU_IAC_OUTPUT_NAME?.trim() || 'LUNA Remote To LUNA',
   mcuInputId: process.env.MCU_INPUT_ID?.trim() || '',

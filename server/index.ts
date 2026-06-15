@@ -437,6 +437,7 @@ export const startRemoteServer = async (options: RemoteServerOptions = {}): Prom
   const mcuService = new McuService({
     enabled: config.enableMcu && config.enableMidi,
     debugMidiMessages: config.debugMcuMidi,
+    navigationSendMode: config.mcuNavSendMode,
     selectedInputId: config.mcuInputId,
     selectedInputName: configuredMcuInputName,
     selectedOutputId: config.mcuOutputId,
@@ -712,8 +713,10 @@ export const startRemoteServer = async (options: RemoteServerOptions = {}): Prom
         : null;
       let keyAction: string | null = command.mcuControl
         ? `MCU focused ${command.mcuControl}`
-        : buildKeyAction(command);
-      let script = command.mcuControl ? null : buildAppleScript(config.lunaAppName, command);
+        : command.mcuNavigation
+          ? `MCU navigation ${command.mcuNavigation}`
+          : buildKeyAction(command);
+      let script = command.mcuControl || command.mcuNavigation ? null : buildAppleScript(config.lunaAppName, command);
       state.lastKeyAction = keyAction;
       state.lastAppleScript = script;
       let responseWarning: string | undefined;
@@ -816,7 +819,7 @@ export const startRemoteServer = async (options: RemoteServerOptions = {}): Prom
         } else {
           const result = await mcuService.sendNavigationControl(command.mcuNavigation);
           usedMcuNavigation = true;
-          keyAction = `MCU navigation ${result.role}: ${result.pressMessage.join(' ')} / ${result.releaseMessage.join(' ')}`;
+          keyAction = `MCU navigation ${result.role} [${result.mode}] delay=${result.delayMs}ms: ${result.pressMessage.join(' ')} / ${result.releaseMessage?.join(' ') ?? 'no release'}`;
           state.lastKeyAction = keyAction;
           logger.log(`[SENT] ${mcuDescription}`);
           logCommandEvent({
@@ -1274,6 +1277,7 @@ export const startRemoteServer = async (options: RemoteServerOptions = {}): Prom
   logger.log(`MIDI enabled: ${config.enableMidi ? 'yes' : 'no'}`);
   logger.log(`MIDI mode: ${config.midiMode}`);
   logger.log(`MCU transport mode: ${config.mcuTransportMode}`);
+  logger.log(`MCU navigation send mode: ${config.mcuNavSendMode}`);
   logger.log(`Expected IAC input: ${config.expectedIacInputName}`);
   logger.log(`Expected IAC output: ${config.expectedIacOutputName}`);
   logger.log(`MCU raw MIDI logging: ${config.debugMcuMidi ? 'yes' : 'no'}`);
