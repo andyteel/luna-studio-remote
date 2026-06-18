@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent, type ReactNode } from 'react';
-import { commandRegistry, type BaseKey, type CommandDefinition, type CommandId, type ModifierKey } from '../shared/commands';
-import type { CommandResponse, RemoteState, RemoteStateStreamEvent, ShortcutTestState, TestShortcutResponse } from './types';
+import { useEffect, useRef, useState, type CSSProperties, type PointerEvent, type ReactNode } from 'react';
+import { commandRegistry, type CommandDefinition, type CommandId } from '../shared/commands';
+import type { CommandResponse, RemoteState, RemoteStateStreamEvent } from './types';
 import playIcon from '../luna-image-resources/buttons/icon_transport_play.png';
 import playIconOn from '../luna-image-resources/buttons/icon_transport_play_on.png';
 import stopIcon from '../luna-image-resources/buttons/icon_transport_stop.png';
@@ -41,8 +41,6 @@ import focusedSwitchRed from '../assets_v2/switch_fader_red@2x.png';
 import focusedSwitchYellow from '../assets_v2/switch_fader_yel@2x.png';
 
 const statusPollMs = 100;
-type TabId = 'tracking' | 'navigate' | 'settings';
-const showDebugTools = false;
 const useCssFocusedMeterTest = true;
 
 type FocusedFaderResponse = {
@@ -56,53 +54,6 @@ type FocusedFaderResponse = {
   state?: RemoteState;
   error?: string;
 };
-
-const shortcutKeyOptions: Array<{ value: BaseKey; label: string }> = [
-  { value: 'backslash', label: '\\' },
-  { value: 'digit0', label: '0' },
-  { value: 'a', label: 'A' },
-  { value: 'd', label: 'D' },
-  { value: 'e', label: 'E' },
-  { value: 'k', label: 'K' },
-  { value: 'l', label: 'L' },
-  { value: 'q', label: 'Q' },
-  { value: 'r', label: 'R' },
-  { value: 't', label: 'T' },
-  { value: 'w', label: 'W' },
-  { value: 'z', label: 'Z' },
-  { value: 'leftArrow', label: 'Left Arrow' },
-  { value: 'rightArrow', label: 'Right Arrow' },
-  { value: 'upArrow', label: 'Up Arrow' },
-  { value: 'downArrow', label: 'Down Arrow' },
-  { value: 'return', label: 'Return' },
-  { value: 'keypadEnter', label: 'Keypad Enter' },
-  { value: 'numpad3', label: 'Numeric Keypad 3' },
-  { value: 'space', label: 'Space' },
-  { value: 'period', label: 'Period' },
-  { value: 'leftBracket', label: '[' },
-  { value: 'rightBracket', label: ']' },
-  { value: 'equals', label: '=' },
-  { value: 'apostrophe', label: "'" },
-];
-
-const modifierOptions: ModifierKey[] = ['command', 'shift', 'control', 'option'];
-
-const shortcutPresets: Array<{ label: string; key: BaseKey; modifiers: ModifierKey[] }> = [
-  { label: 'E', key: 'e', modifiers: [] },
-  { label: 'R', key: 'r', modifiers: [] },
-  { label: 'T', key: 't', modifiers: [] },
-  { label: 'Control 0', key: 'digit0', modifiers: ['control'] },
-  { label: 'Command [', key: 'leftBracket', modifiers: ['command'] },
-  { label: 'Command ]', key: 'rightBracket', modifiers: ['command'] },
-  { label: 'Shift A', key: 'a', modifiers: ['shift'] },
-  { label: 'Control Option L', key: 'l', modifiers: ['control', 'option'] },
-  { label: "Control Option '", key: 'apostrophe', modifiers: ['control', 'option'] },
-  { label: 'P', key: 'p', modifiers: [] },
-  { label: ';', key: 'semicolon', modifiers: [] },
-  { label: 'Return', key: 'return', modifiers: [] },
-  { label: 'Keypad Enter', key: 'keypadEnter', modifiers: [] },
-  { label: 'Numeric Keypad 3', key: 'numpad3', modifiers: [] },
-];
 
 const commandLookup = new Map(commandRegistry.map((command) => [command.id, command]));
 
@@ -155,111 +106,6 @@ const commandVisuals: Record<
   toggleTimelineMixer: { icon: 'view', label: 'Timeline / Mixer' },
 };
 
-const formatShortcutLabel = (key: BaseKey, modifiers: ModifierKey[]): string => {
-  const keyLabels: Record<BaseKey, string> = {
-    backslash: '\\',
-    digit0: '0',
-    a: 'A',
-    d: 'D',
-    e: 'E',
-    k: 'K',
-    l: 'L',
-    q: 'Q',
-    r: 'R',
-    t: 'T',
-    w: 'W',
-    z: 'Z',
-    leftArrow: 'Left Arrow',
-    rightArrow: 'Right Arrow',
-    upArrow: 'Up Arrow',
-    downArrow: 'Down Arrow',
-    return: 'Return',
-    keypadEnter: 'Keypad Enter',
-    numpad3: 'Numeric Keypad 3',
-    space: 'Space',
-    period: 'Period',
-    leftBracket: '[',
-    rightBracket: ']',
-    equals: '=',
-    apostrophe: "'",
-  };
-
-  const modifierLabels: Record<ModifierKey, string> = {
-    command: 'Command',
-    shift: 'Shift',
-    control: 'Control',
-    option: 'Option',
-  };
-
-  return [...modifiers.map((modifier) => modifierLabels[modifier]), keyLabels[key]].join(' ');
-};
-
-const resolveShortcutKeyAction = (key: BaseKey, modifiers: ModifierKey[]): string => {
-  const modifierLabels: Record<ModifierKey, string> = {
-    command: 'command down',
-    shift: 'shift down',
-    control: 'control down',
-    option: 'option down',
-  };
-
-  const keyCodes: Partial<Record<BaseKey, number>> = {
-    space: 49,
-    return: 36,
-    keypadEnter: 76,
-    numpad3: 85,
-    period: 47,
-    leftArrow: 123,
-    rightArrow: 124,
-    upArrow: 126,
-    downArrow: 125,
-    leftBracket: 33,
-    rightBracket: 30,
-    equals: 24,
-    apostrophe: 39,
-  };
-
-  const keystrokes: Partial<Record<BaseKey, string>> = {
-    backslash: '\\',
-    digit0: '0',
-    a: 'a',
-    d: 'd',
-    e: 'e',
-    k: 'k',
-    l: 'l',
-    q: 'q',
-    r: 'r',
-    t: 't',
-    w: 'w',
-    z: 'z',
-  };
-
-  const modifierClause = modifiers.length
-    ? ` using {${modifiers.map((modifier) => modifierLabels[modifier]).join(', ')}}`
-    : '';
-
-  if (key in keyCodes) {
-    return `key code ${keyCodes[key] ?? 'pending'}${modifierClause}`;
-  }
-
-  if (key in keystrokes) {
-    return `keystroke "${keystrokes[key] ?? ''}"${modifierClause}`;
-  }
-
-  return 'pending';
-};
-
-const formatTimestamp = (value: string | null): string => {
-  if (!value) {
-    return 'Waiting';
-  }
-
-  return new Date(value).toLocaleTimeString([], {
-    hour: 'numeric',
-    minute: '2-digit',
-    second: '2-digit',
-  });
-};
-
 const productionTrackingRows: Array<{ className: string; commands: CommandId[] }> = [
   { className: 'tracking-row-full', commands: ['record'] },
   { className: 'tracking-row-halves tracking-row-primary', commands: ['playStop', 'stop'] },
@@ -272,16 +118,6 @@ const productionTrackingRows: Array<{ className: string; commands: CommandId[] }
     commands: ['createMarker', 'togglePlayFromStopLocation', 'togglePrePostRoll'],
   },
 ];
-const navigateMarkerOrder: CommandId[] = ['createMarker', 'previousMarker', 'nextMarker'];
-const navigateMovementOrder: CommandId[] = [
-  'previousBar',
-  'nextBar',
-  'scrollLeftSelection',
-  'scrollRightSelection',
-  'frameSelection',
-];
-const navigateZoomOrder: CommandId[] = ['zoomOut', 'zoomIn', 'waveformZoomOut', 'waveformZoomIn'];
-const navigateViewOrder: CommandId[] = ['toggleTimelineMixer', 'autoScroll'];
 const momentaryTrackingCommands: CommandId[] = [
   'stop',
   'returnToZero',
@@ -637,7 +473,6 @@ const App = () => {
   const [flashCommand, setFlashCommand] = useState<CommandId | null>(null);
   const [holdProgress, setHoldProgress] = useState(0);
   const [message, setMessage] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<TabId>('tracking');
   const [trackingUiState, setTrackingUiState] = useState({
     playing: false,
     recording: false,
@@ -654,22 +489,6 @@ const App = () => {
     normalized: number;
     gainDbText: string | null;
   } | null>(null);
-  const [testKey, setTestKey] = useState<BaseKey>('e');
-  const [testModifiers, setTestModifiers] = useState<ModifierKey[]>([]);
-  const [testBusy, setTestBusy] = useState(false);
-  const [showTestLab, setShowTestLab] = useState(false);
-  const [labState, setLabState] = useState<ShortcutTestState>({
-    shortcutLabel: null,
-    key: null,
-    modifiers: [],
-    keyAction: null,
-    appleScript: null,
-    lastError: null,
-    sentAt: null,
-    success: null,
-  });
-  const [labRequestJson, setLabRequestJson] = useState('Waiting');
-  const [labResponseJson, setLabResponseJson] = useState('Waiting');
   const focusedStripActionSheetRef = useRef<HTMLDivElement | null>(null);
   const focusedFaderHitZoneRef = useRef<HTMLDivElement | null>(null);
   const holdAnimationRef = useRef<number | null>(null);
@@ -679,7 +498,6 @@ const App = () => {
   const stateFetchInFlightRef = useRef(false);
   const stateFetchPendingRef = useRef(false);
   const activeStateFetchPromiseRef = useRef<Promise<void> | null>(null);
-  const currentTab: TabId = 'tracking';
   const isProductionRemote = true;
 
   const applyIncomingState = (nextState: RemoteState) => {
@@ -1046,99 +864,6 @@ const App = () => {
     setFocusedFaderDrag(null);
   };
 
-  const executeTestShortcut = async (key: BaseKey, modifiers: ModifierKey[]) => {
-    setTestBusy(true);
-    setMessage(null);
-    const requestBody = { key, modifiers };
-    const shortcutLabel = formatShortcutLabel(key, modifiers);
-    const keyAction = resolveShortcutKeyAction(key, modifiers);
-
-    console.log('[Shortcut Test Lab] selected key:', key);
-    console.log('[Shortcut Test Lab] selected modifiers:', modifiers);
-    console.log('[Shortcut Test Lab] request body:', requestBody);
-    setLabRequestJson(JSON.stringify(requestBody, null, 2));
-    setLabResponseJson('Waiting for response');
-
-    setLabState({
-      shortcutLabel,
-      key,
-      modifiers,
-      keyAction,
-      appleScript: 'sending...',
-      lastError: null,
-      sentAt: new Date().toISOString(),
-      success: null,
-    });
-
-    try {
-      const response = await fetch('/api/test-shortcut', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(requestBody),
-      });
-
-      const payload = (await response.json()) as TestShortcutResponse;
-      console.log('[Shortcut Test Lab] response body:', payload);
-      setLabResponseJson(JSON.stringify(payload, null, 2));
-
-      if (!payload.ok) {
-        const errorMessage = payload.error ?? 'Shortcut test failed';
-        setMessage(errorMessage);
-        setLabState({
-          shortcutLabel,
-          key,
-          modifiers,
-          keyAction: payload.keyAction ?? keyAction,
-          appleScript: payload.generatedAppleScript ?? 'Waiting',
-          lastError: errorMessage,
-          sentAt: new Date().toISOString(),
-          success: false,
-        });
-        return;
-      }
-
-      await fetchState();
-      setLabState({
-        shortcutLabel: formatShortcutLabel(payload.shortcut?.key ?? key, payload.shortcut?.modifiers ?? modifiers),
-        key: payload.shortcut?.key ?? key,
-        modifiers: payload.shortcut?.modifiers ?? modifiers,
-        keyAction: payload.keyAction ?? keyAction,
-        appleScript: payload.generatedAppleScript ?? 'Waiting',
-        lastError: null,
-        sentAt: new Date().toISOString(),
-        success: true,
-      });
-      setMessage('Test shortcut sent');
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Shortcut test failed';
-      console.error('[Shortcut Test Lab] caught error:', error);
-      setMessage(errorMessage);
-      setLabResponseJson(
-        JSON.stringify(
-          {
-            ok: false,
-            error: errorMessage,
-          },
-          null,
-          2,
-        ),
-      );
-      setLabState((current) => ({
-        ...current,
-        lastError: errorMessage,
-        success: false,
-      }));
-    } finally {
-      setTestBusy(false);
-    }
-  };
-
-  const toggleTestModifier = (modifier: ModifierKey) => {
-    setTestModifiers((current) =>
-      current.includes(modifier) ? current.filter((value) => value !== modifier) : [...current, modifier],
-    );
-  };
-
   const beginHold = (command: CommandDefinition) => {
     if (!command.confirm) {
       void sendCommand(command);
@@ -1185,16 +910,6 @@ const App = () => {
       }
     };
   }, []);
-
-  const sections = useMemo(
-    () => ({
-      navigateMarkers: navigateMarkerOrder.map((id) => commandLookup.get(id)!).filter(Boolean),
-      navigateMovement: navigateMovementOrder.map((id) => commandLookup.get(id)!).filter(Boolean),
-      navigateZoom: navigateZoomOrder.map((id) => commandLookup.get(id)!).filter(Boolean),
-      navigateView: navigateViewOrder.map((id) => commandLookup.get(id)!).filter(Boolean),
-    }),
-    [],
-  );
 
   const getTrackingStateClass = (commandId: CommandId): string => {
     if (commandId === 'playStop' && trackingUiState.playing) {
@@ -1293,7 +1008,7 @@ const App = () => {
     const visual = commandVisuals[command.id];
     const isPressed = flashCommand === command.id;
     const isDisabled = busyCommand !== null || Boolean(command.mcuControl && !state?.focusedTrackReady);
-    const isTrackingButton = currentTab === 'tracking';
+    const isTrackingButton = true;
     const showTrackingText =
       isTrackingButton &&
       (
@@ -1589,8 +1304,6 @@ const App = () => {
     );
   };
 
-  const lastCommandLabel = state?.lastCommand ? commandVisuals[state.lastCommand]?.label ?? commandLookup.get(state.lastCommand)?.label : 'None';
-
   return (
     <main className="app-shell">
       <section className={`topbar ${isProductionRemote ? 'production-header' : ''}`}>
@@ -1603,58 +1316,52 @@ const App = () => {
           <h1>LUNA STUDIO REMOTE</h1>
         </div>
 
-        {showDebugTools ? <div className="status-strip">
-          {state?.testMode ? <div className="status-badge warning">TEST MODE</div> : null}
-          {state?.pinRequired ? <div className="status-badge neutral">PIN</div> : null}
-        </div> : null}
       </section>
 
-      <section className={`layout ${currentTab === 'tracking' ? 'layout-tracking' : ''} ${isProductionRemote ? 'layout-production' : ''}`}>
+      <section className={`layout layout-tracking ${isProductionRemote ? 'layout-production' : ''}`}>
         <div className="remote-stage">
-          {currentTab === 'tracking' ? (
-            <section className="tab-panel" aria-label="Tracking controls">
-              <div className="focused-channel-strip-row">
-                {renderFocusedChannelStrip()}
+          <section className="tab-panel" aria-label="Tracking controls">
+            <div className="focused-channel-strip-row">
+              {renderFocusedChannelStrip()}
+            </div>
+            <div className="panel-group">
+              <div className="tracking-console-layout">
+                {productionTrackingRows.map((row) => (
+                  <div key={row.commands.join('-')} className={`button-grid ${row.className}`}>
+                    {row.commands.map((commandId) => {
+                      const command = commandLookup.get(commandId);
+
+                      if (!command) {
+                        return null;
+                      }
+
+                      const trackingClassMap: Partial<Record<CommandId, string>> = {
+                        record: 'record-button tracking-record',
+                        playStop: 'transport-button tracking-primary-button',
+                        stop: 'transport-button tracking-primary-button',
+                        click: 'utility-button tracking-medium-button',
+                        countIn: 'utility-button tracking-medium-button',
+                        loop: 'utility-button tracking-compact-button',
+                        undo: 'utility-button tracking-compact-button',
+                        redo: 'utility-button tracking-compact-button',
+                        goToEnd: 'transport-button tracking-compact-button',
+                        returnToZero: 'transport-button tracking-compact-button',
+                        nextBar: 'utility-button tracking-compact-button tracking-text-command',
+                        previousBar: 'utility-button tracking-compact-button tracking-text-command',
+                        nextMarker: 'utility-button tracking-compact-button tracking-text-command',
+                        previousMarker: 'utility-button tracking-compact-button tracking-text-command',
+                        createMarker: 'utility-button tracking-compact-button tracking-text-command',
+                        togglePlayFromStopLocation: 'utility-button tracking-compact-button tracking-text-command tracking-play-from-stop',
+                        togglePrePostRoll: 'utility-button tracking-compact-button tracking-text-command tracking-pre-post-roll',
+                      };
+
+                      return renderCommandButton(command, trackingClassMap[command.id] ?? 'utility-button');
+                    })}
+                  </div>
+                ))}
               </div>
-              <div className="panel-group">
-                <div className="tracking-console-layout">
-                  {productionTrackingRows.map((row) => (
-                    <div key={row.commands.join('-')} className={`button-grid ${row.className}`}>
-                      {row.commands.map((commandId) => {
-                        const command = commandLookup.get(commandId);
-
-                        if (!command) {
-                          return null;
-                        }
-
-                        const trackingClassMap: Partial<Record<CommandId, string>> = {
-                          record: 'record-button tracking-record',
-                          playStop: 'transport-button tracking-primary-button',
-                          stop: 'transport-button tracking-primary-button',
-                          click: 'utility-button tracking-medium-button',
-                          countIn: 'utility-button tracking-medium-button',
-                          loop: 'utility-button tracking-compact-button',
-                          undo: 'utility-button tracking-compact-button',
-                          redo: 'utility-button tracking-compact-button',
-                          goToEnd: 'transport-button tracking-compact-button',
-                          returnToZero: 'transport-button tracking-compact-button',
-                          nextBar: 'utility-button tracking-compact-button tracking-text-command',
-                          previousBar: 'utility-button tracking-compact-button tracking-text-command',
-                          nextMarker: 'utility-button tracking-compact-button tracking-text-command',
-                          previousMarker: 'utility-button tracking-compact-button tracking-text-command',
-                          createMarker: 'utility-button tracking-compact-button tracking-text-command',
-                          togglePlayFromStopLocation: 'utility-button tracking-compact-button tracking-text-command tracking-play-from-stop',
-                          togglePrePostRoll: 'utility-button tracking-compact-button tracking-text-command tracking-pre-post-roll',
-                        };
-
-                        return renderCommandButton(command, trackingClassMap[command.id] ?? 'utility-button');
-                      })}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </section>
-          ) : null}
+            </div>
+          </section>
 
           {focusedStripVersionPanelOpen && !focusedStripNavMode ? (
             <div
@@ -1712,262 +1419,9 @@ const App = () => {
             </div>
           ) : null}
 
-          {showDebugTools && currentTab === 'navigate' ? (
-            <section className="tab-panel" aria-label="Navigation controls">
-              <div className="panel-group">
-                <div className="section-header">
-                  <h2>Markers</h2>
-                </div>
-                <div className="button-grid marker-grid">
-                  {sections.navigateMarkers.map((command) => renderCommandButton(command, 'nav-button'))}
-                </div>
-              </div>
-
-              <div className="panel-group">
-                <div className="section-header">
-                  <h2>Movement</h2>
-                </div>
-                <div className="button-grid movement-grid">
-                  {sections.navigateMovement.map((command) => renderCommandButton(command, 'nav-button'))}
-                </div>
-              </div>
-
-              <div className="panel-group">
-                <div className="section-header">
-                  <h2>Zoom</h2>
-                </div>
-                <div className="button-grid zoom-grid">
-                  {sections.navigateZoom.map((command) => renderCommandButton(command, 'nav-button'))}
-                </div>
-              </div>
-
-              <div className="panel-group">
-                <div className="section-header">
-                  <h2>View</h2>
-                </div>
-                <div className="button-grid view-grid">
-                  {sections.navigateView.map((command) => renderCommandButton(command, 'nav-button view-button'))}
-                </div>
-              </div>
-            </section>
-          ) : null}
-
-          {showDebugTools && currentTab === 'settings' ? (
-            <section className="tab-panel settings-panel" aria-label="Settings and Test Lab">
-              <div className="settings-status-row">
-                <div className="panel-card status-card">
-                  <div className="status-card-row">
-                    <div>
-                      <p className="status-caption">Status</p>
-                      <h2>{state?.lunaDetected ? 'Ready to Send' : 'Waiting for LUNA'}</h2>
-                    </div>
-                    <img
-                      src={state?.lunaDetected ? uaDiamondOn : uaDiamondMouseover}
-                      alt=""
-                      aria-hidden="true"
-                      className="status-card-logo"
-                    />
-                  </div>
-                  <p className="panel-note">LUNA is activated before every command. Live control requires `TEST_MODE=false`.</p>
-                </div>
-
-                <div className="panel-card status-card">
-                  <p className="status-caption">Last Command</p>
-                  <div className="last-command-display">
-                    <span className="last-command-icon" aria-hidden="true">
-                      {state?.lastCommand ? renderCommandIcon(commandVisuals[state.lastCommand]?.icon ?? 'view') : '•'}
-                    </span>
-                    <div>
-                      <strong>{lastCommandLabel}</strong>
-                      <p className="panel-note">{formatTimestamp(state?.lastCommandAt ?? null)}</p>
-                    </div>
-                  </div>
-                </div>
-
-                {state?.lastError ? (
-                  <div className="panel-card status-card error-card">
-                    <p className="status-caption">Last Error</p>
-                    <strong>{state.lastError}</strong>
-                  </div>
-                ) : null}
-              </div>
-
-              <div className="panel-card compact-card">
-                <div className="card-row">
-                  <div>
-                    <h2>Remote Access</h2>
-                    <p className="panel-note">Use the LAN URL on iPhone or iPad. Set `TEST_MODE=false` for live control.</p>
-                  </div>
-                  <div className="status-pill subtle">
-                    <span className="status-caption">Sent</span>
-                    <strong>{formatTimestamp(state?.lastCommandAt ?? null)}</strong>
-                  </div>
-                </div>
-
-                {state?.pinRequired ? (
-                  <label className="pin-field">
-                    <span>PIN</span>
-                    <input
-                      type="password"
-                      inputMode="numeric"
-                      autoComplete="one-time-code"
-                      placeholder="Enter PIN"
-                      value={pin}
-                      onChange={(event) => setPin(event.target.value)}
-                    />
-                  </label>
-                ) : (
-                  <p className="panel-note">PIN protection is disabled.</p>
-                )}
-              </div>
-
-              <div className="panel-card compact-card">
-                <h2>Test Mode</h2>
-                <p className="panel-note">
-                  {state?.testMode
-                    ? 'TEST_MODE is enabled. Commands are simulated for safe testing.'
-                    : 'TEST_MODE is disabled. Commands are sent live to LUNA.'}
-                </p>
-              </div>
-
-              <div className="panel-card compact-card">
-                <h2>Feedback</h2>
-                <p className="feedback-strong">{message ?? state?.lastError ?? 'Remote ready.'}</p>
-              </div>
-
-              <div className="panel-card compact-card">
-                <button className="panel-toggle" onClick={() => setShowTestLab((current) => !current)} type="button">
-                  {showTestLab ? 'Hide Shortcut Test Lab' : 'Show Shortcut Test Lab'}
-                </button>
-              </div>
-
-              {showTestLab ? (
-                <div className="panel-card lab-card">
-                  <h2>Shortcut Test Lab</h2>
-                  {!state?.testMode ? (
-                    <div className="status-badge warning wide-badge">LIVE MODE: test shortcuts are sent to LUNA immediately.</div>
-                  ) : null}
-
-                  <div className="lab-controls">
-                    <label className="pin-field">
-                      <span>Key</span>
-                      <select value={testKey} onChange={(event) => setTestKey(event.target.value as BaseKey)}>
-                        {shortcutKeyOptions.map((option) => (
-                          <option key={option.value} value={option.value}>
-                            {option.label}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-
-                    <div className="modifier-group">
-                      <span>Modifiers</span>
-                      <div className="modifier-grid">
-                        {modifierOptions.map((modifier) => (
-                          <label key={modifier} className="modifier-toggle">
-                            <input
-                              type="checkbox"
-                              checked={testModifiers.includes(modifier)}
-                              onChange={() => toggleTestModifier(modifier)}
-                            />
-                            <span>{modifier}</span>
-                          </label>
-                        ))}
-                      </div>
-                    </div>
-
-                    <button className="remote-button utility-button tone-neutral" disabled={testBusy} onClick={() => void executeTestShortcut(testKey, testModifiers)} type="button">
-                      <span className="button-icon" aria-hidden="true">
-                        ⌁
-                      </span>
-                      <span className="button-label">Send Test Shortcut</span>
-                    </button>
-
-                    <div className="preset-grid">
-                      {shortcutPresets.map((preset) => (
-                        <button
-                          key={preset.label}
-                          className="preset-button"
-                          disabled={testBusy}
-                          onClick={() => {
-                            setTestKey(preset.key);
-                            setTestModifiers(preset.modifiers);
-                            void executeTestShortcut(preset.key, preset.modifiers);
-                          }}
-                          type="button"
-                        >
-                          {preset.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <dl className="debug-stats">
-                    <div>
-                      <dt>Selected shortcut</dt>
-                      <dd>{labState.shortcutLabel ?? state?.debug?.lastShortcutTest.shortcutLabel ?? 'Waiting'}</dd>
-                    </div>
-                    <div>
-                      <dt>Success</dt>
-                      <dd>
-                        {labState.success === null
-                          ? labState.sentAt
-                            ? 'Sending...'
-                            : state?.debug?.lastShortcutTest.success === false
-                              ? 'No'
-                              : state?.debug?.lastShortcutTest.success === true
-                                ? 'Yes'
-                                : 'Waiting'
-                          : labState.success
-                            ? 'Yes'
-                            : 'No'}
-                      </dd>
-                    </div>
-                    <div>
-                      <dt>Key action</dt>
-                      <dd>{labState.keyAction ?? state?.debug?.lastShortcutTest.keyAction ?? 'Pending'}</dd>
-                    </div>
-                    <div className="debug-block">
-                      <dt>AppleScript</dt>
-                      <dd>
-                        <pre>{labState.appleScript ?? state?.debug?.lastShortcutTest.appleScript ?? 'Waiting for shortcut test'}</pre>
-                      </dd>
-                    </div>
-                    <div className="debug-block">
-                      <dt>Last error</dt>
-                      <dd>{labState.lastError ?? state?.debug?.lastShortcutTest.lastError ?? 'None'}</dd>
-                    </div>
-                    <div className="debug-block">
-                      <dt>Request JSON</dt>
-                      <dd>
-                        <pre>{labRequestJson}</pre>
-                      </dd>
-                    </div>
-                    <div className="debug-block">
-                      <dt>Response JSON</dt>
-                      <dd>
-                        <pre>{labResponseJson}</pre>
-                      </dd>
-                    </div>
-                  </dl>
-                </div>
-              ) : null}
-            </section>
-          ) : null}
         </div>
       </section>
 
-      {showDebugTools ? <nav className="tab-row" aria-label="Remote tabs">
-        <button className={`tab-button ${activeTab === 'tracking' ? 'active' : ''}`} onClick={() => setActiveTab('tracking')} type="button">
-          TRACKING
-        </button>
-        <button className={`tab-button ${activeTab === 'navigate' ? 'active' : ''}`} onClick={() => setActiveTab('navigate')} type="button">
-          NAVIGATE
-        </button>
-        <button className={`tab-button ${activeTab === 'settings' ? 'active' : ''}`} onClick={() => setActiveTab('settings')} type="button">
-          SETTINGS
-        </button>
-      </nav> : null}
     </main>
   );
 };
