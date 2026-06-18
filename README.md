@@ -6,16 +6,20 @@ Luna Studio Remote is a standalone macOS app for controlling Universal Audio LUN
 
 - Starts its own bundled production server automatically
 - Detects the Mac's LAN IP and shows a scannable QR code
-- Opens a single-screen touch remote that mirrors the final production Luna UI
-- Uses the macOS IAC Driver for MCU transport, focused-track controls, and LUNA feedback
+- Opens a single-screen focused tracking remote for touch control
+- Shows a production focused channel strip with arm, solo, mute, fader, meter, peak, and track-name feedback
+- Supports bidirectional focused fader control from the remote and LUNA
+- Uses the macOS IAC Driver for MCU transport, focused-track controls, focused fader control, and LUNA feedback
+- Provides scribble-strip navigation mode for selected-track movement
+- Provides plus modal actions for new track version, duplicate track, and duplicate without content
 - Keeps keyboard automation for commands that do not have a confirmed MCU mapping
 
 ## Downloads
 
 Public release downloads are intended to be shared from GitHub Releases:
 
-- `LUNA Studio Remote-1.0.0-arm64.dmg`
-- `LUNA Studio Remote-1.0.0-arm64-mac.zip`
+- `LUNA Studio Remote-2.0.0-arm64.dmg`
+- `LUNA Studio Remote-2.0.0-arm64-mac.zip`
 
 This release is currently built for Apple Silicon Macs.
 
@@ -97,10 +101,12 @@ Desktop packaging:
 npm run desktop:package
 ```
 
+Desktop packaging requires full Xcode with `actool` available. Apple Command Line Tools alone are not enough for the macOS app icon packaging step.
+
 ## Release Artifacts
 
 Packaged output is written to:
 
-- `release/LUNA Studio Remote-1.0.0-arm64.dmg`
-- `release/LUNA Studio Remote-1.0.0-arm64-mac.zip`
+- `release/LUNA Studio Remote-2.0.0-arm64.dmg`
+- `release/LUNA Studio Remote-2.0.0-arm64-mac.zip`
 - `release/mac-arm64/LUNA Studio Remote.app`

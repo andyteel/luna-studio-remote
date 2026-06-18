@@ -1,6 +1,17 @@
-# Luna Studio Remote v1.0.0
+# Luna Studio Remote v2.0.0
 
-Luna Studio Remote is a standalone macOS app that starts its own local server, shows a LAN URL and QR code, and lets you control Universal Audio LUNA from an iPhone, iPad, or another browser on the same network.
+Luna Studio Remote v2.0.0 is a focused tracking remote for Universal Audio LUNA. It starts a local server on the Mac, shows a LAN URL and QR code, and lets an iPhone, iPad, or another browser on the same network control the production tracking surface.
+
+## What's New
+
+- Focused channel strip UI for tracking sessions.
+- Bidirectional focused fader control between LUNA and the remote.
+- Focused meter and peak display with LUNA MCU feedback.
+- Focused track arm, solo, and mute controls over MCU/IAC.
+- Scribble-strip navigation mode for selected-track movement.
+- Plus modal actions for new track version, duplicate track, and duplicate without content.
+- Production cleanup removed hidden debug tabs and client-side test-lab UI.
+- Packaging metadata and file lists were cleaned up for release.
 
 ## Installation
 
@@ -12,7 +23,7 @@ macOS may show a security warning because this app is not currently signed or no
 
 ## MIDI Setup
 
-Luna Studio Remote now uses the macOS IAC Driver as its only supported MIDI path. It does not create custom virtual MIDI ports.
+Luna Studio Remote uses the macOS IAC Driver as its only supported MIDI path. It does not create custom virtual MIDI ports.
 
 Create or rename IAC buses exactly:
 
@@ -29,7 +40,7 @@ In LUNA MIDI Control Surfaces, set:
 - Your phone or tablet must be on the same Wi-Fi network as the Mac.
 - This app is a focused tracking remote; it is not a full mixer or hardware control surface.
 - Play, Stop, Record, Loop/Cycle, Click, and focused-track mute/solo/record-arm use MCU over IAC.
-- The remote receives MCU transport, select, LCD, and diagnostic feedback when LUNA sends it.
+- Focused fader, meter, peak, selected-strip, and track-name state depend on LUNA MCU feedback.
 - Commands without a confirmed MCU mapping still use keyboard automation.
-- Pre-roll or post-roll workflows may sometimes need a second stop press.
 - Accessibility, Automation, and Local Network permission prompts may appear on first launch.
+- Building distributable macOS artifacts requires full Xcode with `actool`; Apple Command Line Tools alone are not enough.
