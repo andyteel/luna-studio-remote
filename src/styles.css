@@ -410,6 +410,7 @@ button:focus-visible {
 .focused-strip-panel,
 .focused-strip-fader-track,
 .focused-strip-fader-cap,
+.focused-strip-fader-hit-zone,
 .focused-strip-meter,
 .focused-strip-buttons,
 .focused-strip-scribble {
@@ -797,6 +798,27 @@ button:focus-visible {
   height: 34.24%;
   z-index: 4;
   transform: translateZ(0);
+}
+
+.focused-strip-fader-hit-zone {
+  left: 1.36%;
+  top: 50.785%;
+  width: 98.19%;
+  height: 34.24%;
+  z-index: 7;
+  cursor: ew-resize;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.focused-strip-fader-hit-zone[aria-disabled="true"] {
+  cursor: default;
+}
+
+.focused-strip-fader-hit-zone:focus-visible {
+  outline: 2px solid rgba(229, 246, 254, 0.82);
+  outline-offset: 2px;
 }
 
 .focused-strip-meter {

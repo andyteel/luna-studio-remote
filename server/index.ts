@@ -420,6 +420,48 @@ const buildMidiTestMessage = (currentState: RemoteState): string => {
   return 'Check MIDI Status: MCU focused-track feedback has arrived, but the focused track is not fully hydrated yet.';
 };
 
+const parseFocusedFaderRequest = (
+  input: unknown,
+): {
+  error: string | null;
+  normalized: number;
+  touch: 'start' | 'end' | null;
+} => {
+  if (typeof input !== 'object' || input === null) {
+    return {
+      error: 'Request body must be a JSON object',
+      normalized: 0,
+      touch: null,
+    };
+  }
+
+  const candidate = input as { normalized?: unknown; phase?: unknown };
+
+  if (typeof candidate.normalized !== 'number' || !Number.isFinite(candidate.normalized)) {
+    return {
+      error: 'Expected "normalized" to be a finite number',
+      normalized: 0,
+      touch: null,
+    };
+  }
+
+  const phase = typeof candidate.phase === 'string' ? candidate.phase : 'move';
+
+  if (phase !== 'start' && phase !== 'move' && phase !== 'end') {
+    return {
+      error: 'Expected "phase" to be "start", "move", or "end"',
+      normalized: 0,
+      touch: null,
+    };
+  }
+
+  return {
+    error: null,
+    normalized: Math.max(0, Math.min(1, candidate.normalized)),
+    touch: phase === 'start' ? 'start' : phase === 'end' ? 'end' : null,
+  };
+};
+
 const openAudioMidiSetup = (): void => {
   const child = spawn('open', ['-a', 'Audio MIDI Setup'], {
     detached: true,
@@ -659,6 +701,65 @@ export const startRemoteServer = async (options: RemoteServerOptions = {}): Prom
       message: buildMidiTestMessage(currentState),
       state: currentState,
     });
+  });
+
+  app.post('/api/focused-fader', async (request, response) => {
+    const parsed = parseFocusedFaderRequest(request.body ?? {});
+
+    if (parsed.error) {
+      response.status(400).json({ ok: false, error: parsed.error, state: await getState() });
+      return;
+    }
+
+    if (config.appPin && normalizePin(request.body?.pin) !== config.appPin) {
+      response.status(401).json({ ok: false, error: 'PIN required or incorrect', state: await getState() });
+      return;
+    }
+
+    try {
+      const currentRemoteState = await getState();
+
+      if (!currentRemoteState.focusedTrackReady) {
+        state.lastError = FOCUSED_TRACK_NOT_SELECTED_ERROR;
+        response.status(409).json({ ok: false, error: state.lastError, state: currentRemoteState });
+        return;
+      }
+
+      if (config.testMode || !config.enableMcu || !config.enableMidi) {
+        state.lastError = null;
+        state.lastKeyAction = `TEST MODE MCU focused fader normalized=${parsed.normalized.toFixed(6)}`;
+        state.lastAppleScript = null;
+        response.json({
+          ok: true,
+          fader: {
+            normalized: parsed.normalized,
+            raw14: Math.round(parsed.normalized * 0x3fff),
+            gainDbText: null,
+          },
+          state: await getState(),
+        });
+        return;
+      }
+
+      const result = await mcuService.sendFocusedFaderPosition(parsed.normalized, { touch: parsed.touch });
+      state.lastError = null;
+      state.lastKeyAction = `MCU strip ${result.stripIndex + 1} fader: ${result.faderMessage.join(' ')}${result.touchMessage ? ` touch ${result.touchMessage.join(' ')}` : ''}`;
+      state.lastAppleScript = null;
+
+      response.json({
+        ok: true,
+        fader: {
+          normalized: result.normalized,
+          raw14: result.raw14,
+          signed: result.signed,
+          gainDbText: result.gainDbText,
+        },
+        state: await getState(),
+      });
+    } catch (error) {
+      state.lastError = error instanceof Error ? error.message : 'Failed to send focused fader';
+      response.status(500).json({ ok: false, error: state.lastError, state: await getState() });
+    }
   });
 
   app.post('/api/command', async (request, response) => {

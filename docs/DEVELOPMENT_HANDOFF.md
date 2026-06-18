@@ -2,16 +2,22 @@
 
 ## Current Status
 
-This checkpoint is for the focused-strip UX and navigation investigation phase on branch `v2-focused-track-remote`.
+This checkpoint is for the completed focused-strip recording workflow on branch `v2-focused-track-remote`.
+
+The core recording workflow is operational: transport, record, focused arm/solo/mute, focused track feedback, meter/peak feedback, plus modal actions, and bidirectional focused fader control are working.
 
 ## Working
 
 - Focused strip UI is implemented and polished.
 - Focused track name and dB display update correctly.
 - Focused fader display and taper mapping are working.
+- Focused fader control is complete:
+  - LUNA fader movement updates the remote fader.
+  - Remote mouse/touch/pointer fader movement updates the focused LUNA fader.
+  - Drag release returns the remote to LUNA feedback as the source of truth.
 - Focused meter is considered complete.
 - Meter parsing, rendering, masking, clearing, and peak-hold behavior are working.
-- Record, Solo, Mute, and Plus button behavior is working outside Navigation Mode.
+- Transport, Record, Solo, Mute, Arm, and Plus button behavior is working outside Navigation Mode.
 - Plus modal is completed for:
   - `New Track Version`
   - `Duplicate Track`

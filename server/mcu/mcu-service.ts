@@ -71,6 +71,16 @@ export interface FocusedTrackControlResult {
   releaseMessage: number[];
 }
 
+export interface FocusedTrackFaderPositionResult {
+  stripIndex: number;
+  normalized: number;
+  raw14: number;
+  signed: number;
+  gainDbText: string | null;
+  touchMessage: number[] | null;
+  faderMessage: number[];
+}
+
 export interface TransportControlResult {
   role: McuTransportControlRole;
   pressMessage: number[];
@@ -865,6 +875,70 @@ export class McuService {
       stripIndex,
       pressMessage,
       releaseMessage,
+    };
+  }
+
+  async sendFocusedFaderPosition(
+    normalized: number,
+    options: { touch?: 'start' | 'end' | null } = {},
+  ): Promise<FocusedTrackFaderPositionResult> {
+    this.restorePreservedSnapshot();
+
+    if (!isFocusedTrackSelected(this.focusedTrack)) {
+      throw new Error(FOCUSED_TRACK_NOT_SELECTED_ERROR);
+    }
+
+    const stripIndex = this.focusedTrack.index;
+
+    if (
+      !Number.isInteger(stripIndex) ||
+      stripIndex === null ||
+      stripIndex < 0 ||
+      stripIndex >= MCU_MESSAGE_MAP.protocol.stripCount
+    ) {
+      throw new Error('No focused MCU strip is available');
+    }
+
+    const clampedNormalized =
+      typeof normalized === 'number' && Number.isFinite(normalized)
+        ? Math.max(0, Math.min(1, normalized))
+        : 0;
+    const raw14 = Math.round(clampedNormalized * 0x3fff);
+    const faderAddress = MCU_MESSAGE_MAP.stripFamilies.faderStatusBase + stripIndex;
+    const faderMessage = [faderAddress, raw14 & 0x7f, (raw14 >> 7) & 0x7f];
+    const touchMessage =
+      options.touch === 'start' || options.touch === 'end'
+        ? [
+            MCU_MESSAGE_MAP.protocol.noteStatus,
+            MCU_MESSAGE_MAP.stripFamilies.switchOffsets.faderTouch + stripIndex,
+            options.touch === 'start' ? MCU_BUTTON_PRESS_VELOCITY : MCU_BUTTON_RELEASE_VELOCITY,
+          ]
+        : null;
+    const db = interpolateFaderTaperDb(clampedNormalized);
+    const gainDbText = formatFaderGainDbText(db);
+
+    try {
+      if (touchMessage) {
+        await this.sendRawMcuMessage(touchMessage);
+      }
+
+      await this.sendRawMcuMessage(faderMessage);
+    } catch (error) {
+      this.mcu = {
+        ...this.mcu,
+        lastError: serializeError(error),
+      };
+      throw error;
+    }
+
+    return {
+      stripIndex,
+      normalized: clampedNormalized,
+      raw14,
+      signed: raw14 - 8192,
+      gainDbText,
+      touchMessage,
+      faderMessage,
     };
   }
 

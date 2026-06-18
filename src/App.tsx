@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent, type ReactNode } from 'react';
 import { commandRegistry, type BaseKey, type CommandDefinition, type CommandId, type ModifierKey } from '../shared/commands';
 import type { CommandResponse, RemoteState, RemoteStateStreamEvent, ShortcutTestState, TestShortcutResponse } from './types';
 import playIcon from '../luna-image-resources/buttons/icon_transport_play.png';
@@ -44,6 +44,18 @@ const statusPollMs = 100;
 type TabId = 'tracking' | 'navigate' | 'settings';
 const showDebugTools = false;
 const useCssFocusedMeterTest = true;
+
+type FocusedFaderResponse = {
+  ok: boolean;
+  fader?: {
+    normalized: number;
+    raw14: number;
+    signed?: number;
+    gainDbText: string | null;
+  };
+  state?: RemoteState;
+  error?: string;
+};
 
 const shortcutKeyOptions: Array<{ value: BaseKey; label: string }> = [
   { value: 'backslash', label: '\\' },
@@ -637,6 +649,11 @@ const App = () => {
   const [focusedStripNavMode, setFocusedStripNavMode] = useState(false);
   const [focusedStripVersionPanelOpen, setFocusedStripVersionPanelOpen] = useState(false);
   const [focusedStripVersionPressed, setFocusedStripVersionPressed] = useState(false);
+  const [focusedFaderDrag, setFocusedFaderDrag] = useState<{
+    active: boolean;
+    normalized: number;
+    gainDbText: string | null;
+  } | null>(null);
   const [testKey, setTestKey] = useState<BaseKey>('e');
   const [testModifiers, setTestModifiers] = useState<ModifierKey[]>([]);
   const [testBusy, setTestBusy] = useState(false);
@@ -654,7 +671,11 @@ const App = () => {
   const [labRequestJson, setLabRequestJson] = useState('Waiting');
   const [labResponseJson, setLabResponseJson] = useState('Waiting');
   const focusedStripActionSheetRef = useRef<HTMLDivElement | null>(null);
+  const focusedFaderHitZoneRef = useRef<HTMLDivElement | null>(null);
   const holdAnimationRef = useRef<number | null>(null);
+  const focusedFaderSendAnimationRef = useRef<number | null>(null);
+  const focusedFaderPendingNormalizedRef = useRef<number | null>(null);
+  const focusedFaderLastSentNormalizedRef = useRef<number | null>(null);
   const stateFetchInFlightRef = useRef(false);
   const stateFetchPendingRef = useRef(false);
   const activeStateFetchPromiseRef = useRef<Promise<void> | null>(null);
@@ -706,6 +727,15 @@ const App = () => {
     return () => {
       window.clearInterval(timer);
       stateStream.close();
+    };
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (focusedFaderSendAnimationRef.current !== null) {
+        window.cancelAnimationFrame(focusedFaderSendAnimationRef.current);
+        focusedFaderSendAnimationRef.current = null;
+      }
     };
   }, []);
 
@@ -854,6 +884,166 @@ const App = () => {
     } finally {
       setBusyCommand(null);
     }
+  };
+
+  const getFocusedFaderNormalizedFromClientX = (clientX: number): number | null => {
+    const hitZone = focusedFaderHitZoneRef.current;
+    const strip = hitZone?.closest('.focused-channel-strip');
+
+    if (!(strip instanceof HTMLElement)) {
+      return null;
+    }
+
+    const stripRect = strip.getBoundingClientRect();
+
+    if (stripRect.width <= 0) {
+      return null;
+    }
+
+    const trackLeft = stripRect.left + (focusedFaderTrackLeftPercent / 100) * stripRect.width;
+    const trackWidth = (focusedFaderTrackWidthPercent / 100) * stripRect.width;
+
+    if (trackWidth <= 0) {
+      return null;
+    }
+
+    return clamp01((clientX - trackLeft) / trackWidth);
+  };
+
+  const sendFocusedFaderPosition = async (
+    normalized: number,
+    phase: 'start' | 'move' | 'end',
+  ): Promise<void> => {
+    if (!state?.focusedTrackReady) {
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/focused-fader', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          normalized,
+          phase,
+          pin: pin || undefined,
+        }),
+      });
+      const payload = (await response.json()) as FocusedFaderResponse;
+
+      if (!payload.ok) {
+        setMessage(payload.error ?? 'Focused fader failed');
+        return;
+      }
+
+      if (payload.fader?.gainDbText) {
+        setFocusedFaderDrag((current) => (
+          current?.active && Math.abs(current.normalized - payload.fader!.normalized) < 0.015
+            ? {
+                ...current,
+                gainDbText: payload.fader?.gainDbText ?? current.gainDbText,
+              }
+            : current
+        ));
+      }
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'Focused fader failed');
+    }
+  };
+
+  const queueFocusedFaderPosition = (normalized: number) => {
+    const previousSent = focusedFaderLastSentNormalizedRef.current;
+
+    if (previousSent !== null && Math.abs(previousSent - normalized) < 1 / 0x3fff) {
+      return;
+    }
+
+    focusedFaderPendingNormalizedRef.current = normalized;
+
+    if (focusedFaderSendAnimationRef.current !== null) {
+      return;
+    }
+
+    focusedFaderSendAnimationRef.current = window.requestAnimationFrame(() => {
+      focusedFaderSendAnimationRef.current = null;
+      const pendingNormalized = focusedFaderPendingNormalizedRef.current;
+      focusedFaderPendingNormalizedRef.current = null;
+
+      if (pendingNormalized === null) {
+        return;
+      }
+
+      focusedFaderLastSentNormalizedRef.current = pendingNormalized;
+      void sendFocusedFaderPosition(pendingNormalized, 'move');
+    });
+  };
+
+  const beginFocusedFaderDrag = (event: PointerEvent<HTMLDivElement>) => {
+    if (!state?.focusedTrackReady) {
+      return;
+    }
+
+    event.preventDefault();
+    event.currentTarget.setPointerCapture(event.pointerId);
+
+    const normalized = getFocusedFaderNormalizedFromClientX(event.clientX);
+
+    if (normalized === null) {
+      return;
+    }
+
+    focusedFaderLastSentNormalizedRef.current = normalized;
+    setFocusedFaderDrag({
+      active: true,
+      normalized,
+      gainDbText: state.focusedTrack.fader.gainDbText,
+    });
+    void sendFocusedFaderPosition(normalized, 'start');
+  };
+
+  const updateFocusedFaderDrag = (event: PointerEvent<HTMLDivElement>) => {
+    if (!focusedFaderDrag?.active) {
+      return;
+    }
+
+    event.preventDefault();
+
+    const normalized = getFocusedFaderNormalizedFromClientX(event.clientX);
+
+    if (normalized === null) {
+      return;
+    }
+
+    setFocusedFaderDrag((current) => (
+      current?.active
+        ? {
+            ...current,
+            normalized,
+          }
+        : current
+    ));
+    queueFocusedFaderPosition(normalized);
+  };
+
+  const endFocusedFaderDrag = (event: PointerEvent<HTMLDivElement>) => {
+    if (!focusedFaderDrag?.active) {
+      return;
+    }
+
+    event.preventDefault();
+
+    if (focusedFaderSendAnimationRef.current !== null) {
+      window.cancelAnimationFrame(focusedFaderSendAnimationRef.current);
+      focusedFaderSendAnimationRef.current = null;
+    }
+
+    const pendingNormalized = focusedFaderPendingNormalizedRef.current;
+    focusedFaderPendingNormalizedRef.current = null;
+    const normalized = getFocusedFaderNormalizedFromClientX(event.clientX) ?? pendingNormalized ?? focusedFaderDrag.normalized;
+    focusedFaderLastSentNormalizedRef.current = normalized;
+    void sendFocusedFaderPosition(normalized, 'end').finally(() => {
+      void fetchState();
+    });
+    setFocusedFaderDrag(null);
   };
 
   const executeTestShortcut = async (key: BaseKey, modifiers: ModifierKey[]) => {
@@ -1226,12 +1416,20 @@ const App = () => {
 
   const renderFocusedChannelStrip = () => {
     const focusedTrack = state?.focusedTrack;
-    const faderPosition = clamp01(focusedTrack?.fader.normalized ?? 0.5);
+    const faderPosition = clamp01(
+      focusedFaderDrag?.active
+        ? focusedFaderDrag.normalized
+        : focusedTrack?.fader.normalized ?? 0.5,
+    );
     const meterLevel = clamp01(focusedTrack?.meter.normalized);
     const hasPeakHoldLamp = focusedTrack?.meter.clip === true;
     const liveMeterSegments = Math.max(0, Math.min(31, Math.round(meterLevel * 31)));
     const trackName = focusedTrack?.name ?? (state?.focusedTrackReady ? 'TRACK' : 'NO TRACK');
-    const faderGainDb = formatFocusedFaderGainDb(focusedTrack?.fader.gainDbText);
+    const faderGainDb = formatFocusedFaderGainDb(
+      focusedFaderDrag?.active
+        ? focusedFaderDrag.gainDbText ?? focusedTrack?.fader.gainDbText
+        : focusedTrack?.fader.gainDbText,
+    );
     const buttonSpecs = focusedStripNavMode ? focusedStripNavigationButtons : focusedStripNormalButtons;
     const faderCapLeft =
       focusedFaderTrackLeftPercent -
@@ -1337,6 +1535,22 @@ const App = () => {
 
         <img src={focusedFaderTrack} alt="" className="focused-strip-fader-track" aria-hidden="true" />
         <img src={focusedFaderCap} alt="" className="focused-strip-fader-cap" aria-hidden="true" />
+        <div
+          className="focused-strip-fader-hit-zone"
+          ref={focusedFaderHitZoneRef}
+          onPointerDown={beginFocusedFaderDrag}
+          onPointerMove={updateFocusedFaderDrag}
+          onPointerUp={endFocusedFaderDrag}
+          onPointerCancel={endFocusedFaderDrag}
+          role="slider"
+          aria-label="Focused track fader"
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={Math.round(faderPosition * 100)}
+          aria-valuetext={faderGainDb}
+          aria-disabled={!state?.focusedTrackReady}
+          tabIndex={state?.focusedTrackReady ? 0 : -1}
+        />
 
         <div className="focused-strip-meter" aria-hidden="true">
           {useCssFocusedMeterTest ? (
