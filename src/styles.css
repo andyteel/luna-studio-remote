@@ -388,7 +388,7 @@ button:focus-visible {
 }
 
 .focused-strip-glyph-version {
-  --glyph-offset-y: -5px;
+  --glyph-offset-y: -7px;
 }
 
 .focused-strip-record-dot {
