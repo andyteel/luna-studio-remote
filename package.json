@@ -1,6 +1,8 @@
 {
   "name": "luna-tracking-remote",
   "version": "1.0.0",
+  "description": "A local network remote for controlling Universal Audio LUNA from another device.",
+  "author": "Andy Teel",
   "private": true,
   "type": "module",
   "main": "desktop/main.cjs",
