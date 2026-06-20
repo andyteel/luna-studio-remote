@@ -149,16 +149,6 @@ button:focus-visible {
   font-weight: 800;
 }
 
-.ua-status-logo {
-  display: block;
-  object-fit: contain;
-}
-
-.ua-status-logo {
-  width: 30px;
-  height: 30px;
-}
-
 .layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
@@ -375,6 +365,12 @@ button:focus-visible {
   line-height: 1;
 }
 
+.focused-strip-mask-icon {
+  width: 64%;
+  height: 64%;
+  color: #161616;
+}
+
 .focused-strip-glyph-record {
   --glyph-offset-y: -1px;
 }
@@ -414,8 +410,9 @@ button:focus-visible {
   transform: scaleX(0.92);
 }
 
-.focused-strip-plus {
-  font-size: clamp(2.4rem, 9cqi, 4.4rem);
+.focused-strip-mask-icon-plus {
+  width: 72%;
+  height: 72%;
 }
 
 .focused-strip-button-version.is-primary-action:not(:disabled) {
@@ -548,8 +545,7 @@ button:focus-visible {
 .focused-strip-nav-image {
   width: 62%;
   height: 62%;
-  object-fit: contain;
-  image-rendering: -webkit-optimize-contrast;
+  color: #161616;
 }
 
 .focused-strip-nav-image-bank-left,
@@ -1345,6 +1341,17 @@ button:focus-visible {
 .luna-icon-asset {
   object-fit: contain;
   image-rendering: -webkit-optimize-contrast;
+}
+
+.luna-icon-mask {
+  display: inline-block;
+  background-color: currentColor;
+  -webkit-mask-position: center;
+  -webkit-mask-repeat: no-repeat;
+  -webkit-mask-size: contain;
+  mask-position: center;
+  mask-repeat: no-repeat;
+  mask-size: contain;
 }
 
 .luna-icon-play {

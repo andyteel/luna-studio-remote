@@ -1,20 +1,6 @@
 import { useEffect, useRef, useState, type CSSProperties, type PointerEvent, type ReactNode } from 'react';
 import { commandRegistry, type CommandDefinition, type CommandId } from '../shared/commands';
 import type { CommandResponse, RemoteState, RemoteStateStreamEvent } from './types';
-import playIcon from '../luna-image-resources/buttons/icon_transport_play.png';
-import playIconOn from '../luna-image-resources/buttons/icon_transport_play_on.png';
-import stopIcon from '../luna-image-resources/buttons/icon_transport_stop.png';
-import stopIconOn from '../luna-image-resources/buttons/icon_transport_stop_on.png';
-import pauseIcon from '../luna-image-resources/buttons/icon_transport_pause.png';
-import pauseIconOn from '../luna-image-resources/buttons/icon_transport_pause_on.png';
-import recordIcon from '../luna-image-resources/buttons/icon_transport_rec.png';
-import recordIconOn from '../luna-image-resources/buttons/icon_transport_rec_on.png';
-import loopIcon from '../luna-image-resources/buttons/icon_transport_loop.png';
-import loopIconOn from '../luna-image-resources/buttons/icon_transport_loop_on.png';
-import endIcon from '../luna-image-resources/buttons/icon_transport_end.png';
-import endIconOn from '../luna-image-resources/buttons/icon_transport_end_on.png';
-import startIcon from '../luna-image-resources/buttons/icon_transport_start.png';
-import startIconOn from '../luna-image-resources/buttons/icon_transport_start_on.png';
 import clickIcon from '../luna-image-resources/buttons/icon_click.png';
 import clickIconOn from '../luna-image-resources/buttons/icon_click_on.png';
 import countIn1Icon from '../luna-image-resources/buttons/icon_count_in_1.png';
@@ -23,10 +9,6 @@ import countIn2Icon from '../luna-image-resources/buttons/icon_count_in_2.png';
 import countIn2IconOn from '../luna-image-resources/buttons/icon_count_in_2_on.png';
 import countIn4Icon from '../luna-image-resources/buttons/icon_count_in_4.png';
 import countIn4IconOn from '../luna-image-resources/buttons/icon_count_in_4_on.png';
-import undoIcon from '../luna-image-resources/buttons/icon_undo_drk.png';
-import redoIcon from '../luna-image-resources/buttons/icon_redo_drk.png';
-import uaDiamondOn from '../luna-image-resources/buttons/ua_diamond_on.png';
-import uaDiamondMouseover from '../luna-image-resources/buttons/ua_diamond_mouseover.png';
 import focusedTrackPanel from '../assets_v2/track-panel@2x.png';
 import focusedFaderPanel from '../assets_v2/fader-panel@2x.png';
 import focusedFaderTrack from '../assets_v2/fader-track@2x.png';
@@ -39,6 +21,15 @@ import focusedSwitchNeutral from '../assets_v2/switch_fader@2x.png';
 import focusedSwitchBlue from '../assets_v2/switch_fader_blu@2x.png';
 import focusedSwitchRed from '../assets_v2/switch_fader_red@2x.png';
 import focusedSwitchYellow from '../assets_v2/switch_fader_yel@2x.png';
+import playSvg from '../assets_original/transport/play.svg';
+import stopSvg from '../assets_original/transport/stop.svg';
+import recordSvg from '../assets_original/transport/record.svg';
+import loopSvg from '../assets_original/transport/loop.svg';
+import gteSvg from '../assets_original/transport/gte.svg';
+import rtzSvg from '../assets_original/transport/rtz.svg';
+import undoSvg from '../assets_original/transport/undo.svg';
+import redoSvg from '../assets_original/transport/redo.svg';
+import plusSvg from '../assets_original/transport/plus.svg';
 
 const statusPollMs = 100;
 const useCssFocusedMeterTest = true;
@@ -189,6 +180,19 @@ const trackingTransportGlyphCommands: CommandId[] = [
   'undo',
   'redo',
 ];
+
+const createMaskIconStyle = (src: string): CSSProperties => ({
+  WebkitMaskImage: `url(${src})`,
+  maskImage: `url(${src})`,
+});
+
+const renderMaskIcon = (src: string, className = ''): ReactNode => (
+  <span
+    aria-hidden="true"
+    className={`luna-icon luna-icon-mask ${className}`.trim()}
+    style={createMaskIconStyle(src)}
+  />
+);
 
 const renderSvgIcon = (icon: string): ReactNode => {
   switch (icon) {
@@ -351,21 +355,21 @@ const renderSvgIcon = (icon: string): ReactNode => {
 const renderCommandIcon = (icon: string): ReactNode => {
   switch (icon) {
     case 'play':
-      return <img src={playIcon} alt="" className="luna-icon luna-icon-asset luna-icon-play" />;
+      return renderMaskIcon(playSvg, 'luna-icon-play');
     case 'stop':
-      return <img src={stopIcon} alt="" className="luna-icon luna-icon-asset" />;
+      return renderMaskIcon(stopSvg);
     case 'undo':
-      return <img src={undoIcon} alt="" className="luna-icon luna-icon-asset" />;
+      return renderMaskIcon(undoSvg);
     case 'redo':
-      return <img src={redoIcon} alt="" className="luna-icon luna-icon-asset" />;
+      return renderMaskIcon(redoSvg);
     case 'record':
-      return <img src={recordIcon} alt="" className="luna-icon luna-icon-asset luna-icon-record" />;
+      return renderMaskIcon(recordSvg, 'luna-icon-record');
     case 'loop':
-      return <img src={loopIcon} alt="" className="luna-icon luna-icon-asset luna-icon-loop" />;
+      return renderMaskIcon(loopSvg, 'luna-icon-loop');
     case 'gte':
-      return <img src={endIcon} alt="" className="luna-icon luna-icon-asset" />;
+      return renderMaskIcon(gteSvg);
     case 'rtz':
-      return <img src={startIcon} alt="" className="luna-icon luna-icon-asset luna-icon-wide" />;
+      return renderMaskIcon(rtzSvg, 'luna-icon-wide');
     default:
       return renderSvgIcon(icon);
   }
@@ -450,17 +454,17 @@ const renderFocusedStripButtonIcon = (icon: FocusedStripIcon): ReactNode => {
     case 'version':
       return (
         <span className="focused-strip-glyph focused-strip-glyph-version" aria-hidden="true">
-          <span className="focused-strip-glyph-mark focused-strip-plus">+</span>
+          {renderMaskIcon(plusSvg, 'focused-strip-mask-icon focused-strip-mask-icon-plus')}
         </span>
       );
     case 'bankLeft':
-      return <img src={startIcon} alt="" className="focused-strip-nav-image focused-strip-nav-image-bank-left" aria-hidden="true" />;
+      return renderMaskIcon(rtzSvg, 'focused-strip-mask-icon focused-strip-nav-image focused-strip-nav-image-bank-left');
     case 'channelLeft':
-      return <img src={playIcon} alt="" className="focused-strip-nav-image focused-strip-nav-image-channel-left" aria-hidden="true" />;
+      return renderMaskIcon(playSvg, 'focused-strip-mask-icon focused-strip-nav-image focused-strip-nav-image-channel-left');
     case 'channelRight':
-      return <img src={playIcon} alt="" className="focused-strip-nav-image focused-strip-nav-image-channel-right" aria-hidden="true" />;
+      return renderMaskIcon(playSvg, 'focused-strip-mask-icon focused-strip-nav-image focused-strip-nav-image-channel-right');
     case 'bankRight':
-      return <img src={endIcon} alt="" className="focused-strip-nav-image focused-strip-nav-image-bank-right" aria-hidden="true" />;
+      return renderMaskIcon(gteSvg, 'focused-strip-mask-icon focused-strip-nav-image focused-strip-nav-image-bank-right');
     default:
       return null;
   }
@@ -947,32 +951,21 @@ const App = () => {
   };
 
   const renderTrackingTransportGlyph = (commandId: CommandId): ReactNode => {
-    const isPlaying = trackingUiState.playing;
-    const isRecording = trackingUiState.recording;
-    const isLooping = trackingUiState.loop;
     const isCountInEnabled = trackingUiState.countIn;
-    const usesPauseMode = trackingUiState.playFromStopLocation;
-    const isMomentaryActive = flashCommand === commandId;
 
     switch (commandId) {
       case 'playStop':
-        return <img src={isPlaying ? playIconOn : playIcon} alt="" className="luna-icon luna-icon-asset luna-icon-play" />;
+        return renderMaskIcon(playSvg, 'luna-icon-play');
       case 'stop':
-        return (
-          <img
-            src={usesPauseMode ? (!isPlaying || isMomentaryActive ? pauseIconOn : pauseIcon) : !isPlaying || isMomentaryActive ? stopIconOn : stopIcon}
-            alt=""
-            className="luna-icon luna-icon-asset"
-          />
-        );
+        return renderMaskIcon(stopSvg);
       case 'record':
-        return <img src={isRecording ? recordIconOn : recordIcon} alt="" className="luna-icon luna-icon-asset luna-icon-record" />;
+        return renderMaskIcon(recordSvg, 'luna-icon-record');
       case 'loop':
-        return <img src={isLooping ? loopIconOn : loopIcon} alt="" className="luna-icon luna-icon-asset luna-icon-loop" />;
+        return renderMaskIcon(loopSvg, 'luna-icon-loop');
       case 'returnToZero':
-        return <img src={isMomentaryActive ? startIconOn : startIcon} alt="" className="luna-icon luna-icon-asset luna-icon-wide" />;
+        return renderMaskIcon(rtzSvg, 'luna-icon-wide');
       case 'goToEnd':
-        return <img src={isMomentaryActive ? endIconOn : endIcon} alt="" className="luna-icon luna-icon-asset luna-icon-wide" />;
+        return renderMaskIcon(gteSvg);
       case 'click':
         return <img src={trackingUiState.click ? clickIconOn : clickIcon} alt="" className="luna-icon luna-icon-asset" />;
       case 'countIn':
@@ -996,9 +989,9 @@ const App = () => {
           </span>
         );
       case 'undo':
-        return <img src={undoIcon} alt="" className="luna-icon luna-icon-asset" />;
+        return renderMaskIcon(undoSvg);
       case 'redo':
-        return <img src={redoIcon} alt="" className="luna-icon luna-icon-asset" />;
+        return renderMaskIcon(redoSvg);
       default:
         return renderCommandIcon(commandVisuals[commandId]?.icon ?? 'view');
     }
@@ -1308,12 +1301,7 @@ const App = () => {
     <main className="app-shell">
       <section className={`topbar ${isProductionRemote ? 'production-header' : ''}`}>
         <div className="brand-block">
-          <img
-            src={state?.lunaDetected ? uaDiamondOn : uaDiamondMouseover}
-            alt={state?.lunaDetected ? 'LUNA detected' : 'LUNA not detected'}
-            className="ua-status-logo"
-          />
-          <h1>LUNA STUDIO REMOTE</h1>
+          <h1>LUNA Companion</h1>
         </div>
 
       </section>
