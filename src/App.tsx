@@ -1,8 +1,6 @@
 import { useEffect, useRef, useState, type CSSProperties, type PointerEvent, type ReactNode } from 'react';
 import { commandRegistry, type CommandDefinition, type CommandId } from '../shared/commands';
 import type { CommandResponse, RemoteState, RemoteStateStreamEvent } from './types';
-import clickIcon from '../luna-image-resources/buttons/icon_click.png';
-import clickIconOn from '../luna-image-resources/buttons/icon_click_on.png';
 import countIn1Icon from '../luna-image-resources/buttons/icon_count_in_1.png';
 import countIn1IconOn from '../luna-image-resources/buttons/icon_count_in_1_on.png';
 import countIn2Icon from '../luna-image-resources/buttons/icon_count_in_2.png';
@@ -21,6 +19,7 @@ import focusedSwitchNeutral from '../assets_v2/switch_fader@2x.png';
 import focusedSwitchBlue from '../assets_v2/switch_fader_blu@2x.png';
 import focusedSwitchRed from '../assets_v2/switch_fader_red@2x.png';
 import focusedSwitchYellow from '../assets_v2/switch_fader_yel@2x.png';
+import clickSvg from '../assets_original/transport/click.svg';
 import playSvg from '../assets_original/transport/play.svg';
 import stopSvg from '../assets_original/transport/stop.svg';
 import recordSvg from '../assets_original/transport/record.svg';
@@ -967,7 +966,7 @@ const App = () => {
       case 'goToEnd':
         return renderMaskIcon(gteSvg);
       case 'click':
-        return <img src={trackingUiState.click ? clickIconOn : clickIcon} alt="" className="luna-icon luna-icon-asset" />;
+        return renderMaskIcon(clickSvg);
       case 'countIn':
         return (
           <span className="count-in-cluster">
