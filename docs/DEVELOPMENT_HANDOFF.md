@@ -2,6 +2,67 @@
 
 ## Current Status
 
+This checkpoint also includes the active Focus Track layout prototype on branch `v2-focus-track-swipe-experiment`.
+
+The branch now contains a reversible two-view remote experiment:
+
+- `Transport` view keeps the transport-only layout.
+- `Focus Track` view prototypes a dedicated vertical channel-strip screen for the focused track.
+
+## Focus Track Prototype Status
+
+- A top-level view toggle switches between `Transport` and `Focus Track`.
+- The Focus Track screen reuses existing focused-track state, transport command wiring, and focused-fader send/update logic.
+- Focus Track navigation mode is toggled from the top track-name display.
+- In normal mode, the Focus Track buttons are:
+  - Record
+  - Solo
+  - Mute
+  - Plus
+- In navigation mode, the top two button positions temporarily become:
+  - Track Up
+  - Track Down
+- The Plus action still reuses the existing version-action modal path.
+
+## Focus Track Visual Notes
+
+- Original trademarked transport art has been replaced in active usage with the repo's original SVG assets, including the `-v2` transport replacements that are currently wired for:
+  - Click
+  - Loop
+  - Go To End
+  - Return To Zero
+  - Undo
+  - Redo
+  - Plus
+- The Focus Track view uses `assets_original/focus-channel/fader-cap-v2.png` for the vertical fader cap.
+- The Focus Track layout is still an experiment and remains mid-polish:
+  - fader/meter proportions have been iterated heavily
+  - scale-label alignment is close but still visual-tuning territory
+  - the vertical system was recently compressed to shorten visible travel
+
+## Focus Track Logic Reuse
+
+- `state?.focusedTrack`
+- `sendCommand(...)`
+- `focusedStripNavMode`
+- `focusedStripVersionPanelOpen`
+- `sendFocusedFaderPosition(...)`
+- `queueFocusedFaderPosition(...)`
+- `fetchState()`
+- `beginFocusTrackVerticalFaderDrag`
+- `updateFocusTrackVerticalFaderDrag`
+- `endFocusTrackVerticalFaderDrag`
+
+## Suggested Next Check
+
+- Run `npm run desktop:dev`
+- Switch between `Transport` and `Focus Track`
+- Verify Focus Track navigation mode from the top readout
+- Check whether the fader path, scale labels, and LED meter now feel correctly proportioned on the target display
+- If further visual tuning is needed, prefer CSS-only iteration inside the Focus Track selectors before touching command/state logic
+
+## Previous Checkpoint
+
 This checkpoint is for the completed focused-strip recording workflow on branch `v2-focused-track-remote`.
 
 The core recording workflow is operational: transport, record, focused arm/solo/mute, focused track feedback, meter/peak feedback, plus modal actions, and bidirectional focused fader control are working.

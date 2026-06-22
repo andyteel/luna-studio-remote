@@ -11,6 +11,7 @@ import focusedTrackPanel from '../assets_v2/track-panel@2x.png';
 import focusedFaderPanel from '../assets_v2/fader-panel@2x.png';
 import focusedFaderTrack from '../assets_v2/fader-track@2x.png';
 import focusedFaderCap from '../assets_v2/fader_cap@2x.png';
+import focusTrackFaderCapV2 from '../assets_original/focus-channel/fader-cap-v2.png';
 import focusedMeterBg from '../assets_v2/meter_channer_bg@2x.png';
 import focusedMeterOn from '../assets_v2/meter_channel_on@2x.png';
 import focusedMeterClip from '../assets_v2/meter_channel_clip_on@2x.png';
@@ -19,16 +20,16 @@ import focusedSwitchNeutral from '../assets_v2/switch_fader@2x.png';
 import focusedSwitchBlue from '../assets_v2/switch_fader_blu@2x.png';
 import focusedSwitchRed from '../assets_v2/switch_fader_red@2x.png';
 import focusedSwitchYellow from '../assets_v2/switch_fader_yel@2x.png';
-import clickSvg from '../assets_original/transport/click.svg';
+import clickSvg from '../assets_original/transport/click-v2.svg';
 import playSvg from '../assets_original/transport/play.svg';
 import stopSvg from '../assets_original/transport/stop.svg';
 import recordSvg from '../assets_original/transport/record.svg';
-import loopSvg from '../assets_original/transport/loop.svg';
-import gteSvg from '../assets_original/transport/gte.svg';
-import rtzSvg from '../assets_original/transport/rtz.svg';
-import undoSvg from '../assets_original/transport/undo.svg';
-import redoSvg from '../assets_original/transport/redo.svg';
-import plusSvg from '../assets_original/transport/plus.svg';
+import loopSvg from '../assets_original/transport/loop-v2.svg';
+import gteSvg from '../assets_original/transport/gte-v2.svg';
+import rtzSvg from '../assets_original/transport/rtz-v2.svg';
+import undoSvg from '../assets_original/transport/undo-v2.svg';
+import redoSvg from '../assets_original/transport/redo-v2.svg';
+import plusSvg from '../assets_original/transport/plus-v2.svg';
 
 const statusPollMs = 100;
 const useCssFocusedMeterTest = true;
@@ -165,7 +166,11 @@ const clamp01 = (value: number | null | undefined): number => {
 };
 
 const formatFocusedFaderGainDb = (gainDbText: string | null | undefined): string => {
-  return gainDbText ?? '--.- dB';
+  if (!gainDbText) {
+    return '--.- dB';
+  }
+
+  return gainDbText.replace(/^gain\s*/i, '');
 };
 const trackingTransportGlyphCommands: CommandId[] = [
   'record',
@@ -180,16 +185,12 @@ const trackingTransportGlyphCommands: CommandId[] = [
   'redo',
 ];
 
-const createMaskIconStyle = (src: string): CSSProperties => ({
-  WebkitMaskImage: `url(${src})`,
-  maskImage: `url(${src})`,
-});
-
-const renderMaskIcon = (src: string, className = ''): ReactNode => (
-  <span
+const renderImageIcon = (src: string, className = ''): ReactNode => (
+  <img
+    src={src}
+    alt=""
     aria-hidden="true"
-    className={`luna-icon luna-icon-mask ${className}`.trim()}
-    style={createMaskIconStyle(src)}
+    className={`luna-icon luna-icon-asset ${className}`.trim()}
   />
 );
 
@@ -354,21 +355,21 @@ const renderSvgIcon = (icon: string): ReactNode => {
 const renderCommandIcon = (icon: string): ReactNode => {
   switch (icon) {
     case 'play':
-      return renderMaskIcon(playSvg, 'luna-icon-play');
+      return renderImageIcon(playSvg, 'luna-icon-play');
     case 'stop':
-      return renderMaskIcon(stopSvg);
+      return renderImageIcon(stopSvg);
     case 'undo':
-      return renderMaskIcon(undoSvg);
+      return renderImageIcon(undoSvg);
     case 'redo':
-      return renderMaskIcon(redoSvg);
+      return renderImageIcon(redoSvg);
     case 'record':
-      return renderMaskIcon(recordSvg, 'luna-icon-record');
+      return renderImageIcon(recordSvg, 'luna-icon-record');
     case 'loop':
-      return renderMaskIcon(loopSvg, 'luna-icon-loop');
+      return renderImageIcon(loopSvg, 'luna-icon-loop');
     case 'gte':
-      return renderMaskIcon(gteSvg);
+      return renderImageIcon(gteSvg);
     case 'rtz':
-      return renderMaskIcon(rtzSvg, 'luna-icon-wide');
+      return renderImageIcon(rtzSvg, 'luna-icon-wide');
     default:
       return renderSvgIcon(icon);
   }
@@ -453,21 +454,23 @@ const renderFocusedStripButtonIcon = (icon: FocusedStripIcon): ReactNode => {
     case 'version':
       return (
         <span className="focused-strip-glyph focused-strip-glyph-version" aria-hidden="true">
-          {renderMaskIcon(plusSvg, 'focused-strip-mask-icon focused-strip-mask-icon-plus')}
+          {renderImageIcon(plusSvg, 'focused-strip-svg-icon focused-strip-svg-icon-plus')}
         </span>
       );
     case 'bankLeft':
-      return renderMaskIcon(rtzSvg, 'focused-strip-mask-icon focused-strip-nav-image focused-strip-nav-image-bank-left');
+      return renderImageIcon(rtzSvg, 'focused-strip-svg-icon focused-strip-nav-image focused-strip-nav-image-bank-left');
     case 'channelLeft':
-      return renderMaskIcon(playSvg, 'focused-strip-mask-icon focused-strip-nav-image focused-strip-nav-image-channel-left');
+      return renderImageIcon(playSvg, 'focused-strip-svg-icon focused-strip-nav-image focused-strip-nav-image-channel-left');
     case 'channelRight':
-      return renderMaskIcon(playSvg, 'focused-strip-mask-icon focused-strip-nav-image focused-strip-nav-image-channel-right');
+      return renderImageIcon(playSvg, 'focused-strip-svg-icon focused-strip-nav-image focused-strip-nav-image-channel-right');
     case 'bankRight':
-      return renderMaskIcon(gteSvg, 'focused-strip-mask-icon focused-strip-nav-image focused-strip-nav-image-bank-right');
+      return renderImageIcon(gteSvg, 'focused-strip-svg-icon focused-strip-nav-image focused-strip-nav-image-bank-right');
     default:
       return null;
   }
 };
+
+type ActiveRemoteView = 'transport' | 'focus';
 
 const App = () => {
   const [state, setState] = useState<RemoteState | null>(null);
@@ -487,6 +490,7 @@ const App = () => {
   const [focusedStripNavMode, setFocusedStripNavMode] = useState(false);
   const [focusedStripVersionPanelOpen, setFocusedStripVersionPanelOpen] = useState(false);
   const [focusedStripVersionPressed, setFocusedStripVersionPressed] = useState(false);
+  const [activeRemoteView, setActiveRemoteView] = useState<ActiveRemoteView>('transport');
   const [focusedFaderDrag, setFocusedFaderDrag] = useState<{
     active: boolean;
     normalized: number;
@@ -494,6 +498,7 @@ const App = () => {
   } | null>(null);
   const focusedStripActionSheetRef = useRef<HTMLDivElement | null>(null);
   const focusedFaderHitZoneRef = useRef<HTMLDivElement | null>(null);
+  const focusTrackVerticalFaderRef = useRef<HTMLDivElement | null>(null);
   const holdAnimationRef = useRef<number | null>(null);
   const focusedFaderSendAnimationRef = useRef<number | null>(null);
   const focusedFaderPendingNormalizedRef = useRef<number | null>(null);
@@ -731,6 +736,22 @@ const App = () => {
     return clamp01((clientX - trackLeft) / trackWidth);
   };
 
+  const getFocusedFaderNormalizedFromClientY = (clientY: number): number | null => {
+    const hitZone = focusTrackVerticalFaderRef.current;
+
+    if (!(hitZone instanceof HTMLElement)) {
+      return null;
+    }
+
+    const hitZoneRect = hitZone.getBoundingClientRect();
+
+    if (hitZoneRect.height <= 0) {
+      return null;
+    }
+
+    return clamp01(1 - (clientY - hitZoneRect.top) / hitZoneRect.height);
+  };
+
   const sendFocusedFaderPosition = async (
     normalized: number,
     phase: 'start' | 'move' | 'end',
@@ -867,6 +888,76 @@ const App = () => {
     setFocusedFaderDrag(null);
   };
 
+  const beginFocusTrackVerticalFaderDrag = (event: PointerEvent<HTMLDivElement>) => {
+    if (!state?.focusedTrackReady) {
+      return;
+    }
+
+    event.preventDefault();
+    event.currentTarget.setPointerCapture(event.pointerId);
+
+    const normalized = getFocusedFaderNormalizedFromClientY(event.clientY);
+
+    if (normalized === null) {
+      return;
+    }
+
+    focusedFaderLastSentNormalizedRef.current = normalized;
+    setFocusedFaderDrag({
+      active: true,
+      normalized,
+      gainDbText: state.focusedTrack.fader.gainDbText,
+    });
+    void sendFocusedFaderPosition(normalized, 'start');
+  };
+
+  const updateFocusTrackVerticalFaderDrag = (event: PointerEvent<HTMLDivElement>) => {
+    if (!focusedFaderDrag?.active) {
+      return;
+    }
+
+    event.preventDefault();
+
+    const normalized = getFocusedFaderNormalizedFromClientY(event.clientY);
+
+    if (normalized === null) {
+      return;
+    }
+
+    setFocusedFaderDrag((current) => (
+      current?.active
+        ? {
+            ...current,
+            normalized,
+          }
+        : current
+    ));
+    queueFocusedFaderPosition(normalized);
+  };
+
+  const endFocusTrackVerticalFaderDrag = (event: PointerEvent<HTMLDivElement>) => {
+    if (!focusedFaderDrag?.active) {
+      return;
+    }
+
+    event.preventDefault();
+
+    if (focusedFaderSendAnimationRef.current !== null) {
+      window.cancelAnimationFrame(focusedFaderSendAnimationRef.current);
+      focusedFaderSendAnimationRef.current = null;
+    }
+
+    const pendingNormalized = focusedFaderPendingNormalizedRef.current;
+    focusedFaderPendingNormalizedRef.current = null;
+    const normalized =
+      getFocusedFaderNormalizedFromClientY(event.clientY) ?? pendingNormalized ?? focusedFaderDrag.normalized;
+    focusedFaderLastSentNormalizedRef.current = normalized;
+    void sendFocusedFaderPosition(normalized, 'end').finally(() => {
+      void fetchState();
+    });
+    setFocusedFaderDrag(null);
+  };
+
   const beginHold = (command: CommandDefinition) => {
     if (!command.confirm) {
       void sendCommand(command);
@@ -949,24 +1040,39 @@ const App = () => {
     return '';
   };
 
+  const getFocusTrackButtonStateClass = (commandId: CommandId): string => {
+    const focusedTrack = state?.focusedTrack;
+
+    switch (commandId) {
+      case 'focusedTrackRecordArm':
+        return focusedTrack?.arm ? 'luna-button-state-red luna-button-active' : '';
+      case 'focusedTrackSolo':
+        return focusedTrack?.solo ? 'luna-button-state-yellow luna-button-active' : '';
+      case 'focusedTrackMute':
+        return focusedTrack?.mute ? 'luna-button-state-blue luna-button-active' : '';
+      default:
+        return '';
+    }
+  };
+
   const renderTrackingTransportGlyph = (commandId: CommandId): ReactNode => {
     const isCountInEnabled = trackingUiState.countIn;
 
     switch (commandId) {
       case 'playStop':
-        return renderMaskIcon(playSvg, 'luna-icon-play');
+        return renderImageIcon(playSvg, 'luna-icon-play');
       case 'stop':
-        return renderMaskIcon(stopSvg);
+        return renderImageIcon(stopSvg);
       case 'record':
-        return renderMaskIcon(recordSvg, 'luna-icon-record');
+        return renderImageIcon(recordSvg, 'luna-icon-record');
       case 'loop':
-        return renderMaskIcon(loopSvg, 'luna-icon-loop');
+        return renderImageIcon(loopSvg, 'luna-icon-loop');
       case 'returnToZero':
-        return renderMaskIcon(rtzSvg, 'luna-icon-wide');
+        return renderImageIcon(rtzSvg, 'luna-icon-wide');
       case 'goToEnd':
-        return renderMaskIcon(gteSvg);
+        return renderImageIcon(gteSvg);
       case 'click':
-        return renderMaskIcon(clickSvg);
+        return renderImageIcon(clickSvg);
       case 'countIn':
         return (
           <span className="count-in-cluster">
@@ -988,9 +1094,9 @@ const App = () => {
           </span>
         );
       case 'undo':
-        return renderMaskIcon(undoSvg);
+        return renderImageIcon(undoSvg);
       case 'redo':
-        return renderMaskIcon(redoSvg);
+        return renderImageIcon(redoSvg);
       default:
         return renderCommandIcon(commandVisuals[commandId]?.icon ?? 'view');
     }
@@ -1296,6 +1402,161 @@ const App = () => {
     );
   };
 
+  const renderFocusTrackPrototypeView = () => {
+    const focusedTrack = state?.focusedTrack;
+    const faderPosition = clamp01(
+      focusedFaderDrag?.active
+        ? focusedFaderDrag.normalized
+        : focusedTrack?.fader.normalized ?? 0.5,
+    );
+    const meterLevel = clamp01(focusedTrack?.meter.normalized);
+    const hasPeakHoldLamp = focusedTrack?.meter.clip === true;
+    const trackName = focusedTrack?.name ?? (state?.focusedTrackReady ? 'TRACK' : 'NO TRACK');
+    const faderGainDb = formatFocusedFaderGainDb(
+      focusedFaderDrag?.active
+        ? focusedFaderDrag.gainDbText ?? focusedTrack?.fader.gainDbText
+        : focusedTrack?.fader.gainDbText,
+    );
+    const focusTrackStyle = {
+      '--focus-track-fader-level': `${faderPosition * 100}%`,
+      '--focus-track-meter-level': `${meterLevel * 100}%`,
+    } as CSSProperties;
+    const focusActionButtons: Array<{
+      position: FocusedStripButtonPosition;
+      commandId: CommandId;
+      icon: FocusedStripIcon;
+      autoExitNavigation?: boolean;
+    }> = focusedStripNavMode
+      ? [
+          { position: 'record', commandId: 'focusedSelectedTrackUp', icon: 'bankLeft', autoExitNavigation: true },
+          { position: 'solo', commandId: 'focusedSelectedTrackDown', icon: 'bankRight', autoExitNavigation: true },
+          { position: 'mute', commandId: 'focusedTrackMute', icon: 'mute' },
+          { position: 'version', commandId: 'newTrackVersion', icon: 'version' },
+        ]
+      : focusedStripNormalButtons;
+
+    return (
+      <section className="focus-track-view" aria-label="Focus track view" style={focusTrackStyle}>
+        <div className="focus-track-card">
+          <div className="focus-track-header">
+            <button
+              type="button"
+              className={`focus-track-readout ${focusedStripNavMode ? 'is-navigation-mode' : ''}`}
+              onClick={() => setFocusedStripNavMode((current) => !current)}
+              aria-pressed={focusedStripNavMode}
+              aria-label="Toggle focused track navigation mode"
+            >
+              <span className="focus-track-name">{trackName}</span>
+            </button>
+          </div>
+
+          <div className="focus-track-action-grid" aria-label="Focused track controls">
+            {focusActionButtons.map((spec) => {
+              const command = commandLookup.get(spec.commandId);
+
+              if (!command) {
+                return null;
+              }
+
+              const isDisabled =
+                busyCommand !== null ||
+                Boolean(command.mcuControl && !state?.focusedTrackReady) ||
+                Boolean(command.mcuNavigation && !state?.midiConnected);
+              const isPressed = flashCommand === command.id;
+              const isVersionMenuTrigger = spec.position === 'version';
+
+              return (
+                <button
+                  key={spec.position}
+                  className={`remote-button luna-button tracking-flat-button focus-track-surface-button focus-track-action-button focus-track-action-button-${spec.position} ${isPressed ? 'is-flashing' : ''} ${getFocusTrackButtonStateClass(command.id)}`}
+                  disabled={isDisabled}
+                  onClick={() => {
+                    if (isVersionMenuTrigger) {
+                      setFocusedStripVersionPanelOpen((current) => !current);
+                      setFocusedStripVersionPressed(false);
+                      return;
+                    }
+
+                    void sendCommand(command);
+
+                    if (spec.autoExitNavigation) {
+                      setFocusedStripNavMode(false);
+                    }
+                  }}
+                  type="button"
+                  aria-label={command.label}
+                  aria-pressed={!isVersionMenuTrigger ? Boolean(getFocusTrackButtonStateClass(command.id)) : undefined}
+                  title={command.label}
+                >
+                  <span className="button-icon transport-icon focus-track-surface-icon" aria-hidden="true">
+                    {renderFocusedStripButtonIcon(spec.icon)}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="focus-track-strip">
+            <div className="focus-track-fader-column">
+              <div
+                className="focus-track-fader-hit-zone"
+                ref={focusTrackVerticalFaderRef}
+                onPointerDown={beginFocusTrackVerticalFaderDrag}
+                onPointerMove={updateFocusTrackVerticalFaderDrag}
+                onPointerUp={endFocusTrackVerticalFaderDrag}
+                onPointerCancel={endFocusTrackVerticalFaderDrag}
+                role="slider"
+                aria-label="Focused track fader"
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-valuenow={Math.round(faderPosition * 100)}
+                aria-valuetext={faderGainDb}
+                aria-disabled={!state?.focusedTrackReady}
+                tabIndex={state?.focusedTrackReady ? 0 : -1}
+              >
+                <span className="focus-track-fader-rail" aria-hidden="true" />
+                <img src={focusTrackFaderCapV2} alt="" className="focus-track-fader-cap" aria-hidden="true" />
+              </div>
+              <div className="focus-track-fader-scale" aria-hidden="true">
+                <span>12</span>
+                <span>6</span>
+                <span>0</span>
+                <span>-6</span>
+                <span>-12</span>
+                <span>-20</span>
+                <span>-32</span>
+                <span>-56</span>
+              </div>
+            </div>
+
+            <div className="focus-track-meter-stack" aria-hidden="true">
+              <span className="focus-track-meter-rail">
+                <span className="focus-track-meter-scale">
+                  <span>0</span>
+                  <span>3</span>
+                  <span>6</span>
+                  <span>9</span>
+                  <span>12</span>
+                  <span>15</span>
+                  <span>18</span>
+                  <span>21</span>
+                  <span>27</span>
+                  <span>36</span>
+                  <span>46</span>
+                  <span>60</span>
+                </span>
+                <span className="focus-track-meter-fill" />
+                {hasPeakHoldLamp ? <span className="focus-track-peak-indicator">PEAK</span> : null}
+              </span>
+            </div>
+          </div>
+
+          <span className="focus-track-meter-readout">{faderGainDb}</span>
+        </div>
+      </section>
+    );
+  };
+
   return (
     <main className="app-shell">
       <section className={`topbar ${isProductionRemote ? 'production-header' : ''}`}>
@@ -1308,46 +1569,68 @@ const App = () => {
       <section className={`layout layout-tracking ${isProductionRemote ? 'layout-production' : ''}`}>
         <div className="remote-stage">
           <section className="tab-panel" aria-label="Tracking controls">
-            <div className="focused-channel-strip-row">
-              {renderFocusedChannelStrip()}
+            <div className="remote-view-toggle" role="tablist" aria-label="Remote view mode">
+              <button
+                type="button"
+                className={`remote-view-toggle-button ${activeRemoteView === 'transport' ? 'is-active' : ''}`}
+                aria-pressed={activeRemoteView === 'transport'}
+                onClick={() => setActiveRemoteView('transport')}
+              >
+                Transport
+              </button>
+              <button
+                type="button"
+                className={`remote-view-toggle-button ${activeRemoteView === 'focus' ? 'is-active' : ''}`}
+                aria-pressed={activeRemoteView === 'focus'}
+                onClick={() => setActiveRemoteView('focus')}
+              >
+                Focus Track
+              </button>
             </div>
-            <div className="panel-group">
-              <div className="tracking-console-layout">
-                {productionTrackingRows.map((row) => (
-                  <div key={row.commands.join('-')} className={`button-grid ${row.className}`}>
-                    {row.commands.map((commandId) => {
-                      const command = commandLookup.get(commandId);
 
-                      if (!command) {
-                        return null;
-                      }
+            {activeRemoteView === 'transport' ? (
+              <>
+                <div className="panel-group">
+                  <div className="tracking-console-layout">
+                    {productionTrackingRows.map((row) => (
+                      <div key={row.commands.join('-')} className={`button-grid ${row.className}`}>
+                        {row.commands.map((commandId) => {
+                          const command = commandLookup.get(commandId);
 
-                      const trackingClassMap: Partial<Record<CommandId, string>> = {
-                        record: 'record-button tracking-record',
-                        playStop: 'transport-button tracking-primary-button',
-                        stop: 'transport-button tracking-primary-button',
-                        click: 'utility-button tracking-medium-button',
-                        countIn: 'utility-button tracking-medium-button',
-                        loop: 'utility-button tracking-compact-button',
-                        undo: 'utility-button tracking-compact-button',
-                        redo: 'utility-button tracking-compact-button',
-                        goToEnd: 'transport-button tracking-compact-button',
-                        returnToZero: 'transport-button tracking-compact-button',
-                        nextBar: 'utility-button tracking-compact-button tracking-text-command',
-                        previousBar: 'utility-button tracking-compact-button tracking-text-command',
-                        nextMarker: 'utility-button tracking-compact-button tracking-text-command',
-                        previousMarker: 'utility-button tracking-compact-button tracking-text-command',
-                        createMarker: 'utility-button tracking-compact-button tracking-text-command',
-                        togglePlayFromStopLocation: 'utility-button tracking-compact-button tracking-text-command tracking-play-from-stop',
-                        togglePrePostRoll: 'utility-button tracking-compact-button tracking-text-command tracking-pre-post-roll',
-                      };
+                          if (!command) {
+                            return null;
+                          }
 
-                      return renderCommandButton(command, trackingClassMap[command.id] ?? 'utility-button');
-                    })}
+                          const trackingClassMap: Partial<Record<CommandId, string>> = {
+                            record: 'record-button tracking-record',
+                            playStop: 'transport-button tracking-primary-button',
+                            stop: 'transport-button tracking-primary-button',
+                            click: 'utility-button tracking-medium-button',
+                            countIn: 'utility-button tracking-medium-button',
+                            loop: 'utility-button tracking-compact-button',
+                            undo: 'utility-button tracking-compact-button',
+                            redo: 'utility-button tracking-compact-button',
+                            goToEnd: 'transport-button tracking-compact-button',
+                            returnToZero: 'transport-button tracking-compact-button',
+                            nextBar: 'utility-button tracking-compact-button tracking-text-command',
+                            previousBar: 'utility-button tracking-compact-button tracking-text-command',
+                            nextMarker: 'utility-button tracking-compact-button tracking-text-command',
+                            previousMarker: 'utility-button tracking-compact-button tracking-text-command',
+                            createMarker: 'utility-button tracking-compact-button tracking-text-command',
+                            togglePlayFromStopLocation: 'utility-button tracking-compact-button tracking-text-command tracking-play-from-stop',
+                            togglePrePostRoll: 'utility-button tracking-compact-button tracking-text-command tracking-pre-post-roll',
+                          };
+
+                          return renderCommandButton(command, trackingClassMap[command.id] ?? 'utility-button');
+                        })}
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-            </div>
+                </div>
+              </>
+            ) : (
+              renderFocusTrackPrototypeView()
+            )}
           </section>
 
           {focusedStripVersionPanelOpen && !focusedStripNavMode ? (
