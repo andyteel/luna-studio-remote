@@ -15,7 +15,34 @@
 :root {
   color-scheme: dark;
   font-family: "Avenir Next", "Segoe UI", sans-serif;
-  --luna-app-bg: #262a2d;
+  --luna-app-bg: #23272a;
+  --luna-graphite-grain-opacity: 0.56;
+  --remote-frame-scale: 1;
+  --remote-panel-width: 380px;
+  --transport-grid-width: 330px;
+  --transport-record-height: 150px;
+  --transport-primary-height: 125px;
+  --transport-medium-height: 100px;
+  --transport-compact-height: 75px;
+  --transport-row-gap: 2px;
+  --remote-content-height: calc(
+    var(--transport-record-height) +
+    var(--transport-primary-height) +
+    var(--transport-medium-height) +
+    var(--transport-compact-height) +
+    var(--transport-compact-height) +
+    var(--transport-compact-height) +
+    var(--transport-compact-height) +
+    var(--transport-row-gap) +
+    var(--transport-row-gap) +
+    var(--transport-row-gap) +
+    var(--transport-row-gap) +
+    var(--transport-row-gap) +
+    var(--transport-row-gap)
+  );
+  --focus-track-button-height: 44px;
+  --focus-track-fader-height: 280px;
+  --focus-track-meter-height: 364px;
   --luna-panel-bg: #1c1f21;
   --luna-bg: #0b0d10;
   --luna-panel: #23272d;
@@ -58,7 +85,9 @@ body,
 
 #root {
   min-height: 100vh;
-  background: #3f4449;
+  background:
+    radial-gradient(circle at 50% 0%, rgba(58, 65, 70, 0.28) 0%, rgba(58, 65, 70, 0) 42%),
+    linear-gradient(180deg, #20262b 0%, #151a1e 45%, #080a0c 100%);
 }
 
 html,
@@ -95,10 +124,37 @@ button:focus-visible {
 
 .app-shell {
   position: relative;
+  isolation: isolate;
   width: min(1320px, 100%);
   min-height: 100vh;
   margin: 0 auto;
   padding: max(0.8rem, env(safe-area-inset-top)) 0.8rem max(1rem, env(safe-area-inset-bottom));
+}
+
+.svg-filter-defs {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+}
+
+.app-shell::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(145deg, rgba(118, 128, 136, 0.36) 0%, rgba(32, 38, 42, 0.08) 42%),
+    #4c565e;
+  filter: url("#powder-coated-graphite-texture");
+  mix-blend-mode: screen;
+  opacity: var(--luna-graphite-grain-opacity);
+}
+
+.app-shell > * {
+  position: relative;
+  z-index: 1;
 }
 
 .topbar,
@@ -175,7 +231,7 @@ button:focus-visible {
 .brand-block h1 {
   margin: 0;
   font-family: "Luna Oxygen Bold", "Avenir Next", sans-serif;
-  font-size: clamp(1.1rem, 2.6vw, 1.55rem);
+  font-size: 1.55rem;
   line-height: 1;
   letter-spacing: 0.08em;
   color: #e5f6fe;
@@ -220,15 +276,18 @@ button:focus-visible {
 .tab-panel {
   display: grid;
   gap: 0.72rem;
+  justify-items: center;
 }
 
 .tab-panel {
   position: relative;
   isolation: isolate;
-  gap: 0.82rem;
-  width: min(100%, 900px);
+  gap: 0.20rem;
+  width: var(--remote-panel-width);
   justify-self: center;
-  padding: 0.65rem 1.15rem 1rem;
+  padding: 1.35rem 1.15rem 1rem;
+  transform: scale(var(--remote-frame-scale));
+  transform-origin: top center;
 }
 
 .tab-panel > * {
@@ -241,7 +300,7 @@ button:focus-visible {
   content: "";
   position: absolute;
   pointer-events: none;
-  border-radius: 22px;
+  border-radius: 15px;
 }
 
 .tab-panel::before {
@@ -253,14 +312,14 @@ button:focus-visible {
 .tab-panel::after {
   inset: 0.5rem 0.55rem 0.55rem;
   z-index: 0;
-  border: 2px solid rgba(236, 233, 225, 0.3);
+  border: 3px solid rgba(236, 233, 225, 0.3);
   box-shadow: none;
 }
 
 .panel-group {
   padding: 0.72rem;
   border-radius: 10px;
-  width: min(100%, 880px);
+  width: max-content;
   justify-self: center;
   border: 0;
   background: transparent;
@@ -302,18 +361,23 @@ button:focus-visible {
 
 .button-grid {
   display: grid;
-  gap: 0.6rem;
+  gap: var(--transport-row-gap);
+  min-height: 0;
 }
 
 .tracking-console-layout {
   display: grid;
-  gap: 0.08rem;
+  gap: var(--transport-row-gap);
+  align-content: start;
+  width: var(--transport-grid-width);
+  min-width: var(--transport-grid-width);
+  justify-self: center;
 }
 
 .tracking-row-full,
 .tracking-row-halves,
 .tracking-row-thirds {
-  gap: 0.08rem;
+  gap: var(--transport-row-gap);
 }
 
 .tracking-row-full {
@@ -368,7 +432,7 @@ button:focus-visible {
 }
 
 .focus-track-view {
-  width: min(100%, 520px);
+  width: max-content;
   justify-self: center;
   display: grid;
   gap: 0.9rem;
@@ -380,12 +444,39 @@ button:focus-visible {
 }
 
 .focus-track-card {
+  position: relative;
+  isolation: isolate;
   display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  align-content: start;
   gap: 0.95rem;
+  width: fit-content;
+  max-width: 100%;
+  height: var(--remote-content-height);
+  min-height: var(--remote-content-height);
+  justify-self: center;
   padding: 1rem 1rem 1.15rem;
-  border-radius: 26px;
-  background: #596066;
-  border: 1px solid rgba(236, 233, 225, 0.1);
+  border-radius: 13px;
+  overflow: hidden;
+  background: linear-gradient(180deg, #778188 0%, #6a747b 52%, #5e686f 100%);
+  border: 0;
+  box-shadow: none;
+}
+
+.focus-track-card-grain {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  pointer-events: none;
+  mix-blend-mode: multiply;
+  opacity: 0.42;
+}
+
+.focus-track-card > :not(.focus-track-card-grain) {
+  position: relative;
+  z-index: 1;
 }
 
 .focus-track-header {
@@ -432,7 +523,7 @@ button:focus-visible {
 
 .focus-track-name {
   font-family: "Luna Oxygen Bold", "Avenir Next", sans-serif;
-  font-size: clamp(1.18rem, 3.5vw, 1.6rem);
+  font-size: 1.38rem;
   letter-spacing: 0.08em;
   color: #d9ef78;
   overflow: hidden;
@@ -456,9 +547,9 @@ button:focus-visible {
 .focus-track-surface-button {
   width: 92px;
   min-width: 92px;
-  height: 44px;
-  min-height: 44px;
-  max-height: 44px;
+  height: var(--focus-track-button-height);
+  min-height: var(--focus-track-button-height);
+  max-height: var(--focus-track-button-height);
   display: grid;
   justify-items: center;
   align-content: center;
@@ -511,8 +602,8 @@ button:focus-visible {
 }
 
 .focus-track-action-button {
-  height: 44px;
-  min-height: 44px;
+  height: var(--focus-track-button-height);
+  min-height: var(--focus-track-button-height);
 }
 
 .focus-track-action-button-record {
@@ -535,9 +626,11 @@ button:focus-visible {
   display: grid;
   grid-template-columns: 92px 92px;
   column-gap: 0.7rem;
-  align-items: start;
+  align-items: stretch;
   justify-self: center;
+  align-self: stretch;
   width: 196px;
+  min-height: 0;
 }
 
 .focus-track-fader-column {
@@ -545,7 +638,7 @@ button:focus-visible {
   grid-template-columns: 34px 46px;
   column-gap: 0.92rem;
   align-items: stretch;
-  min-height: 430px;
+  min-height: 0;
   justify-self: start;
   padding-left: 18px;
   transform: translateY(30px);
@@ -556,8 +649,8 @@ button:focus-visible {
   grid-template-rows: repeat(8, minmax(0, 1fr));
   align-content: stretch;
   justify-items: start;
-  min-height: 231px;
-  height: min(33vh, 280px);
+  height: 100%;
+  min-height: 0;
   padding-block: 0;
   color: #2a2a2a;
   font-family: "Luna Oxygen Bold", "Avenir Next", sans-serif;
@@ -580,8 +673,8 @@ button:focus-visible {
 .focus-track-fader-hit-zone {
   position: relative;
   width: 34px;
-  min-height: 231px;
-  height: min(33vh, 280px);
+  height: 100%;
+  min-height: 0;
   display: grid;
   place-items: center;
   align-self: start;
@@ -629,9 +722,10 @@ button:focus-visible {
 .focus-track-meter-stack {
   display: grid;
   justify-items: center;
-  align-content: start;
+  align-content: stretch;
   gap: 0.35rem;
   justify-self: center;
+  min-height: 0;
 }
 
 .focus-track-meter-rail {
@@ -640,8 +734,8 @@ button:focus-visible {
   grid-template-columns: 14px 32px;
   gap: 0.5rem;
   align-items: stretch;
-  min-height: 301px;
-  height: min(42vh, 364px);
+  height: 100%;
+  min-height: 0;
   width: 46px;
   padding: 0.2rem 0.15rem 0.2rem 0.15rem;
   border-radius: 10px;
@@ -917,7 +1011,7 @@ button:focus-visible {
   z-index: 40;
   display: grid;
   place-items: center;
-  padding: clamp(20px, 5vw, 40px);
+  padding: 32px;
   background: rgba(6, 9, 11, 0.56);
   backdrop-filter: blur(5px);
 }
@@ -999,7 +1093,7 @@ button:focus-visible {
 }
 
 .focused-strip-action-sheet-button {
-  min-height: clamp(64px, 11vw, 78px);
+  min-height: 78px;
   display: grid;
   place-items: center;
   padding: 0 1.5rem;
@@ -1043,7 +1137,7 @@ button:focus-visible {
 .focused-strip-action-sheet-label {
   display: block;
   font-family: "Luna Oxygen Bold", "Avenir Next", sans-serif;
-  font-size: clamp(0.9rem, 2vw, 1.08rem);
+  font-size: 1.08rem;
   font-weight: 700;
   letter-spacing: 0.08em;
   line-height: 1.16;
@@ -1364,84 +1458,9 @@ button:focus-visible {
     0 0 7px rgba(255, 81, 25, 0.42);
 }
 
-@media (max-width: 760px) {
-  .focus-track-view {
-    width: min(100%, 420px);
-    padding-inline: 0.25rem;
-  }
-
-  .focus-track-strip {
-    grid-template-columns: minmax(0, 1fr) 48px;
-    gap: 0.6rem;
-  }
-
-  .focus-track-action-grid {
-    grid-template-columns: repeat(2, 92px);
-    column-gap: 0.48rem;
-    row-gap: 0.38rem;
-    width: 196px;
-  }
-
-  .focus-track-surface-button {
-    width: 92px;
-    min-width: 92px;
-    height: 40px;
-    min-height: 40px;
-    max-height: 40px;
-  }
-
-  .focus-track-fader-column {
-    grid-template-columns: 30px 38px;
-    gap: 0.42rem;
-    min-height: 360px;
-    padding-left: 12px;
-  }
-
-  .focus-track-strip {
-    grid-template-columns: 92px 92px;
-    column-gap: 0.48rem;
-    width: 196px;
-  }
-
-  .focus-track-fader-hit-zone {
-    min-height: 231px;
-    height: min(33vh, 280px);
-  }
-
-  .focus-track-meter-rail {
-    min-height: 252px;
-    height: min(38vh, 301px);
-  }
-
-  .focus-track-fader-scale {
-    min-height: 231px;
-    height: min(33vh, 280px);
-    font-size: 0.56rem;
-  }
-
-  .focus-track-meter-scale {
-    font-size: 0.56rem;
-  }
-
-  .focus-track-fader-cap {
-    width: 50px;
-  }
-
-  .focus-track-readout {
-    width: 196px;
-  }
-}
-
 .focus-track-action-grid .focus-track-surface-button.remote-button,
 .focus-track-action-grid .focus-track-action-button.remote-button {
-  min-height: 44px;
-}
-
-@media (max-width: 760px) {
-  .focus-track-action-grid .focus-track-surface-button.remote-button,
-  .focus-track-action-grid .focus-track-action-button.remote-button {
-    min-height: 40px;
-  }
+  min-height: var(--focus-track-button-height);
 }
 
 .remote-button {
@@ -1679,30 +1698,36 @@ button:focus-visible {
 
 .record-button {
   grid-column: 1 / -1;
-  min-height: clamp(118px, 16vh, 152px);
+  height: var(--transport-record-height);
+  min-height: var(--transport-record-height);
 }
 
 .tracking-record {
   grid-column: 1 / -1;
-  min-height: clamp(138px, 18.7vh, 178px);
+  height: var(--transport-record-height);
+  min-height: var(--transport-record-height);
 }
 
 .transport-button,
 .nav-button,
 .utility-button {
-  min-height: clamp(92px, 14vh, 128px);
+  height: var(--transport-primary-height);
+  min-height: var(--transport-primary-height);
 }
 
 .tracking-primary-button {
-  min-height: clamp(126px, 15.4vh, 156px);
+  height: var(--transport-primary-height);
+  min-height: var(--transport-primary-height);
 }
 
 .tracking-medium-button {
-  min-height: clamp(86px, 10.5vh, 104px);
+  height: var(--transport-medium-height);
+  min-height: var(--transport-medium-height);
 }
 
 .tracking-compact-button {
-  min-height: clamp(72px, 8.4vh, 86px);
+  height: var(--transport-compact-height);
+  min-height: var(--transport-compact-height);
 }
 
 .button-icon {
@@ -1904,8 +1929,8 @@ button:focus-visible {
 }
 
 .luna-icon {
-  width: clamp(0.95rem, 2vw, 1.25rem);
-  height: clamp(0.95rem, 2vw, 1.25rem);
+  width: 1.25rem;
+  height: 1.25rem;
   color: #f0f2f4;
 }
 
@@ -1947,19 +1972,19 @@ button:focus-visible {
 }
 
 .luna-icon-wide {
-  width: clamp(1.71rem, 3.74vw, 2.36rem);
+  width: 2.36rem;
 }
 
 .tracking-flat-button.tracking-record .transport-icon .luna-icon-record {
-  width: clamp(2.24rem, 4.49vw, 2.91rem);
-  height: clamp(2.24rem, 4.49vw, 2.91rem);
+  width: 2.91rem;
+  height: 2.91rem;
   transform: scale(1.1);
   transform-origin: center;
 }
 
 .tracking-flat-button .luna-icon {
-  width: clamp(1.63rem, 3.74vw, 2.2rem);
-  height: clamp(1.63rem, 3.74vw, 2.2rem);
+  width: 2.2rem;
+  height: 2.2rem;
 }
 
 .tracking-flat-button .count-in-cluster .luna-icon {
@@ -1984,7 +2009,7 @@ button:focus-visible {
 .tracking-text-command .tracking-text-button-label,
 .tracking-play-from-stop .tracking-text-button-label,
 .tracking-pre-post-roll .tracking-text-button-label {
-  font-size: clamp(0.66rem, 1.3vw, 0.84rem);
+  font-size: 0.84rem;
   line-height: 1.12;
 }
 
@@ -1998,7 +2023,7 @@ button:focus-visible {
   z-index: 2;
   text-align: center;
   font-family: "Luna Oxygen Bold", "Avenir Next", sans-serif;
-  font-size: clamp(0.74rem, 1.45vw, 0.94rem);
+  font-size: 0.94rem;
   font-weight: 800;
   letter-spacing: 0.12em;
   line-height: 1.1;
@@ -2037,58 +2062,16 @@ button:focus-visible {
     padding-left: 0.7rem;
     padding-right: 0.7rem;
   }
+}
 
-  .tracking-console-layout,
-  .tracking-row-full,
-  .tracking-row-halves,
-  .tracking-row-thirds {
-    gap: 0.08rem;
-  }
-
-  .luna-icon {
-    width: 1rem;
-    height: 1rem;
-  }
-
-  .tracking-flat-button.tracking-record .transport-icon .luna-icon-record {
-    width: 1.4rem;
-    height: 1.4rem;
-    transform: scale(1.1);
+@media (max-width: 400px) {
+  :root {
+    --remote-frame-scale: 0.96;
   }
 }
 
-@media (orientation: portrait) {
-  .tracking-record {
-    min-height: clamp(134px, 16.3vh, 170px);
-  }
-
-  .tracking-primary-button {
-    min-height: clamp(124px, 14.8vh, 150px);
-  }
-
-  .tracking-medium-button {
-    min-height: clamp(84px, 10vh, 98px);
-  }
-
-  .tracking-compact-button {
-    min-height: clamp(70px, 8.1vh, 82px);
-  }
-}
-
-@media (orientation: landscape) {
-  .tracking-record {
-    min-height: clamp(122px, 16.4vh, 160px);
-  }
-
-  .tracking-primary-button {
-    min-height: clamp(112px, 14.6vh, 144px);
-  }
-
-  .tracking-medium-button {
-    min-height: clamp(76px, 10.2vh, 92px);
-  }
-
-  .tracking-compact-button {
-    min-height: clamp(66px, 8.8vh, 80px);
+@media (max-width: 380px) {
+  :root {
+    --remote-frame-scale: 0.92;
   }
 }

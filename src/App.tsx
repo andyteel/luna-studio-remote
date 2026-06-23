@@ -1438,6 +1438,10 @@ const App = () => {
     return (
       <section className="focus-track-view" aria-label="Focus track view" style={focusTrackStyle}>
         <div className="focus-track-card">
+          <svg className="focus-track-card-grain" aria-hidden="true" focusable="false" viewBox="0 0 100 100" preserveAspectRatio="none">
+            <rect width="100" height="100" fill="#a3adb5" filter="url(#focus-track-card-powder-texture)" />
+          </svg>
+
           <div className="focus-track-header">
             <button
               type="button"
@@ -1558,7 +1562,55 @@ const App = () => {
   };
 
   return (
-    <main className="app-shell">
+    <>
+      <svg className="svg-filter-defs" aria-hidden="true" focusable="false">
+        <filter
+          id="powder-coated-graphite-texture"
+          x="0"
+          y="0"
+          width="100%"
+          height="100%"
+          colorInterpolationFilters="sRGB"
+        >
+          <feTurbulence type="fractalNoise" baseFrequency="0.46" numOctaves="3" seed="17" result="noise" />
+          <feColorMatrix
+            in="noise"
+            type="matrix"
+            values="
+              0.48 0 0 0 0.34
+              0 0.48 0 0 0.36
+              0 0 0.48 0 0.39
+              0 0 0 0.78 0
+            "
+            result="powder"
+          />
+          <feBlend in="SourceGraphic" in2="powder" mode="multiply" />
+        </filter>
+        <filter
+          id="focus-track-card-powder-texture"
+          x="0"
+          y="0"
+          width="100%"
+          height="100%"
+          colorInterpolationFilters="sRGB"
+        >
+          <feTurbulence type="fractalNoise" baseFrequency="1.5" numOctaves="3" seed="29" result="noise" />
+          <feColorMatrix
+            in="noise"
+            type="matrix"
+            values="
+              0.56 0 0 0 0.2
+              0 0.56 0 0 0.22
+              0 0 0.56 0 0.24
+              0 0 0 0.9 0
+            "
+            result="cardPowder"
+          />
+          <feBlend in="SourceGraphic" in2="cardPowder" mode="multiply" />
+        </filter>
+      </svg>
+
+      <main className="app-shell">
       <section className={`topbar ${isProductionRemote ? 'production-header' : ''}`}>
         <div className="brand-block">
           <h1>LUNA Companion</h1>
@@ -1692,7 +1744,8 @@ const App = () => {
         </div>
       </section>
 
-    </main>
+      </main>
+    </>
   );
 };
 
