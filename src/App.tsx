@@ -1522,14 +1522,15 @@ const App = () => {
                 <img src={focusTrackFaderCapV2} alt="" className="focus-track-fader-cap" aria-hidden="true" />
               </div>
               <div className="focus-track-fader-scale" aria-hidden="true">
-                <span>12</span>
-                <span>6</span>
-                <span>0</span>
-                <span>-6</span>
-                <span>-12</span>
-                <span>-20</span>
-                <span>-32</span>
-                <span>-56</span>
+                <span><span className="focus-track-scale-hash">-</span><span>12</span></span>
+                <span><span className="focus-track-scale-hash">-</span><span>6</span></span>
+                <span><span className="focus-track-scale-hash">-</span><span>0</span></span>
+                <span><span className="focus-track-scale-hash">-</span><span>6</span></span>
+                <span><span className="focus-track-scale-hash">-</span><span>12</span></span>
+                <span><span className="focus-track-scale-hash">-</span><span>20</span></span>
+                <span><span className="focus-track-scale-hash">-</span><span>32</span></span>
+                <span><span className="focus-track-scale-hash">-</span><span>56</span></span>
+                <span><span className="focus-track-scale-hash">-</span><span>∞</span></span>
               </div>
             </div>
 
