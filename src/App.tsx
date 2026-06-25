@@ -122,7 +122,7 @@ const momentaryTrackingCommands: CommandId[] = [
   'nextMarker',
 ];
 
-type FocusedStripButtonPosition = 'record' | 'solo' | 'mute' | 'version';
+type FocusedStripButtonPosition = 'trackUp' | 'trackDown' | 'record' | 'solo' | 'mute' | 'version';
 type FocusedStripIcon = FocusedStripButtonPosition | 'bankLeft' | 'channelLeft' | 'channelRight' | 'bankRight';
 
 const focusedStripNormalButtons: Array<{
@@ -1236,7 +1236,7 @@ const App = () => {
     );
     const meterLevel = clamp01(focusedTrack?.meter.normalized);
     const hasPeakHoldLamp = focusedTrack?.meter.clip === true;
-    const liveMeterSegments = Math.max(0, Math.min(31, Math.round(meterLevel * 31)));
+    const liveMeterSegments = Math.max(0, Math.min(63, Math.round(meterLevel * 63)));
     const trackName = focusedTrack?.name ?? (state?.focusedTrackReady ? 'TRACK' : 'NO TRACK');
     const faderGainDb = formatFocusedFaderGainDb(
       focusedFaderDrag?.active
@@ -1411,12 +1411,14 @@ const App = () => {
     );
     const meterLevel = clamp01(focusedTrack?.meter.normalized);
     const hasPeakHoldLamp = focusedTrack?.meter.clip === true;
+    const liveMeterSegments = Math.max(0, Math.min(63, Math.round(meterLevel * 63)));
     const trackName = focusedTrack?.name ?? (state?.focusedTrackReady ? 'TRACK' : 'NO TRACK');
     const faderGainDb = formatFocusedFaderGainDb(
       focusedFaderDrag?.active
         ? focusedFaderDrag.gainDbText ?? focusedTrack?.fader.gainDbText
         : focusedTrack?.fader.gainDbText,
     );
+    const focusTrackMeterReadout = faderGainDb.replace(/\s*dB$/i, '');
     const focusTrackStyle = {
       '--focus-track-fader-level': `${faderPosition * 100}%`,
       '--focus-track-meter-level': `${meterLevel * 100}%`,
@@ -1426,14 +1428,11 @@ const App = () => {
       commandId: CommandId;
       icon: FocusedStripIcon;
       autoExitNavigation?: boolean;
-    }> = focusedStripNavMode
-      ? [
-          { position: 'record', commandId: 'focusedSelectedTrackUp', icon: 'bankLeft', autoExitNavigation: true },
-          { position: 'solo', commandId: 'focusedSelectedTrackDown', icon: 'bankRight', autoExitNavigation: true },
-          { position: 'mute', commandId: 'focusedTrackMute', icon: 'mute' },
-          { position: 'version', commandId: 'newTrackVersion', icon: 'version' },
-        ]
-      : focusedStripNormalButtons;
+    }> = [
+      { position: 'trackUp', commandId: 'focusedSelectedTrackUp', icon: 'bankLeft' },
+      { position: 'trackDown', commandId: 'focusedSelectedTrackDown', icon: 'bankRight' },
+      ...focusedStripNormalButtons,
+    ];
 
     return (
       <section className="focus-track-view" aria-label="Focus track view" style={focusTrackStyle}>
@@ -1443,15 +1442,9 @@ const App = () => {
           </svg>
 
           <div className="focus-track-header">
-            <button
-              type="button"
-              className={`focus-track-readout ${focusedStripNavMode ? 'is-navigation-mode' : ''}`}
-              onClick={() => setFocusedStripNavMode((current) => !current)}
-              aria-pressed={focusedStripNavMode}
-              aria-label="Toggle focused track navigation mode"
-            >
+            <div className="focus-track-readout" aria-label={`Focused track ${trackName}`}>
               <span className="focus-track-name">{trackName}</span>
-            </button>
+            </div>
           </div>
 
           <div className="focus-track-action-grid" aria-label="Focused track controls">
@@ -1550,13 +1543,32 @@ const App = () => {
                   <span>46</span>
                   <span>60</span>
                 </span>
-                <span className="focus-track-meter-fill" />
-                {hasPeakHoldLamp ? <span className="focus-track-peak-indicator">PEAK</span> : null}
+                <span className="focus-track-meter-led-stack">
+                  {Array.from({ length: 64 }, (_, index) => {
+                    const isFinalRedSegment = index === 63;
+                    const isLiveOn = isFinalRedSegment ? false : index < liveMeterSegments;
+                    const isPeakHoldOn = hasPeakHoldLamp && isFinalRedSegment;
+                    const colorZone =
+                      index < 48
+                        ? 'is-green-zone'
+                        : index < 61
+                          ? 'is-yellow-zone'
+                          : index < 63
+                            ? 'is-orange-zone'
+                            : 'is-red-zone';
+
+                    return (
+                      <span
+                        key={index}
+                        className={`focus-track-meter-led focus-track-meter-led-${index + 1} ${colorZone} ${isLiveOn ? 'is-live-on' : ''} ${isPeakHoldOn ? 'is-peak-hold-on' : ''}`}
+                      />
+                    );
+                  })}
+                </span>
+                <span className="focus-track-meter-readout">{focusTrackMeterReadout}</span>
               </span>
             </div>
           </div>
-
-          <span className="focus-track-meter-readout">{faderGainDb}</span>
         </div>
       </section>
     );
@@ -1612,16 +1624,13 @@ const App = () => {
       </svg>
 
       <main className="app-shell">
-      <section className={`topbar ${isProductionRemote ? 'production-header' : ''}`}>
-        <div className="brand-block">
-          <h1>LUNA Companion</h1>
-        </div>
-
-      </section>
-
       <section className={`layout layout-tracking ${isProductionRemote ? 'layout-production' : ''}`}>
         <div className="remote-stage">
           <section className="tab-panel" aria-label="Tracking controls">
+            <div className="brand-block tab-panel-brand">
+              <h1>LUNA Companion</h1>
+            </div>
+
             <div className="remote-view-toggle" role="tablist" aria-label="Remote view mode">
               <button
                 type="button"
@@ -1641,49 +1650,51 @@ const App = () => {
               </button>
             </div>
 
-            {activeRemoteView === 'transport' ? (
-              <>
-                <div className="panel-group">
-                  <div className="tracking-console-layout">
-                    {productionTrackingRows.map((row) => (
-                      <div key={row.commands.join('-')} className={`button-grid ${row.className}`}>
-                        {row.commands.map((commandId) => {
-                          const command = commandLookup.get(commandId);
+            <div className="remote-view-slot">
+              {activeRemoteView === 'transport' ? (
+                <>
+                  <div className="panel-group">
+                    <div className="tracking-console-layout">
+                      {productionTrackingRows.map((row) => (
+                        <div key={row.commands.join('-')} className={`button-grid ${row.className}`}>
+                          {row.commands.map((commandId) => {
+                            const command = commandLookup.get(commandId);
 
-                          if (!command) {
-                            return null;
-                          }
+                            if (!command) {
+                              return null;
+                            }
 
-                          const trackingClassMap: Partial<Record<CommandId, string>> = {
-                            record: 'record-button tracking-record',
-                            playStop: 'transport-button tracking-primary-button',
-                            stop: 'transport-button tracking-primary-button',
-                            click: 'utility-button tracking-medium-button',
-                            countIn: 'utility-button tracking-medium-button',
-                            loop: 'utility-button tracking-compact-button',
-                            undo: 'utility-button tracking-compact-button',
-                            redo: 'utility-button tracking-compact-button',
-                            goToEnd: 'transport-button tracking-compact-button',
-                            returnToZero: 'transport-button tracking-compact-button',
-                            nextBar: 'utility-button tracking-compact-button tracking-text-command',
-                            previousBar: 'utility-button tracking-compact-button tracking-text-command',
-                            nextMarker: 'utility-button tracking-compact-button tracking-text-command',
-                            previousMarker: 'utility-button tracking-compact-button tracking-text-command',
-                            createMarker: 'utility-button tracking-compact-button tracking-text-command',
-                            togglePlayFromStopLocation: 'utility-button tracking-compact-button tracking-text-command tracking-play-from-stop',
-                            togglePrePostRoll: 'utility-button tracking-compact-button tracking-text-command tracking-pre-post-roll',
-                          };
+                            const trackingClassMap: Partial<Record<CommandId, string>> = {
+                              record: 'record-button tracking-record',
+                              playStop: 'transport-button tracking-primary-button',
+                              stop: 'transport-button tracking-primary-button',
+                              click: 'utility-button tracking-medium-button',
+                              countIn: 'utility-button tracking-medium-button',
+                              loop: 'utility-button tracking-compact-button',
+                              undo: 'utility-button tracking-compact-button',
+                              redo: 'utility-button tracking-compact-button',
+                              goToEnd: 'transport-button tracking-compact-button',
+                              returnToZero: 'transport-button tracking-compact-button',
+                              nextBar: 'utility-button tracking-compact-button tracking-text-command',
+                              previousBar: 'utility-button tracking-compact-button tracking-text-command',
+                              nextMarker: 'utility-button tracking-compact-button tracking-text-command',
+                              previousMarker: 'utility-button tracking-compact-button tracking-text-command',
+                              createMarker: 'utility-button tracking-compact-button tracking-text-command',
+                              togglePlayFromStopLocation: 'utility-button tracking-compact-button tracking-text-command tracking-play-from-stop',
+                              togglePrePostRoll: 'utility-button tracking-compact-button tracking-text-command tracking-pre-post-roll',
+                            };
 
-                          return renderCommandButton(command, trackingClassMap[command.id] ?? 'utility-button');
-                        })}
-                      </div>
-                    ))}
+                            return renderCommandButton(command, trackingClassMap[command.id] ?? 'utility-button');
+                          })}
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              </>
-            ) : (
-              renderFocusTrackPrototypeView()
-            )}
+                </>
+              ) : (
+                renderFocusTrackPrototypeView()
+              )}
+            </div>
           </section>
 
           {focusedStripVersionPanelOpen && !focusedStripNavMode ? (
