@@ -42,7 +42,7 @@
   },
   "build": {
     "appId": "com.lunastudioremote.app",
-    "productName": "LUNA Studio Remote",
+    "productName": "Luna Companion",
     "directories": {
       "output": "release"
     },

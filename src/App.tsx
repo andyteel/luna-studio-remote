@@ -1628,7 +1628,7 @@ const App = () => {
         <div className="remote-stage">
           <section className="tab-panel" aria-label="Tracking controls">
             <div className="brand-block tab-panel-brand">
-              <h1>LUNA Companion</h1>
+              <h1>LUNA COMPANION</h1>
             </div>
 
             <div className="remote-view-toggle" role="tablist" aria-label="Remote view mode">

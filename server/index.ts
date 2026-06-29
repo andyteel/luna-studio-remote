@@ -1339,7 +1339,7 @@ export const startRemoteServer = async (options: RemoteServerOptions = {}): Prom
           [
             '<!doctype html>',
             '<html lang="en">',
-            '<head><meta charset="utf-8"><title>Luna Studio Remote</title></head>',
+            '<head><meta charset="utf-8"><title>Luna Companion</title></head>',
             '<body>',
             '<h1>Frontend build missing</h1>',
             `<p>Resolved dist path: ${clientDistPath}</p>`,
@@ -1371,8 +1371,8 @@ export const startRemoteServer = async (options: RemoteServerOptions = {}): Prom
   const lanUrls = getLanUrls(port);
 
   logger.log('');
-  logger.log('Luna Studio Remote');
-  logger.log(`App name: Luna Studio Remote`);
+  logger.log('Luna Companion');
+  logger.log(`App name: Luna Companion`);
   logger.log(`Local URL: ${localUrl}`);
   logger.log(`LAN URLs: ${lanUrls.length ? lanUrls.join(', ') : 'No LAN address detected'}`);
   logger.log(`Resolved dist path: ${clientDistPath} Exists: ${clientDistExists && clientIndexExists ? 'true' : 'false'}`);
@@ -1416,7 +1416,7 @@ export const startRemoteServer = async (options: RemoteServerOptions = {}): Prom
 
 if (isEntrypoint()) {
   void startRemoteServer().catch((error) => {
-    console.error('Failed to start Luna Studio Remote');
+    console.error('Failed to start Luna Companion');
     console.error(error);
     process.exitCode = 1;
   });

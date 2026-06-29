@@ -138,8 +138,8 @@ const renderMidiDiagnostics = (diagnostics = {}) => {
 };
 
 const renderMidiStatus = (midi = {}) => {
-  const expectedInput = midi.expectedIacInputName ?? 'LUNA Remote From LUNA';
-  const expectedOutput = midi.expectedIacOutputName ?? 'LUNA Remote To LUNA';
+  const expectedInput = midi.expectedIacInputName ?? 'LUNA Companion From LUNA';
+  const expectedOutput = midi.expectedIacOutputName ?? 'LUNA Companion To LUNA';
   const warnings = Array.isArray(midi.setupWarnings) ? midi.setupWarnings : [];
 
   midiStatusTitle.textContent = toUpperUi(midi.title ?? 'MIDI unavailable');

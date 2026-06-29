@@ -52,8 +52,8 @@ const createDefaultMidiStatus = () => ({
   title: 'MIDI unavailable',
   detail: 'Start the server to check MIDI setup.',
   midiMode: 'iac',
-  expectedIacInputName: 'LUNA Remote From LUNA',
-  expectedIacOutputName: 'LUNA Remote To LUNA',
+  expectedIacInputName: 'LUNA Companion From LUNA',
+  expectedIacOutputName: 'LUNA Companion To LUNA',
   expectedIacInputFound: false,
   expectedIacOutputFound: false,
   midiConnected: false,
@@ -86,7 +86,7 @@ let runtimeStatus = {
   portMessage: null,
   showPermissionsNote: true,
   permissionsNote:
-    'LUNA Studio Remote may need Accessibility, Automation, and Local Network access. If macOS prompts, allow access so keystrokes and network discovery work correctly.',
+    'Luna Companion may need Accessibility, Automation, and Local Network access. If macOS prompts, allow access so keystrokes and network discovery work correctly.',
   midi: createDefaultMidiStatus(),
   updatedAt: new Date().toISOString(),
 };
@@ -561,22 +561,24 @@ const startServer = async () => {
   const moduleUrl = pathToFileURL(getServerEntryPath()).href;
   const serverModule = await import(moduleUrl);
   const { startRemoteServer } = serverModule;
+  const logger = createLogger();
 
   if (typeof startRemoteServer !== 'function') {
     throw new Error('Bundled server entry does not export startRemoteServer');
   }
 
+  logger.log('Luna Companion Remote Server');
   remoteServer = await startRemoteServer({
     host: DEFAULT_ENV.HOST,
     port: selectedPort,
-    logger: createLogger(),
+    logger,
   });
 
   const remoteUrl = buildLanUrl(remoteServer.port) ?? remoteServer.lanUrls[0] ?? null;
   const portMessage =
     remoteServer.port === DEFAULT_PORT
       ? null
-      : `Port ${DEFAULT_PORT} was busy, so LUNA Studio Remote is using port ${remoteServer.port}.`;
+      : `Port ${DEFAULT_PORT} was busy, so Luna Companion is using port ${remoteServer.port}.`;
 
   const qrCodeDataUrl = remoteUrl
     ? await QRCode.toDataURL(remoteUrl, {
@@ -692,7 +694,7 @@ const createQrWindow = () => {
     minHeight: WINDOW_BOUNDS.height,
     resizable: false,
     fullscreenable: false,
-    title: 'LUNA Studio Remote',
+    title: 'Luna Companion',
     autoHideMenuBar: true,
     backgroundColor: '#676e72',
     icon: fs.existsSync(getAppIconPath()) ? getAppIconPath() : undefined,
@@ -766,7 +768,7 @@ const refreshTrayMenu = () => {
     },
   ];
 
-  tray.setToolTip(runtimeStatus.remoteUrl ?? 'LUNA Studio Remote');
+  tray.setToolTip(runtimeStatus.remoteUrl ?? 'Luna Companion');
   tray.setContextMenu(Menu.buildFromTemplate(template));
 };
 
@@ -791,7 +793,7 @@ const handleRuntimeError = async (error) => {
 
   await dialog.showMessageBox({
     type: 'error',
-    message: 'LUNA Studio Remote could not start its bundled server.',
+    message: 'Luna Companion could not start its bundled server.',
     detail: error instanceof Error ? error.message : String(error),
   });
 };
@@ -896,7 +898,7 @@ app.whenReady().then(async () => {
   if (!permissionsState.permissionsNoteDismissed) {
     await dialog.showMessageBox({
       type: 'info',
-      message: 'LUNA Studio Remote permissions',
+      message: 'Luna Companion permissions',
       detail:
         'To control LUNA, macOS may ask for Accessibility, Automation, and Local Network access. Allow these prompts so the remote can send keystrokes and stay reachable on your Wi-Fi network.',
     });

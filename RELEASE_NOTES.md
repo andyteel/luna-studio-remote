@@ -1,6 +1,6 @@
-# Luna Studio Remote v2.0.0
+# Luna Companion v2.0.0
 
-Luna Studio Remote v2.0.0 is a focused tracking remote for Universal Audio LUNA. It starts a local server on the Mac, shows a LAN URL and QR code, and lets an iPhone, iPad, or another browser on the same network control the production tracking surface.
+Luna Companion v2.0.0 is a focused tracking remote for Universal Audio LUNA. It starts a local server on the Mac, shows a LAN URL and QR code, and lets an iPhone, iPad, or another browser on the same network control the production tracking surface.
 
 ## What's New
 
@@ -16,24 +16,24 @@ Luna Studio Remote v2.0.0 is a focused tracking remote for Universal Audio LUNA.
 ## Installation
 
 1. Download the DMG or ZIP for Apple Silicon Macs.
-2. Move `LUNA Studio Remote.app` into `Applications`.
+2. Move `Luna Companion.app` into `Applications`.
 3. Launch the app.
 
 macOS may show a security warning because this app is not currently signed or notarized. Right-click the app and choose Open the first time you launch it.
 
 ## MIDI Setup
 
-Luna Studio Remote uses the macOS IAC Driver as its only supported MIDI path. It does not create custom virtual MIDI ports.
+Luna Companion uses the macOS IAC Driver as its only supported MIDI path. It does not create custom virtual MIDI ports.
 
 Create or rename IAC buses exactly:
 
-- `LUNA Remote To LUNA`
-- `LUNA Remote From LUNA`
+- `LUNA Companion To LUNA`
+- `LUNA Companion From LUNA`
 
 In LUNA MIDI Control Surfaces, set:
 
-- Input device: `LUNA Remote To LUNA`
-- Output device: `LUNA Remote From LUNA`
+- Input device: `LUNA Companion To LUNA`
+- Output device: `LUNA Companion From LUNA`
 
 ## Notes
 

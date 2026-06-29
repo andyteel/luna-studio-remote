@@ -54,7 +54,7 @@
   --luna-panel: #23272d;
   --luna-panel-dark: #171a1f;
   --luna-surface-top: #34393d;
-  --luna-surface-mid: #23272a;
+  --luna-surface-mid: var(--luna-app-bg);
   --luna-surface-bottom: #171a1c;
   --luna-surface-speck: rgba(255, 255, 255, 0.068);
   --luna-surface-speck-fine: rgba(255, 255, 255, 0.036);
