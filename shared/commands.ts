@@ -30,7 +30,7 @@ export type BaseKey =
   | 'w';
 
 export type FocusedTrackMcuControlRole = 'recordEnable' | 'solo' | 'mute';
-export type McuTransportControlRole = 'play' | 'stop' | 'record' | 'cycle' | 'click';
+export type McuTransportControlRole = 'play' | 'stop' | 'record' | 'cycle' | 'click' | 'rewind' | 'fastForward';
 export type McuNavigationControlRole = 'channelLeft' | 'channelRight' | 'bankLeft' | 'bankRight';
 
 export type CommandId =
@@ -73,7 +73,7 @@ export type CommandId =
 export interface CommandDefinition {
   id: CommandId;
   label: string;
-  keys: Array<ModifierKey | BaseKey>;
+  keys?: Array<ModifierKey | BaseKey>;
   mcuControl?: FocusedTrackMcuControlRole;
   mcuTransport?: McuTransportControlRole;
   mcuNavigation?: McuNavigationControlRole;
@@ -88,11 +88,11 @@ export const commandRegistry: CommandDefinition[] = [
   { id: 'record', label: 'Record', keys: ['numpad3'], mcuTransport: 'record', accent: 'record' },
   { id: 'playStop', label: 'Play / Stop', keys: ['space'], mcuTransport: 'play', accent: 'neutral' },
   { id: 'stop', label: 'Stop', keys: ['space'], mcuTransport: 'stop', accent: 'neutral' },
-  { id: 'returnToZero', label: 'Return to Zero', keys: ['return'], accent: 'neutral' },
+  { id: 'returnToZero', label: 'Return to Zero', mcuTransport: 'rewind', accent: 'neutral' },
   {
     id: 'goToEnd',
     label: 'Go To End',
-    keys: ['control', 'digit0'],
+    mcuTransport: 'fastForward',
     accent: 'neutral',
   },
   { id: 'loop', label: 'Loop', keys: ['control', 'l'], mcuTransport: 'cycle', accent: 'neutral' },

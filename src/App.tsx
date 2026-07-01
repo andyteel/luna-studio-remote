@@ -1085,12 +1085,17 @@ const App = () => {
     const focusedTrack = state?.focusedTrack;
 
     switch (commandId) {
+      case 'focusedSelectedTrackUp':
+      case 'focusedSelectedTrackDown':
+        return flashCommand === commandId ? 'luna-button-state-yellow luna-button-active' : '';
+      case 'newTrackVersion':
+        return flashCommand === commandId ? 'luna-button-state-blue luna-button-active' : '';
       case 'focusedTrackRecordArm':
         return focusedTrack?.arm ? 'luna-button-state-red luna-button-active' : '';
       case 'focusedTrackSolo':
         return focusedTrack?.solo ? 'luna-button-state-yellow luna-button-active' : '';
       case 'focusedTrackMute':
-        return focusedTrack?.mute ? 'luna-button-state-blue luna-button-active' : '';
+        return focusedTrack?.mute ? 'luna-button-state-red luna-button-active' : '';
       default:
         return '';
     }
@@ -1492,6 +1497,7 @@ const App = () => {
                   disabled={isDisabled}
                   onClick={() => {
                     if (isVersionMenuTrigger) {
+                      pulseCommand(command.id);
                       setFocusedStripVersionPanelOpen((current) => !current);
                       setFocusedStripVersionPressed(false);
                       return;

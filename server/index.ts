@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import type { Server as HttpServer } from 'node:http';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { commandMap, commandRegistry, type BaseKey, type CommandId, type ModifierKey } from '../shared/commands.js';
+import { commandMap, commandRegistry, type BaseKey, type CommandDefinition, type CommandId, type ModifierKey } from '../shared/commands.js';
 import type { McuDiagnosticsState, McuPortState, V2RemoteState } from '../shared/v2-state.js';
 import { config } from './config.js';
 import { getLanUrls } from './network.js';
@@ -212,6 +212,34 @@ const parseShortcutRequest = (
       keys: [...modifiers, key],
     },
   };
+};
+
+const hasKeyboardShortcut = (
+  command: CommandDefinition,
+): command is CommandDefinition & { keys: Array<ModifierKey | BaseKey> } =>
+  Array.isArray(command.keys) && command.keys.length > 0;
+
+const getKeyboardDescription = (command: CommandDefinition): string =>
+  hasKeyboardShortcut(command) ? `${command.id} -> ${command.keys.join('+')}` : `${command.id} -> no keyboard shortcut`;
+
+const getInitialKeyAction = (command: CommandDefinition): string | null => {
+  if (command.mcuControl) {
+    return `MCU focused ${command.mcuControl}`;
+  }
+
+  if (command.mcuNavigation) {
+    return `MCU navigation ${command.mcuNavigation}`;
+  }
+
+  if (command.mcuTransport && !hasKeyboardShortcut(command)) {
+    return `MCU transport ${command.mcuTransport}`;
+  }
+
+  if (!hasKeyboardShortcut(command)) {
+    throw new Error(`${command.label} has no keyboard fallback`);
+  }
+
+  return buildKeyAction(command);
 };
 
 const buildTestShortcutResponse = (details: {
@@ -812,16 +840,15 @@ export const startRemoteServer = async (options: RemoteServerOptions = {}): Prom
         return;
       }
 
-      const keyboardDescription = `${command.id} -> ${command.keys.join('+')}`;
+      const keyboardDescription = getKeyboardDescription(command);
       const focusedMcuDescription = command.mcuControl
         ? `${command.id} -> MCU focused ${command.mcuControl}`
         : null;
-      let keyAction: string | null = command.mcuControl
-        ? `MCU focused ${command.mcuControl}`
-        : command.mcuNavigation
-          ? `MCU navigation ${command.mcuNavigation}`
-          : buildKeyAction(command);
-      let script = command.mcuControl || command.mcuNavigation ? null : buildAppleScript(config.lunaAppName, command);
+      let keyAction: string | null = getInitialKeyAction(command);
+      let script: string | null = null;
+      if (!command.mcuControl && !command.mcuNavigation && hasKeyboardShortcut(command)) {
+        script = buildAppleScript(config.lunaAppName, command);
+      }
       state.lastKeyAction = keyAction;
       state.lastAppleScript = script;
       let responseWarning: string | undefined;
@@ -829,6 +856,10 @@ export const startRemoteServer = async (options: RemoteServerOptions = {}): Prom
       let usedMcuNavigation = false;
 
       const sendKeyboardAutomation = async (): Promise<void> => {
+        if (!hasKeyboardShortcut(command)) {
+          throw new Error(`${command.label} has no keyboard fallback`);
+        }
+
         keyAction = buildKeyAction(command);
         script = buildAppleScript(config.lunaAppName, command);
         state.lastKeyAction = keyAction;
@@ -934,7 +965,7 @@ export const startRemoteServer = async (options: RemoteServerOptions = {}): Prom
             success: true,
           });
         }
-      } else if (command.mcuTransport && config.mcuTransportMode !== 'keyboard') {
+      } else if (command.mcuTransport && (config.mcuTransportMode !== 'keyboard' || !hasKeyboardShortcut(command))) {
         const mcuDescription = `${command.id} -> MCU transport ${command.mcuTransport}`;
         keyAction = `MCU transport ${command.mcuTransport}`;
         script = null;
@@ -952,7 +983,7 @@ export const startRemoteServer = async (options: RemoteServerOptions = {}): Prom
         } else if (!config.enableMcu || !config.enableMidi) {
           const mcuError = 'MCU transport is disabled by configuration';
 
-          if (config.mcuTransportMode === 'mcu-only') {
+          if (config.mcuTransportMode === 'mcu-only' || !hasKeyboardShortcut(command)) {
             state.lastError = mcuError;
             logCommandEvent({
               commandId: command.id,
@@ -984,7 +1015,7 @@ export const startRemoteServer = async (options: RemoteServerOptions = {}): Prom
           } catch (error) {
             const mcuError = error instanceof Error ? error.message : 'Failed to send MCU transport command';
 
-            if (config.mcuTransportMode === 'mcu-only') {
+            if (config.mcuTransportMode === 'mcu-only' || !hasKeyboardShortcut(command)) {
               throw error;
             }
 
