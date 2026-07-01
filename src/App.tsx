@@ -17,6 +17,8 @@ import focusedSwitchYellow from '../assets_v2/switch_fader_yel@2x.png';
 import clickSvg from '../assets_original/transport/click-v2.svg';
 import playSvg from '../assets_original/transport/play.svg';
 import stopSvg from '../assets_original/transport/stop.svg';
+import playActiveSvg from '../assets_original/Icons/icon-play-active.svg';
+import playInactiveSvg from '../assets_original/Icons/icon-play-inactive.svg';
 import recordSvg from '../assets_original/transport/record.svg';
 import loopSvg from '../assets_original/transport/loop-v2.svg';
 import gteSvg from '../assets_original/transport/gte-v2.svg';
@@ -24,6 +26,8 @@ import rtzSvg from '../assets_original/transport/rtz-v2.svg';
 import undoSvg from '../assets_original/transport/undo-v2.svg';
 import redoSvg from '../assets_original/transport/redo-v2.svg';
 import plusSvg from '../assets_original/transport/plus-v2.svg';
+import recordActiveSvg from '../assets_original/Icons/icon-rec-active.svg';
+import recordInactiveSvg from '../assets_original/Icons/icon-rec-inactive.svg';
 
 const statusPollMs = 100;
 const useCssFocusedMeterTest = true;
@@ -1066,11 +1070,11 @@ const App = () => {
   const renderTrackingTransportGlyph = (commandId: CommandId): ReactNode => {
     switch (commandId) {
       case 'playStop':
-        return renderImageIcon(playSvg, 'luna-icon-play');
+        return renderImageIcon(trackingUiState.playing ? playActiveSvg : playInactiveSvg, 'luna-icon-play');
       case 'stop':
         return renderImageIcon(stopSvg);
       case 'record':
-        return renderImageIcon(recordSvg, 'luna-icon-record');
+        return renderImageIcon(trackingUiState.recording ? recordActiveSvg : recordInactiveSvg, 'luna-icon-record');
       case 'loop':
         return renderImageIcon(loopSvg, 'luna-icon-loop');
       case 'returnToZero':

@@ -2118,10 +2118,6 @@ button:focus-visible {
   image-rendering: -webkit-optimize-contrast;
 }
 
-.luna-icon-play {
-  filter: hue-rotate(0deg) saturate(1.25) brightness(1.05);
-}
-
 .luna-icon-record {
   filter: saturate(1.15);
 }
@@ -2139,6 +2135,7 @@ button:focus-visible {
   height: 2.44rem;
   transform: scale(0.55);
   transform-origin: center;
+  background-color: transparent;
 }
 
 .tracking-flat-button .transport-icon .luna-icon-play {
