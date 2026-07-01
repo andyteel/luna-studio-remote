@@ -1,12 +1,6 @@
 import { useEffect, useRef, useState, type CSSProperties, type PointerEvent, type ReactNode } from 'react';
 import { commandRegistry, type CommandDefinition, type CommandId } from '../shared/commands';
 import type { CommandResponse, RemoteState, RemoteStateStreamEvent } from './types';
-import countIn1Icon from '../luna-image-resources/buttons/icon_count_in_1.png';
-import countIn1IconOn from '../luna-image-resources/buttons/icon_count_in_1_on.png';
-import countIn2Icon from '../luna-image-resources/buttons/icon_count_in_2.png';
-import countIn2IconOn from '../luna-image-resources/buttons/icon_count_in_2_on.png';
-import countIn4Icon from '../luna-image-resources/buttons/icon_count_in_4.png';
-import countIn4IconOn from '../luna-image-resources/buttons/icon_count_in_4_on.png';
 import focusedTrackPanel from '../assets_v2/track-panel@2x.png';
 import focusedFaderPanel from '../assets_v2/fader-panel@2x.png';
 import focusedFaderTrack from '../assets_v2/fader-track@2x.png';
@@ -180,7 +174,6 @@ const trackingTransportGlyphCommands: CommandId[] = [
   'goToEnd',
   'loop',
   'click',
-  'countIn',
   'undo',
   'redo',
 ];
@@ -191,6 +184,19 @@ const renderImageIcon = (src: string, className = ''): ReactNode => (
     alt=""
     aria-hidden="true"
     className={`luna-icon luna-icon-asset ${className}`.trim()}
+  />
+);
+
+const renderRecordIcon = (className = ''): ReactNode => (
+  <img
+    src={recordSvg}
+    alt=""
+    aria-hidden="true"
+    className={`luna-icon luna-icon-asset luna-icon-record ${className}`.trim()}
+    style={{
+      WebkitMaskImage: `url(${recordSvg})`,
+      maskImage: `url(${recordSvg})`,
+    }}
   />
 );
 
@@ -412,6 +418,8 @@ const renderTrackingTextLabel = (commandId: CommandId, fallbackLabel: string): R
           <span>MARKER</span>
         </>
       );
+    case 'countIn':
+      return 'COUNT IN';
     case 'togglePlayFromStopLocation':
       return (
         <>
@@ -1056,8 +1064,6 @@ const App = () => {
   };
 
   const renderTrackingTransportGlyph = (commandId: CommandId): ReactNode => {
-    const isCountInEnabled = trackingUiState.countIn;
-
     switch (commandId) {
       case 'playStop':
         return renderImageIcon(playSvg, 'luna-icon-play');
@@ -1073,26 +1079,6 @@ const App = () => {
         return renderImageIcon(gteSvg);
       case 'click':
         return renderImageIcon(clickSvg);
-      case 'countIn':
-        return (
-          <span className="count-in-cluster">
-            <img
-              src={isCountInEnabled ? countIn1IconOn : countIn1Icon}
-              alt=""
-              className="luna-icon luna-icon-asset count-in-icon"
-            />
-            <img
-              src={isCountInEnabled ? countIn2IconOn : countIn2Icon}
-              alt=""
-              className="luna-icon luna-icon-asset count-in-icon"
-            />
-            <img
-              src={isCountInEnabled ? countIn4IconOn : countIn4Icon}
-              alt=""
-              className="luna-icon luna-icon-asset count-in-icon"
-            />
-          </span>
-        );
       case 'undo':
         return renderImageIcon(undoSvg);
       case 'redo':
@@ -1114,6 +1100,7 @@ const App = () => {
         command.id === 'togglePlayFromStopLocation' ||
         command.id === 'togglePrePostRoll' ||
         command.id === 'createMarker' ||
+        command.id === 'countIn' ||
         command.id === 'previousBar' ||
         command.id === 'nextBar' ||
         command.id === 'previousMarker' ||
@@ -1669,7 +1656,7 @@ const App = () => {
                               playStop: 'transport-button tracking-primary-button',
                               stop: 'transport-button tracking-primary-button',
                               click: 'utility-button tracking-medium-button',
-                              countIn: 'utility-button tracking-medium-button',
+                              countIn: 'utility-button tracking-medium-button tracking-text-command',
                               loop: 'utility-button tracking-compact-button',
                               undo: 'utility-button tracking-compact-button',
                               redo: 'utility-button tracking-compact-button',

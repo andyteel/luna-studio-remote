@@ -585,8 +585,8 @@ const startServer = async () => {
         margin: 1,
         width: 260,
         color: {
-          dark: '#0a0a0a',
-          light: '#f6f2e9',
+          dark: '#000000',
+          light: '#ffffff',
         },
       })
     : null;
