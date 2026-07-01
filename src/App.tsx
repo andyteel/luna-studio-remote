@@ -14,11 +14,25 @@ import focusedSwitchNeutral from '../assets_v2/switch_fader@2x.png';
 import focusedSwitchBlue from '../assets_v2/switch_fader_blu@2x.png';
 import focusedSwitchRed from '../assets_v2/switch_fader_red@2x.png';
 import focusedSwitchYellow from '../assets_v2/switch_fader_yel@2x.png';
+import playActiveSvg from '../assets_original/Icons/icon-play-active.svg';
+import playInactiveSvg from '../assets_original/Icons/icon-play-inactive.svg';
+import stopActiveSvg from '../assets_original/Icons/icon-stop-active.svg';
+import stopInactiveSvg from '../assets_original/Icons/icon-stop-inactive.svg';
+import loopActiveSvg from '../assets_original/Icons/icon-loop-active.svg';
+import loopInactiveSvg from '../assets_original/Icons/icon-loop-inactive.svg';
+import clickActiveSvg from '../assets_original/Icons/icon-click-active.svg';
+import clickInactiveSvg from '../assets_original/Icons/icon-click-inactive.svg';
+import undoActiveSvg from '../assets_original/Icons/icon-undo-active.svg';
+import undoInactiveSvg from '../assets_original/Icons/icon-undo-inactive.svg';
+import redoActiveSvg from '../assets_original/Icons/icon-redo-active.svg';
+import redoInactiveSvg from '../assets_original/Icons/icon-redo-inactive.svg';
+import gteActiveSvg from '../assets_original/Icons/icon-gte-active.svg';
+import gteInactiveSvg from '../assets_original/Icons/icon-gte-inactive.svg';
+import rtzActiveSvg from '../assets_original/Icons/icon-rtz-active.svg';
+import rtzInactiveSvg from '../assets_original/Icons/icon-rtz-inactive.svg';
 import clickSvg from '../assets_original/transport/click-v2.svg';
 import playSvg from '../assets_original/transport/play.svg';
 import stopSvg from '../assets_original/transport/stop.svg';
-import playActiveSvg from '../assets_original/Icons/icon-play-active.svg';
-import playInactiveSvg from '../assets_original/Icons/icon-play-inactive.svg';
 import recordSvg from '../assets_original/transport/record.svg';
 import loopSvg from '../assets_original/transport/loop-v2.svg';
 import gteSvg from '../assets_original/transport/gte-v2.svg';
@@ -448,7 +462,12 @@ const renderFocusedStripButtonIcon = (icon: FocusedStripIcon): ReactNode => {
     case 'record':
       return (
         <span className="focused-strip-glyph focused-strip-glyph-record" aria-hidden="true">
-          <span className="focused-strip-glyph-mark focused-strip-record-dot" />
+          <img
+            src={focusTrackRecordArmActive ? recordActiveSvg : recordInactiveSvg}
+            alt=""
+            aria-hidden="true"
+            className="focused-strip-svg-icon focused-strip-focus-track-icon focused-strip-focus-track-icon-record"
+          />
         </span>
       );
     case 'solo':
@@ -470,17 +489,27 @@ const renderFocusedStripButtonIcon = (icon: FocusedStripIcon): ReactNode => {
         </span>
       );
     case 'bankLeft':
-      return renderImageIcon(rtzSvg, 'focused-strip-svg-icon focused-strip-nav-image focused-strip-nav-image-bank-left');
+      return renderImageIcon(
+        focusTrackPreviousTrackPressed ? rtzActiveSvg : rtzInactiveSvg,
+        'focused-strip-svg-icon focused-strip-nav-image focused-strip-nav-image-bank-left',
+      );
     case 'channelLeft':
       return renderImageIcon(playSvg, 'focused-strip-svg-icon focused-strip-nav-image focused-strip-nav-image-channel-left');
     case 'channelRight':
       return renderImageIcon(playSvg, 'focused-strip-svg-icon focused-strip-nav-image focused-strip-nav-image-channel-right');
     case 'bankRight':
-      return renderImageIcon(gteSvg, 'focused-strip-svg-icon focused-strip-nav-image focused-strip-nav-image-bank-right');
+      return renderImageIcon(
+        focusTrackNextTrackPressed ? gteActiveSvg : gteInactiveSvg,
+        'focused-strip-svg-icon focused-strip-nav-image focused-strip-nav-image-bank-right',
+      );
     default:
       return null;
   }
 };
+
+let focusTrackRecordArmActive = false;
+let focusTrackPreviousTrackPressed = false;
+let focusTrackNextTrackPressed = false;
 
 type ActiveRemoteView = 'transport' | 'focus';
 
@@ -1072,21 +1101,21 @@ const App = () => {
       case 'playStop':
         return renderImageIcon(trackingUiState.playing ? playActiveSvg : playInactiveSvg, 'luna-icon-play');
       case 'stop':
-        return renderImageIcon(stopSvg);
+        return renderImageIcon(!trackingUiState.playing ? stopActiveSvg : stopInactiveSvg);
       case 'record':
         return renderImageIcon(trackingUiState.recording ? recordActiveSvg : recordInactiveSvg, 'luna-icon-record');
       case 'loop':
-        return renderImageIcon(loopSvg, 'luna-icon-loop');
+        return renderImageIcon(trackingUiState.loop ? loopActiveSvg : loopInactiveSvg, 'luna-icon-loop');
       case 'returnToZero':
-        return renderImageIcon(rtzSvg, 'luna-icon-wide');
+        return renderImageIcon(flashCommand === 'returnToZero' ? rtzActiveSvg : rtzInactiveSvg, 'luna-icon-wide');
       case 'goToEnd':
-        return renderImageIcon(gteSvg);
+        return renderImageIcon(flashCommand === 'goToEnd' ? gteActiveSvg : gteInactiveSvg);
       case 'click':
-        return renderImageIcon(clickSvg);
+        return renderImageIcon(trackingUiState.click ? clickActiveSvg : clickInactiveSvg);
       case 'undo':
-        return renderImageIcon(undoSvg);
+        return renderImageIcon(flashCommand === 'undo' ? undoActiveSvg : undoInactiveSvg);
       case 'redo':
-        return renderImageIcon(redoSvg);
+        return renderImageIcon(flashCommand === 'redo' ? redoActiveSvg : redoInactiveSvg);
       default:
         return renderCommandIcon(commandVisuals[commandId]?.icon ?? 'view');
     }
@@ -1424,6 +1453,9 @@ const App = () => {
       { position: 'trackDown', commandId: 'focusedSelectedTrackDown', icon: 'bankRight' },
       ...focusedStripNormalButtons,
     ];
+    focusTrackRecordArmActive = focusedTrack?.arm === true;
+    focusTrackPreviousTrackPressed = flashCommand === 'focusedSelectedTrackUp';
+    focusTrackNextTrackPressed = flashCommand === 'focusedSelectedTrackDown';
 
     return (
       <section className="focus-track-view" aria-label="Focus track view" style={focusTrackStyle}>
@@ -1479,9 +1511,9 @@ const App = () => {
                   <span className="button-icon transport-icon focus-track-surface-icon" aria-hidden="true">
                     {renderFocusedStripButtonIcon(spec.icon)}
                   </span>
-                </button>
-              );
-            })}
+              </button>
+            );
+          })}
           </div>
 
           <div className="focus-track-strip">

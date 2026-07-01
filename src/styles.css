@@ -1,3 +1,7 @@
+/* ============================================================
+   Font loading
+   ============================================================ */
+
 @font-face {
   font-family: "Luna Oxygen";
   src: url("../luna-fonts/Oxygen.otf") format("opentype");
@@ -11,6 +15,10 @@
   font-weight: 700;
   font-style: normal;
 }
+
+/* ============================================================
+   Design tokens and layout constants
+   ============================================================ */
 
 :root {
   color-scheme: dark;
@@ -76,6 +84,10 @@
   --luna-offline: #b64b4b;
   --luna-shadow: rgba(0, 0, 0, 0.5);
 }
+
+/* ============================================================
+   Browser resets and app shell
+   ============================================================ */
 
 * {
   box-sizing: border-box;
@@ -162,6 +174,10 @@ button:focus-visible {
   position: relative;
   z-index: 1;
 }
+
+/* ============================================================
+   Shared graphite panel surfaces
+   ============================================================ */
 
 .topbar,
 .panel-group {
@@ -278,6 +294,10 @@ button:focus-visible {
   grid-template-columns: minmax(0, 1fr);
 }
 
+/* ============================================================
+   Remote stage and view switching
+   ============================================================ */
+
 .remote-stage,
 .tab-panel {
   display: grid;
@@ -391,6 +411,10 @@ button:focus-visible {
   min-height: 0;
 }
 
+/* ============================================================
+   Tracking transport grid
+   ============================================================ */
+
 .tracking-console-layout {
   display: grid;
   gap: var(--transport-row-gap);
@@ -417,6 +441,10 @@ button:focus-visible {
 .tracking-row-thirds {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
+
+/* ============================================================
+   Focused channel strip: horizontal console view
+   ============================================================ */
 
 .focused-channel-strip-row {
   display: grid;
@@ -456,6 +484,10 @@ button:focus-visible {
   z-index: 4;
   border-radius: inherit;
 }
+
+/* ============================================================
+   Focus track view: vertical card, actions, fader, and meter
+   ============================================================ */
 
 .focus-track-view {
   width: max-content;
@@ -544,9 +576,6 @@ button:focus-visible {
   min-width: 0;
   text-align: center;
   text-transform: uppercase;
-}
-
-.focus-track-name {
   font-family: "Luna Oxygen Bold", "Avenir Next", sans-serif;
   font-size: 1.38rem;
   letter-spacing: 0.08em;
@@ -557,6 +586,18 @@ button:focus-visible {
 }
 
 .focus-track-action-grid {
+  --focus-track-record-icon-size: 25px;
+  --focus-track-record-icon-offset-x: 0px;
+  --focus-track-record-icon-offset-y: 10px;
+  --focus-track-previous-icon-size: 25px;
+  --focus-track-previous-icon-offset-x: 0px;
+  --focus-track-previous-icon-offset-y: 0px;
+  --focus-track-next-icon-size: 25px;
+  --focus-track-next-icon-offset-x: 0px;
+  --focus-track-next-icon-offset-y: 0px;
+  --focus-track-version-icon-size: 15px;
+  --focus-track-version-icon-offset-x: 0px;
+  --focus-track-version-icon-offset-y: 0px;
   display: grid;
   grid-template-columns: repeat(2, 92px);
   grid-template-areas:
@@ -596,19 +637,13 @@ button:focus-visible {
 }
 
 .focus-track-surface-icon .focused-strip-glyph {
-  width: 32px;
-  height: 32px;
+  width: 20px;
+  height: 20px;
 }
 
 .focus-track-surface-icon .focused-strip-svg-icon {
-  width: 32px;
-  height: 32px;
-}
-
-.focus-track-surface-icon .focused-strip-nav-image-bank-left,
-.focus-track-surface-icon .focused-strip-nav-image-bank-right {
-  width: 36px;
-  height: 36px;
+  width: 20px;
+  height: 20px;
 }
 
 .focus-track-surface-icon .focused-strip-letter {
@@ -630,14 +665,25 @@ button:focus-visible {
 }
 
 .focus-track-action-button-trackUp {
+  --focus-track-icon-size: var(--focus-track-previous-icon-size);
+  --focus-track-icon-offset-x: var(--focus-track-previous-icon-offset-x);
+  --focus-track-icon-offset-y: var(--focus-track-previous-icon-offset-y);
   grid-area: trackUp;
 }
 
 .focus-track-action-button-trackDown {
+  --focus-track-icon-size: var(--focus-track-next-icon-size);
+  --focus-track-icon-offset-x: var(--focus-track-next-icon-offset-x);
+  --focus-track-icon-offset-y: var(--focus-track-next-icon-offset-y);
   grid-area: trackDown;
 }
 
 .focus-track-action-button-record {
+  --focus-track-icon-size: var(--focus-track-record-icon-size);
+  --focus-track-icon-offset-x: var(--focus-track-record-icon-offset-x);
+  --focus-track-icon-offset-y: var(--focus-track-record-icon-offset-y);
+  --glyph-offset-x: var(--focus-track-record-icon-offset-x);
+  --glyph-offset-y: var(--focus-track-record-icon-offset-y);
   grid-area: record;
 }
 
@@ -650,7 +696,57 @@ button:focus-visible {
 }
 
 .focus-track-action-button-version {
+  --focus-track-icon-size: var(--focus-track-version-icon-size);
+  --focus-track-icon-offset-x: var(--focus-track-version-icon-offset-x);
+  --focus-track-icon-offset-y: var(--focus-track-version-icon-offset-y);
   grid-area: version;
+}
+
+
+.focus-track-action-button-record .focused-strip-glyph {
+  width: var(--focus-track-icon-size);
+  height: var(--focus-track-icon-size);
+}
+
+.focus-track-action-button-record .focused-strip-svg-icon {
+  width: 100%;
+  height: 100%;
+}
+
+.focus-track-action-button-version .luna-icon.focused-strip-svg-icon-plus {
+  position: static;
+  inset: auto;
+  width: var(--focus-track-icon-size);
+  height: var(--focus-track-icon-size);
+  transform: translate(
+    var(--focus-track-icon-offset-x),
+    var(--focus-track-icon-offset-y)
+  );
+  object-fit: contain;
+}
+
+.focus-track-action-button-trackUp .focused-strip-svg-icon.focused-strip-nav-image-bank-left {
+  position: static;
+  inset: auto;
+  width: var(--focus-track-icon-size);
+  height: var(--focus-track-icon-size);
+  transform: translate(
+    var(--focus-track-icon-offset-x),
+    var(--focus-track-icon-offset-y)
+  );
+  object-fit: contain;
+}
+
+.focus-track-action-button-trackDown .focused-strip-svg-icon.focused-strip-nav-image-bank-right {
+  position: static;
+  inset: auto;
+  width: var(--focus-track-icon-size);
+  height: var(--focus-track-icon-size);
+  transform: translate(
+    var(--focus-track-icon-offset-x),
+    var(--focus-track-icon-offset-y)
+  );
+  object-fit: contain;
 }
 
 .focus-track-strip {
@@ -978,11 +1074,6 @@ button:focus-visible {
   filter: contrast(1.01) brightness(0.98);
 }
 
-.focused-channel-strip .focused-strip-panel.focused-strip-track-panel,
-.focused-channel-strip .focused-strip-panel.focused-strip-fader-panel {
-  display: none;
-}
-
 .focused-strip-buttons {
   inset: 0;
   z-index: 5;
@@ -1025,6 +1116,7 @@ button:focus-visible {
 
 .focused-strip-button-record {
   --record-icon-color: #4A0100;
+  left: 6.66%;
 }
 
 .focused-strip-button-record.is-active {
@@ -1038,9 +1130,6 @@ button:focus-visible {
   height: 100%;
 }
 
-.focused-strip-button-record {
-  left: 6.66%;
-}
 
 .focused-strip-button-solo {
   left: 19.36%;
@@ -1111,6 +1200,7 @@ button:focus-visible {
   mask-repeat: no-repeat;
   mask-position: center;
   mask-size: contain;
+  filter: saturate(1.15);
 }
 
 .focused-strip-glyph-record {
@@ -1152,7 +1242,7 @@ button:focus-visible {
 }
 
 .focused-strip-record-dot {
-  width: 55%;
+  width: 48%;
   aspect-ratio: 1;
   border-radius: 50%;
   background: #b70000;
@@ -1167,6 +1257,10 @@ button:focus-visible {
   transform: none;
   filter: none;
 }
+
+/* ============================================================
+   Focused strip action sheet
+   ============================================================ */
 
 .focused-strip-action-sheet-overlay {
   position: fixed;
@@ -1318,8 +1412,8 @@ button:focus-visible {
 
 .focused-strip-nav-image-bank-left,
 .focused-strip-nav-image-bank-right {
-  width: 109%;
-  height: 109%;
+  width: 100%;
+  height: 100%;
 }
 
 .focused-strip-nav-image-channel-left {
@@ -1621,14 +1715,15 @@ button:focus-visible {
     0 0 7px rgba(255, 81, 25, 0.42);
 }
 
-.focus-track-action-grid .focus-track-surface-button.remote-button,
-.focus-track-action-grid .focus-track-action-button.remote-button {
-  min-height: var(--focus-track-button-height);
-}
+/* ============================================================
+   Transport button system
+   ============================================================ */
 
 .remote-button {
-  min-height: 92px;
+  min-height: 45px;
 }
+
+
 
 .luna-button {
   --switch-frame-top: #24292e;
@@ -2087,6 +2182,10 @@ button:focus-visible {
     inset -1px -1px 5px rgba(0, 0, 0, 0.12);
 }
 
+/* ============================================================
+   Icon and label sizing
+   ============================================================ */
+
 .luna-icon {
   width: 1.25rem;
   height: 1.25rem;
@@ -2118,9 +2217,6 @@ button:focus-visible {
   image-rendering: -webkit-optimize-contrast;
 }
 
-.luna-icon-record {
-  filter: saturate(1.15);
-}
 
 .luna-icon-loop {
   opacity: 0.9;
@@ -2131,26 +2227,29 @@ button:focus-visible {
 }
 
 .tracking-flat-button.tracking-record .transport-icon .luna-icon-record {
-  width: 2.44rem;
-  height: 2.44rem;
-  transform: scale(0.55);
-  transform-origin: center;
   background-color: transparent;
 }
 
 .tracking-flat-button .transport-icon .luna-icon-play {
-  transform: scale(1.2);
-  transform-origin: center;
+  transform: none;
 }
 
 .tracking-flat-button .transport-icon .luna-icon-loop {
-  transform: scale(1.1);
-  transform-origin: center;
+  transform: none;
 }
 
 .tracking-flat-button .luna-icon {
-  width: 1rem;
-  height: 1.25rem;
+  width: 1.9rem;
+  height: 1.9rem;
+}
+
+.focus-track-action-button-version .luna-icon.focused-strip-svg-icon-plus {
+  width: var(--focus-track-version-icon-size);
+  height: var(--focus-track-version-icon-size);
+  transform: translate(
+    var(--focus-track-version-icon-offset-x),
+    var(--focus-track-version-icon-offset-y)
+  );
 }
 
 .tracking-text-button-label {
@@ -2211,6 +2310,10 @@ button:focus-visible {
   letter-spacing: 0.12em;
   font-weight: 700;
 }
+
+/* ============================================================
+   Responsive scaling
+   ============================================================ */
 
 @media (max-width: 1100px) {
   .layout {
