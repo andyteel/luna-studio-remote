@@ -40,6 +40,7 @@ import rtzSvg from '../assets_original/transport/rtz-v2.svg';
 import undoSvg from '../assets_original/transport/undo-v2.svg';
 import redoSvg from '../assets_original/transport/redo-v2.svg';
 import plusSvg from '../assets_original/transport/plus-v2.svg';
+import appLogoMark from '../assets_original/logos/lc-app-icon.svg';
 import recordActiveSvg from '../assets_original/Icons/icon-rec-active.svg';
 import recordInactiveSvg from '../assets_original/Icons/icon-rec-inactive.svg';
 
@@ -1657,7 +1658,10 @@ const App = () => {
         <div className="remote-stage">
           <section className="tab-panel" aria-label="Tracking controls">
             <div className="brand-block tab-panel-brand">
-              <h1>LUNA COMPANION</h1>
+              <div className="brand-lockup" aria-label="Luna Companion">
+                <img src={appLogoMark} alt="" aria-hidden="true" className="brand-logo-mark" />
+                <h1>LUNA COMPANION</h1>
+              </div>
             </div>
 
             <div className="remote-view-toggle" role="tablist" aria-label="Remote view mode">

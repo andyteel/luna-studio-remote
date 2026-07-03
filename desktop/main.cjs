@@ -93,7 +93,7 @@ let runtimeStatus = {
 
 const getStateFilePath = () => path.join(app.getPath('userData'), 'desktop-state.json');
 const getAppIconPath = () => path.join(app.getAppPath(), 'desktop-assets', 'luna-app-icon.png');
-const getTrayIconPath = () => path.join(app.getAppPath(), 'desktop-assets', 'lsr-tray-icon.png');
+const getTrayIconPath = () => path.join(app.getAppPath(), 'desktop-assets', 'tray-icon.png');
 const getServerEntryPath = () => path.join(app.getAppPath(), 'dist-server', 'server', 'index.js');
 const getWindowHtmlPath = () => path.join(__dirname, 'qr-window.html');
 
@@ -108,10 +108,13 @@ const createTrayImage = () => {
     return nativeImage.createEmpty();
   }
 
-  return trayImage.resize({
+  const resizedTrayImage = trayImage.resize({
     height: 18,
     quality: 'best',
   });
+
+  resizedTrayImage.setTemplateImage(true);
+  return resizedTrayImage;
 };
 
 const buildLanUrl = (port) => {

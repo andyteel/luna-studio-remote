@@ -62,7 +62,7 @@
       "node_modules/jazz-midi/**/*.node"
     ],
     "mac": {
-      "icon": "Icon/LRC Exports/LRC.icon",
+      "icon": "assets_original/logos/apple-icons/lc-apple-icon.icon",
       "category": "public.app-category.music",
       "target": [
         "dmg",

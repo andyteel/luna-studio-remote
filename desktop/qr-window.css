@@ -204,32 +204,92 @@ button:focus-visible {
 
 .topbar {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-start;
   align-items: center;
   gap: 12px;
-  padding: 8px 10px;
+  padding: 12px 12px;
   border-radius: 8px;
+  min-height: 0;
 }
 
 .brand-block {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 14px;
   min-width: 0;
+  line-height: 1;
+}
+
+.brand-lockup {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 12px;
+  min-width: 0;
+  line-height: 1;
+}
+
+.brand-logo-mark {
+  width: auto;
+  height: 32px;
+  flex: 0 0 auto;
+  display: block;
+}
+
+.brand-lockup h1 {
+  margin: 0;
+  font-family: "Luna Oxygen Bold", "Avenir Next", sans-serif;
+  font-weight: 700;
+  font-size: 1.55rem;
+  line-height: 1;
+  letter-spacing: 0.08em;
+  color: #e5f6fe;
+  text-transform: uppercase;
 }
 
 .brand-copy {
   min-width: 0;
+  display: flex;
+  align-items: center;
 }
 
 .brand-copy h1 {
   margin: 0;
-  font-family: "Luna Oxygen Bold", "Avenir Next", sans-serif;
-  font-size: 1rem;
+  font-family: "Luna Oxygen", "Avenir Next", sans-serif;
+  font-weight: 400;
+  font-size: 1.55rem;
   line-height: 1;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.08em;
   color: #e5f6fe;
   text-transform: uppercase;
+}
+
+.remote-topbar .brand-lockup {
+  justify-content: flex-start;
+  align-items: center;
+  gap: 12px;
+}
+
+.remote-topbar .brand-logo-mark {
+  height: 32px;
+}
+
+.remote-topbar .header-subtitle {
+  margin: 0;
+  align-self: center;
+  line-height: 1;
+  color: #d9b47a;
+  font-size: 0.78rem;
+}
+
+.remote-topbar .brand-lockup h1 {
+  font-family: "Luna Oxygen Bold", "Avenir Next", sans-serif;
+  font-weight: 700;
+  color: #e5f6fe;
+}
+
+.remote-topbar .brand-block {
+  gap: 14px;
 }
 
 .header-subtitle,
@@ -258,7 +318,8 @@ button:focus-visible {
 }
 
 .header-subtitle {
-  margin-top: 3px;
+  margin: 0;
+  line-height: 1;
 }
 
 .status-value {
