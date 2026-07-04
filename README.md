@@ -1,148 +1,395 @@
-# LUNA Studio Remote
+# Luna Companion
 
-LUNA Studio Remote is a standalone macOS companion app for controlling Universal Audio's LUNA from an iPhone, iPad, or another browser on the same local network.
+*Control LUNA from anywhere in your studio.*
 
-It was built for recording workflows where the Mac running LUNA is across the room, such as tracking drums, vocals, guitars, or any setup where walking back to the computer slows down the session.
+**Luna Companion** lets you control Universal Audio's LUNA DAW from anywhere in your studio using your phone or tablet. Whether you're recording yourself across the room, sitting behind a drum kit, or dialing in a guitar tone away from your desk, Luna Companion puts the essential controls of LUNA right in your hand.
 
-## What It Does
+<img height="600" alt="lc-remote-server" src="https://github.com/user-attachments/assets/67c27bf5-8d14-4965-bd90-7305e47cb0f3" />
+<img width="732" height="263" alt="lc-system-tray" src="https://github.com/user-attachments/assets/5ca1b5bf-0726-4e33-a32c-b97f36c8152f" />
 
-- Runs as a standalone macOS desktop app
-- Starts a bundled local web server automatically
-- Detects the Mac's local network address
-- Shows a scannable QR code for phone or tablet access
-- Opens a touch-friendly browser remote on devices connected to the same network
-- Sends transport and workflow commands to LUNA through macOS Accessibility and Automation permissions
 
-## Current Release
+## Features
 
-The current public release is built for Apple Silicon Macs.
+### Transport Controls
+- Play
+- Stop
+- Record
+- Return to Zero
+- Go to End
+- Loop
+- Click (Metronome)
+- Count-In
+- Pre/Post Roll Toggle
+- Play From Stop Location
+- Undo
+- Redo
+<img height="600" alt="lc-transport" src="https://github.com/user-attachments/assets/f7b7e118-09b3-4684-8606-624a37f124c0" />
 
-Download the latest release from the GitHub Releases page:
+### Focus Track Controls
+- Record Arm
+- Solo
+- Mute
+- Volume Fader
+- Real-time Level Meter
+- Previous Track
+- Next Track
+- Track Options
+<img height="600" alt="lc-focus-track" src="https://github.com/user-attachments/assets/51e6e022-2599-455b-9053-59ddd49f7a5f" />
 
-- `LUNA Studio Remote-1.0.0-arm64.dmg`
-- `LUNA Studio Remote-1.0.0-arm64-mac.zip`
+### Remote Experience
+- Wireless control over your local network
+- Optimized for phones and tablets
+- Add to your device's Home Screen for an app-like experience
+- Signed and notarized macOS application
+- Lightweight companion server with built-in setup and connection status
 
-The DMG is recommended for most users.
+> **Note:** Luna Companion combines Mackie Control (MCU) with macOS keyboard automation to provide access to more of LUNA's functionality than standard MIDI control alone.
+
+---
+
+# Installation
 
 ## Requirements
 
-- Apple Silicon Mac
-- macOS with Accessibility, Automation, and Local Network permissions available
-- Universal Audio LUNA installed on the Mac
-- iPhone, iPad, or another browser-based device on the same Wi-Fi or local network
+Before installing Luna Companion, make sure you have:
 
-## Installation
+- A Mac running Universal Audio LUNA
+- An iPhone, iPad, or other mobile device with a modern web browser
+- Both devices connected to the same local network
+- A configured IAC Driver in macOS Audio MIDI Setup
+- LUNA configured to use the Luna Companion IAC ports
 
-1. Download the DMG from the latest GitHub Release.
+## Install Luna Companion
+
+1. Download the latest DMG from the **Releases** page.
 2. Open the DMG.
-3. Drag `LUNA Studio Remote.app` into the `Applications` folder.
-4. Launch `LUNA Studio Remote.app`.
-5. If macOS blocks the first launch, right-click the app and choose **Open**.
+3. Drag **Luna Companion** into your **Applications** folder.
+4. Launch Luna Companion.
 
-Because this app is not currently signed or notarized, macOS may show a security warning on first launch.
+The companion server window will open and display a QR code along with the address of your remote.
 
-## First Launch
+## Connect Your Device
 
-When the app opens, it starts the local server automatically and displays:
+1. Scan the QR code with your phone or tablet.
+2. The remote interface will open in your browser.
+3. Add the page to your Home Screen if desired.
+4. Keep the Luna Companion server running while using the remote.
 
-- The local network URL
-- A QR code for phone or tablet access
-- Server controls for copy, open, restart, stop, and quit
+---
 
-Scan the QR code with your iPhone or iPad, or manually open the displayed local URL in a browser.
+# First-Time Setup
 
-Your remote device must be on the same Wi-Fi or wired local network as the Mac running LUNA Studio Remote.
+Luna Companion uses both MIDI and macOS keyboard automation to provide the broadest possible control of LUNA.
 
-## macOS Permissions
+Once setup is complete, you should not need to repeat these steps unless your MIDI configuration or macOS permissions change.
 
-LUNA Studio Remote sends keyboard shortcuts to LUNA, so macOS may prompt for permissions.
+## 1. Configure the IAC Driver
 
-Allow access for:
+Luna Companion communicates with LUNA through macOS's built-in IAC Driver.
 
-- Accessibility
-- Automation
-- Local Network
+If you have not already configured it:
 
-If commands do not reach LUNA, open **System Settings** and check the app's permissions under **Privacy & Security**.
+1. Open **Audio MIDI Setup** on your Mac.
+2. Open the **MIDI Studio** window.
+3. Open the **IAC Driver**.
+4. Enable the IAC Driver.
+5. Create or verify the following ports:
+   - **IAC Luna Companion From Luna**
+   - **IAC Luna Companion To Luna**
 
-## Using the Remote
+## 2. Configure LUNA
 
-1. Open LUNA on your Mac.
-2. Launch LUNA Studio Remote.
-3. Scan the QR code from your phone or tablet.
-4. Keep LUNA active or available to receive commands.
-5. Use the remote for transport and tracking workflow controls.
+Once the IAC Driver has been configured, assign the Luna Companion MIDI ports inside LUNA.
 
-## Important Notes
+1. Open **Settings** in LUNA.
+2. Select the **Controllers** tab.
+3. In the first available control surface row, set the **Input Device** to **IAC Luna Companion To Luna**.
+4. Set the **Output Device** to **IAC Luna Companion From Luna**.
+5. Enable the controller by checking the **On** box.
+6. Set **Surface Shows Tracks From** to **Focused Window**.
 
-- This is a keystroke-based remote, not an official Universal Audio product.
-- It does not receive direct transport, timeline, or mixer state feedback from LUNA.
-- If another app takes focus, some commands may not reach LUNA until LUNA is active again.
-- Transport behavior depends on LUNA's current shortcut handling and macOS permission state.
-- Some workflows may require an extra stop press, especially when pre-roll, post-roll, or record states are involved.
-- If macOS Spotlight still uses `Command+Space`, remap that shortcut so the record command can reach LUNA correctly.
+> **Recommended:** Setting **Surface Shows Tracks From** to **Focused Window** allows Luna Companion to follow the track selection in whichever LUNA window is currently active, keeping the Focus Track display synchronized as you work.
 
-## Troubleshooting
+> **Note:** The Input and Output devices are intentionally reversed from the application's perspective. LUNA receives MIDI data from **IAC Luna Companion To Luna** and sends MIDI feedback to **IAC Luna Companion From Luna**.
 
-### The phone cannot open the remote
+## 3. Grant macOS Permissions
 
-- Make sure the phone and Mac are on the same Wi-Fi or local network.
-- Disable VPNs or network isolation features that block local device discovery.
-- Restart the server from the LUNA Studio Remote window.
-- Quit and relaunch the app.
+Some commands are sent using macOS keyboard automation because they are not available through Mackie Control.
 
-### The remote opens, but LUNA does not respond
+The first time these commands are used, macOS may ask you to grant:
 
-- Confirm that LUNA is open.
-- Confirm that LUNA Studio Remote has Accessibility permission.
-- Confirm that macOS has allowed Automation permission.
-- Click back into LUNA and try the command again.
+- **Accessibility** permission
+- **Automation** permission
 
-### Record does not work as expected
+Grant these permissions when prompted. They only need to be approved once.
 
-- Check for macOS shortcut conflicts.
-- Make sure `Command+Space` is not still assigned to Spotlight.
-- Confirm that LUNA itself responds to the expected keyboard shortcut from the Mac keyboard.
+If keyboard-based commands do not respond, open:
 
-## Local Development
+**System Settings > Privacy & Security > Accessibility**
 
-Install dependencies:
+Then make sure **Luna Companion** is enabled.
 
-```bash
-npm install
-```
+## 4. Verify the Connection
 
-Run the development server:
+With the Luna Companion server running:
 
-```bash
-npm run dev
-```
+1. Press **Play** or **Stop** in LUNA, or select a track.
+2. The server window should indicate that MIDI is connected.
+3. The remote should begin displaying the currently focused track name, level meter, and transport status.
 
-Build and package the desktop app:
+If these indicators appear, Luna Companion is communicating successfully with LUNA and is ready to use.
 
-```bash
-npm run desktop:package
-```
+---
 
-## Release Artifacts
+# Using Luna Companion
 
-Packaged output is written to:
+Luna Companion is organized into two primary screens, each designed for a different part of the recording workflow.
 
-- `release/LUNA Studio Remote-1.0.0-arm64.dmg`
-- `release/LUNA Studio Remote-1.0.0-arm64-mac.zip`
-- `release/mac-arm64/LUNA Studio Remote.app`
+## Transport Screen
 
-## Tech Stack
+The Transport screen gives you quick access to LUNA's primary recording, playback, and session navigation controls, making it easy to operate your session from anywhere in your studio.
 
-- Electron
-- React
-- Vite
-- Express
-- TypeScript
-- electron-builder
+### Recording & Playback
 
-## Disclaimer
+- Play
+- Stop / Pause
+- Record
+- Loop
+- Click (Metronome)
+- Count-In
+- Pre/Post Roll Toggle
+- Play From Stop Location
 
-LUNA Studio Remote is an independent companion utility. It is not affiliated with, endorsed by, or supported by Universal Audio.
+The **Pre/Post Roll** button toggles both **Pre-Roll** and **Post-Roll** together, matching LUNA's keyboard shortcut. Individual Pre-Roll and Post-Roll settings can still be adjusted directly within LUNA.
 
-Use it at your own discretion during recording sessions, and test your workflow before relying on it in a critical take.
+When **Play From Stop Location** is enabled, the **Stop** button changes to a **Pause** button. Instead of returning to the previous start position, playback resumes from the exact point where playback was paused.
+
+### Timeline Navigation
+
+- Return to Zero
+- Go to End
+- Previous Marker
+- Next Marker
+- Create Marker
+- Previous Bar
+- Next Bar
+
+### Editing
+
+- Undo
+- Redo
+
+## Focus Track Screen
+
+The Focus Track screen gives you quick access to the currently selected track in LUNA. Whether you're recording yourself across the room or making quick adjustments during a session, the Focus Track screen keeps the most important controls close at hand.
+
+### Track Controls
+
+- Record Arm
+- Solo
+- Mute
+- Volume Fader
+- Real-time Level Meter
+
+The Focus Track screen automatically follows the currently selected track in LUNA, allowing you to arm tracks, adjust levels, and monitor signal without returning to your computer.
+
+### Track Navigation
+
+- Previous Track
+- Next Track
+
+Quickly move between tracks in your session while keeping your hands on your instrument.
+
+### Track Options
+
+<img height="600" alt="lc-track-options" src="https://github.com/user-attachments/assets/7a8af4a3-c0a1-4de5-a941-ac66db1c1566" />
+
+The **+** button opens a menu of convenient track actions, allowing you to create new recording destinations or duplicate your current track without interrupting your workflow.
+
+Available options include:
+
+- **New Track Version**
+- **Duplicate Track with Content**
+- **Duplicate Track without Content**
+
+#### New Track Version
+
+Creates a new track version on the current track, allowing you to record additional takes while preserving previous performances. This is LUNA's non-destructive way of capturing multiple takes on the same track.
+
+#### Duplicate Track with Content
+
+Creates a new track containing the current track's audio along with its channel settings, plugins, routing, and sends.
+
+#### Duplicate Track without Content
+
+Creates a new track with the same channel settings, plugins, routing, and sends, but without copying the recorded audio. This is useful when you want another recording track with the same setup while starting with an empty timeline.
+
+## Home Screen Installation
+
+For the best experience, add Luna Companion to your phone or tablet's Home Screen. This launches the remote in a full-screen, app-like view without browser controls and provides quick access for future sessions.
+
+---
+
+# How Luna Companion Works
+
+Luna Companion combines two methods of controlling LUNA to provide a richer remote experience than MIDI alone.
+
+## Mackie Control (MCU)
+
+Whenever possible, Luna Companion communicates with LUNA using the Mackie Control (MCU) protocol. This provides real-time feedback for features such as:
+
+- Transport status
+- Focus Track selection
+- Record Arm
+- Solo
+- Mute
+- Volume
+- Level metering
+
+Because these functions are driven by MIDI feedback from LUNA, the remote reflects the current state of your session.
+
+## macOS Keyboard Automation
+
+Some LUNA features are not available through the Mackie Control protocol. For those functions, Luna Companion uses macOS keyboard automation to trigger the same commands you would use from your keyboard.
+
+Examples include:
+
+- Undo / Redo
+- Return to Zero
+- Go to End
+- Marker navigation and creation
+- Count-In
+- Pre/Post Roll
+- Play From Stop Location
+- Track Options
+
+This hybrid approach allows Luna Companion to provide access to significantly more of LUNA's functionality than would be possible using MIDI alone.
+
+---
+
+# Known Limitations
+
+Luna Companion combines Mackie Control (MCU) with macOS keyboard automation to provide access to more of LUNA's functionality than MIDI control alone. While this enables a much richer remote experience, there are a few limitations imposed by LUNA itself.
+
+## Play From Stop Location
+
+LUNA does not provide feedback indicating whether **Play From Stop Location** is enabled.
+
+To provide visual feedback, Luna Companion maintains this button's state locally. When enabled, the **Stop** button changes to a **Pause** button to indicate that playback will resume from the point where it was stopped.
+
+If **Play From Stop Location** is changed directly within LUNA, the remote's indicator may become temporarily out of sync. Simply toggle the function again from the remote or within LUNA to resynchronize the indicator.
+
+## Count-In
+
+The **Count-In** button toggles LUNA's Count-In function on or off using LUNA's keyboard shortcut.
+
+The remote does not set the Count-In length. If you want a 1-bar, 2-bar, or 4-bar count-in, set that preference inside LUNA first. Luna Companion will then toggle Count-In on or off using LUNA's current setting.
+
+Because LUNA does not provide feedback for this state over MCU, the remote's Count-In indicator may become temporarily out of sync if Count-In is changed directly inside LUNA.
+
+## Pre/Post Roll
+
+The **Pre/Post Roll** button maintains its state locally because LUNA does not expose its current status through MCU.
+
+LUNA's keyboard shortcut toggles **Pre-Roll** and **Post-Roll** together. For that reason, the remote controls them as a single combined function rather than as separate switches.
+
+If Pre-Roll or Post-Roll is changed directly within LUNA, the remote's indicator may become temporarily out of sync. Toggle the function again from the remote or within LUNA to resynchronize the indicator.
+
+## Keyboard-Based Commands
+
+Some Luna Companion functions are performed using macOS keyboard automation because they are not available through Mackie Control.
+
+These commands require:
+
+- Accessibility permission
+- Automation permission
+
+These permissions are requested by macOS the first time they are needed and only need to be granted once.
+
+## Multiple LUNA Windows
+
+Commands that use macOS keyboard automation are sent to whichever LUNA window currently has focus.
+
+For example, if both the Mixer and Timeline windows are open, make sure the window you want to control is the active window before using keyboard-based commands.
+
+MCU-based functions, including transport status, Focus Track updates, and level metering, continue to operate normally.
+
+---
+
+# Troubleshooting
+
+## The remote won't connect
+
+- Make sure your computer and mobile device are connected to the same local network.
+- Verify that the Luna Companion server is running.
+- Try scanning the QR code again or manually enter the Remote URL displayed in the server window.
+- If needed, restart the Luna Companion server.
+
+## MIDI is not connected
+
+Verify that:
+
+- The IAC Driver is enabled in macOS Audio MIDI Setup.
+- LUNA is configured to use the Luna Companion IAC ports.
+- The controller is enabled in **Settings > Controllers**.
+- **Surface Shows Tracks From** is set to **Focused Window**.
+
+Press **Play**, **Stop**, or select a track in LUNA. The server should indicate that MIDI communication has been established.
+
+## Keyboard commands don't respond
+
+Some commands rely on macOS keyboard automation.
+
+If commands such as **Undo**, **Redo**, **Track Options**, or timeline navigation do not respond:
+
+- Verify that Accessibility permission has been granted.
+- Verify that Automation permission has been granted.
+- Restart Luna Companion after granting permissions if necessary.
+
+## Track information doesn't update
+
+If the Focus Track screen does not follow your selection:
+
+- Confirm that **Surface Shows Tracks From** is set to **Focused Window** in LUNA's **Controllers** settings.
+- Click the track you want to control in LUNA.
+
+## Button indicators don't match LUNA
+
+The following buttons maintain their state locally because LUNA does not provide MCU feedback for them:
+
+- Count-In
+- Pre/Post Roll
+- Play From Stop Location
+
+If one of these indicators becomes out of sync, simply toggle the function again from the remote or directly within LUNA to restore synchronization.
+
+## Keyboard commands affect the wrong window
+
+If multiple LUNA windows are open, keyboard-based commands are sent to the window that currently has focus.
+
+Click the desired LUNA window before using keyboard-based commands.
+
+---
+
+# Tutorial Video
+
+A complete installation, setup, and walkthrough of Luna Companion is available on YouTube.
+
+**Watch the tutorial:** 
+https://youtu.be/KysxiVoA4lI
+
+---
+
+# Feedback
+
+Luna Companion was built to solve a real workflow challenge in my own studio, and I hope it makes recording with LUNA more enjoyable for you as well.
+
+If you encounter a bug, have an idea for a new feature, or would like to share feedback, please open an issue on GitHub. I'd love to hear how you're using Luna Companion in your own workflow.
+
+---
+
+# Acknowledgments
+
+Luna Companion was created independently by Andy Teel to extend the remote control capabilities of Universal Audio's LUNA DAW.
+
+LUNA is a trademark of Universal Audio, Inc. Luna Companion is an independent project and is not affiliated with, endorsed by, or sponsored by Universal Audio.
