@@ -557,6 +557,8 @@ const startServer = async () => {
   process.env.ENABLE_KEYSTROKES = DEFAULT_ENV.ENABLE_KEYSTROKES;
   process.env.LUNA_APP_NAME = DEFAULT_ENV.LUNA_APP_NAME;
   process.env.HOST = DEFAULT_ENV.HOST;
+  process.env.MCU_TRANSPORT_MODE = 'prefer-mcu';
+  process.env.MCU_NAV_SEND_MODE = 'noteOnZeroRelease';
 
   const selectedPort = await findAvailablePort(DEFAULT_PORT);
   process.env.PORT = String(selectedPort);

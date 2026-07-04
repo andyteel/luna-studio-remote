@@ -16,6 +16,8 @@ import focusedSwitchRed from '../assets_v2/switch_fader_red@2x.png';
 import focusedSwitchYellow from '../assets_v2/switch_fader_yel@2x.png';
 import playActiveSvg from '../assets_original/Icons/icon-play-active.svg';
 import playInactiveSvg from '../assets_original/Icons/icon-play-inactive.svg';
+import pauseActiveSvg from '../assets_original/Icons/icon-pause-active.svg';
+import pauseInactiveSvg from '../assets_original/Icons/icon-pause-inactive.svg';
 import stopActiveSvg from '../assets_original/Icons/icon-stop-active.svg';
 import stopInactiveSvg from '../assets_original/Icons/icon-stop-inactive.svg';
 import loopActiveSvg from '../assets_original/Icons/icon-loop-active.svg';
@@ -528,6 +530,7 @@ const App = () => {
     click: false,
     countIn: false,
     playFromStopLocation: false,
+    prePostRoll: false,
   });
   const [focusedStripNavMode, setFocusedStripNavMode] = useState(false);
   const [focusedStripVersionPanelOpen, setFocusedStripVersionPanelOpen] = useState(false);
@@ -715,6 +718,8 @@ const App = () => {
           return { ...current, countIn: !current.countIn };
         case 'togglePlayFromStopLocation':
           return { ...current, playFromStopLocation: !current.playFromStopLocation };
+        case 'togglePrePostRoll':
+          return { ...current, prePostRoll: !current.prePostRoll };
         default:
           return current;
       }
@@ -1058,6 +1063,7 @@ const App = () => {
 
     if (
       (commandId === 'loop' && trackingUiState.loop) ||
+      (commandId === 'togglePrePostRoll' && trackingUiState.prePostRoll) ||
       (commandId === 'togglePlayFromStopLocation' && trackingUiState.playFromStopLocation)
     ) {
       return 'luna-button-state-yellow luna-button-active';
@@ -1107,7 +1113,10 @@ const App = () => {
       case 'playStop':
         return renderImageIcon(trackingUiState.playing ? playActiveSvg : playInactiveSvg, 'luna-icon-play');
       case 'stop':
-        return renderImageIcon(!trackingUiState.playing ? stopActiveSvg : stopInactiveSvg);
+        return renderImageIcon(
+          trackingUiState.playFromStopLocation ? pauseActiveSvg : stopActiveSvg,
+          trackingUiState.playFromStopLocation ? 'luna-icon-pause' : '',
+        );
       case 'record':
         return renderImageIcon(trackingUiState.recording ? recordActiveSvg : recordInactiveSvg, 'luna-icon-record');
       case 'loop':

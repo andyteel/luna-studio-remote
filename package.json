@@ -62,12 +62,17 @@
       "node_modules/jazz-midi/**/*.node"
     ],
     "mac": {
+      "identity": "Andy Teel (DBS522BW3B)",
+      "hardenedRuntime": true,
+      "entitlements": "build/entitlements.mac.plist",
+      "entitlementsInherit": "build/entitlements.mac.inherit.plist",
       "icon": "assets_original/logos/apple-icons/lc-apple-icon.icon",
       "category": "public.app-category.music",
       "target": [
         "dmg",
         "zip"
       ]
-    }
+    },
+    "afterSign": "build/notarize.cjs"
   }
 }
