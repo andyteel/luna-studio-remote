@@ -52,6 +52,8 @@
       "dist-server/**/*",
       "desktop/**/*",
       "desktop-assets/**/*",
+      "assets_original/logos/lc-app-icon.svg",
+      "assets_original/logos/lc-app-icon-sm.png",
       "luna-fonts/**/*",
       "package.json",
       "luna-image-resources/misc/UniversalAudioIcon.png",
