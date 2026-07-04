@@ -21,13 +21,17 @@ const keyCodeMap = {
 } as const;
 
 const keystrokeMap = {
+  backslash: '\\',
   digit0: '0',
   a: 'a',
+  d: 'd',
   e: 'e',
   k: 'k',
   l: 'l',
+  p: 'p',
   q: 'q',
   r: 'r',
+  semicolon: ';',
   t: 't',
   w: 'w',
   z: 'z',
@@ -74,7 +78,7 @@ export const buildKeyAction = (shortcut: ShortcutSpec): string => {
   }
 
   if (baseKey in keystrokeMap) {
-    return `keystroke "${keystrokeMap[baseKey as keyof typeof keystrokeMap]}"${modifierClause}`;
+    return `keystroke "${applescriptEscape(keystrokeMap[baseKey as keyof typeof keystrokeMap])}"${modifierClause}`;
   }
 
   throw new Error(`Unsupported base key "${String(baseKey)}" for ${shortcut.id}`);

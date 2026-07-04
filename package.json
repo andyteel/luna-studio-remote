@@ -1,6 +1,8 @@
 {
   "name": "luna-tracking-remote",
-  "version": "1.0.0",
+  "version": "2.0.0",
+  "description": "A local network remote for controlling Universal Audio LUNA from another device.",
+  "author": "Andy Teel",
   "private": true,
   "type": "module",
   "main": "desktop/main.cjs",
@@ -20,6 +22,7 @@
   "dependencies": {
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
+    "jzz": "^1.9.6",
     "qrcode": "^1.5.4",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
@@ -39,7 +42,7 @@
   },
   "build": {
     "appId": "com.lunastudioremote.app",
-    "productName": "LUNA Studio Remote",
+    "productName": "Luna Companion",
     "directories": {
       "output": "release"
     },
@@ -49,21 +52,29 @@
       "dist-server/**/*",
       "desktop/**/*",
       "desktop-assets/**/*",
+      "assets_original/logos/lc-app-icon.svg",
+      "assets_original/logos/lc-app-icon-sm.png",
       "luna-fonts/**/*",
-      "Icon/LRC-toolbar-icon.png",
-      "Icon/LRC-toolbar-@2.png",
-      "Icon/LRC-toolbar-@3.png",
-      "Icon/LRC-toolbar-@4.png",
       "package.json",
-      "luna-image-resources/misc/UniversalAudioIcon.png"
+      "luna-image-resources/misc/UniversalAudioIcon.png",
+      "node_modules/jzz/**/*",
+      "node_modules/jazz-midi/**/*"
+    ],
+    "asarUnpack": [
+      "node_modules/jazz-midi/**/*.node"
     ],
     "mac": {
-      "icon": "Icon/LRC Exports/LRC.icon",
+      "identity": "Andy Teel (DBS522BW3B)",
+      "hardenedRuntime": true,
+      "entitlements": "build/entitlements.mac.plist",
+      "entitlementsInherit": "build/entitlements.mac.inherit.plist",
+      "icon": "assets_original/logos/apple-icons/lc-apple-icon.icon",
       "category": "public.app-category.music",
       "target": [
         "dmg",
         "zip"
       ]
-    }
+    },
+    "afterSign": "build/notarize.cjs"
   }
 }

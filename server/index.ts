@@ -1,13 +1,22 @@
 import express from 'express';
+import { spawn } from 'node:child_process';
 import fs from 'node:fs';
 import type { Server as HttpServer } from 'node:http';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { commandMap, commandRegistry, type BaseKey, type CommandId, type ModifierKey } from '../shared/commands.js';
+import { commandMap, commandRegistry, type BaseKey, type CommandDefinition, type CommandId, type ModifierKey } from '../shared/commands.js';
+import type { McuDiagnosticsState, McuPortState, V2RemoteState } from '../shared/v2-state.js';
 import { config } from './config.js';
 import { getLanUrls } from './network.js';
 import { buildAppleScript, buildKeyAction, isLunaRunning, triggerLunaCommand, triggerShortcut, type ShortcutSpec } from './luna.js';
+import { McuService } from './mcu/mcu-service.js';
 import type { RemoteState, TestShortcutDebug } from './types.js';
+
+interface RemoteStateStreamEvent {
+  reason: string;
+  emittedAt: string;
+  state: RemoteState;
+}
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -70,13 +79,17 @@ const normalizePin = (value: unknown): string => {
 
 const validModifierKeys: ModifierKey[] = ['command', 'shift', 'control', 'option'];
 const validBaseKeys: BaseKey[] = [
+  'backslash',
   'digit0',
   'a',
+  'd',
   'e',
   'k',
   'l',
+  'p',
   'q',
   'r',
+  'semicolon',
   't',
   'w',
   'z',
@@ -97,13 +110,17 @@ const validBaseKeys: BaseKey[] = [
 
 const formatShortcutLabel = (key: BaseKey, modifiers: ModifierKey[]): string => {
   const keyLabels: Record<BaseKey, string> = {
+    backslash: '\\',
     digit0: '0',
     a: 'A',
+    d: 'D',
     e: 'E',
     k: 'K',
     l: 'L',
+    p: 'P',
     q: 'Q',
     r: 'R',
+    semicolon: ';',
     t: 'T',
     w: 'W',
     z: 'Z',
@@ -197,6 +214,34 @@ const parseShortcutRequest = (
   };
 };
 
+const hasKeyboardShortcut = (
+  command: CommandDefinition,
+): command is CommandDefinition & { keys: Array<ModifierKey | BaseKey> } =>
+  Array.isArray(command.keys) && command.keys.length > 0;
+
+const getKeyboardDescription = (command: CommandDefinition): string =>
+  hasKeyboardShortcut(command) ? `${command.id} -> ${command.keys.join('+')}` : `${command.id} -> no keyboard shortcut`;
+
+const getInitialKeyAction = (command: CommandDefinition): string | null => {
+  if (command.mcuControl) {
+    return `MCU focused ${command.mcuControl}`;
+  }
+
+  if (command.mcuNavigation) {
+    return `MCU navigation ${command.mcuNavigation}`;
+  }
+
+  if (command.mcuTransport && !hasKeyboardShortcut(command)) {
+    return `MCU transport ${command.mcuTransport}`;
+  }
+
+  if (!hasKeyboardShortcut(command)) {
+    throw new Error(`${command.label} has no keyboard fallback`);
+  }
+
+  return buildKeyAction(command);
+};
+
 const buildTestShortcutResponse = (details: {
   ok: boolean;
   key?: BaseKey;
@@ -277,17 +322,214 @@ const isEntrypoint = (): boolean => {
   return path.resolve(entryPath) === fileURLToPath(import.meta.url);
 };
 
+const FOCUSED_TRACK_NOT_SELECTED_ERROR =
+  'Focused track is not selected yet. Select a track in LUNA or wait for MCU select feedback.';
+const FOCUSED_TRACK_NAME_PENDING_WARNING =
+  'Focused track name is pending, using selected strip index.';
+const LUNA_DETECTION_CACHE_MS = 2000;
+
+const normalizeMidiPortName = (name: string): string => name.trim().toLowerCase().replace(/\s+/g, ' ');
+
+const withoutIacDriverPrefix = (name: string): string => {
+  return name.replace(/^iac driver\s+/, '');
+};
+
+const midiPortNameMatches = (candidateName: string | null | undefined, expectedName: string): boolean => {
+  if (!candidateName) {
+    return false;
+  }
+
+  const normalizedCandidateName = normalizeMidiPortName(candidateName);
+  const normalizedExpectedName = normalizeMidiPortName(expectedName);
+  const candidateNames = [
+    normalizedCandidateName,
+    withoutIacDriverPrefix(normalizedCandidateName),
+  ];
+
+  return candidateNames.some((name) => name === normalizedExpectedName || name.includes(normalizedExpectedName));
+};
+
+const hasPortNamed = (ports: McuPortState[], expectedName: string): boolean => {
+  return ports.some((port) => midiPortNameMatches(port.name, expectedName));
+};
+
+const isExpectedPortSelected = (selectedName: string | null, expectedName: string): boolean => {
+  return midiPortNameMatches(selectedName, expectedName);
+};
+
+const buildSetupWarnings = (snapshot: V2RemoteState, diagnostics: McuDiagnosticsState): string[] => {
+  const warnings: string[] = [];
+  const expectedInputFound =
+    hasPortNamed(snapshot.mcu.inputPorts, config.expectedIacInputName) ||
+    isExpectedPortSelected(snapshot.mcu.selectedInputName, config.expectedIacInputName);
+  const expectedOutputFound =
+    hasPortNamed(snapshot.mcu.outputPorts, config.expectedIacOutputName) ||
+    isExpectedPortSelected(snapshot.mcu.selectedOutputName, config.expectedIacOutputName);
+  const midiConnected = Boolean(snapshot.mcu.selectedInputId && snapshot.mcu.selectedOutputId);
+  const mcuReceiving = Boolean(
+    snapshot.mcu.lastMessageAt ||
+      (snapshot.transport.source === 'mcu' && snapshot.transport.updatedAt),
+  );
+  const focusedTrackSelected = snapshot.focusedTrack.source === 'mcu' && snapshot.focusedTrack.index !== null;
+  const focusedTrackNamed = snapshot.focusedTrack.source === 'mcu' && snapshot.focusedTrack.name !== null;
+  const focusedTrackHydrated = focusedTrackSelected && focusedTrackNamed;
+
+  if (!expectedInputFound || !expectedOutputFound) {
+    warnings.push(
+      `Required IAC ports were not found. Create IAC buses named "${config.expectedIacOutputName}" and "${config.expectedIacInputName}" in Audio MIDI Setup.`,
+    );
+    return warnings;
+  }
+
+  if (
+    expectedInputFound &&
+    snapshot.mcu.selectedInputName &&
+    !isExpectedPortSelected(snapshot.mcu.selectedInputName, config.expectedIacInputName)
+  ) {
+    warnings.push(`Select "${config.expectedIacInputName}" as this app's MCU input port.`);
+  }
+
+  if (
+    expectedOutputFound &&
+    snapshot.mcu.selectedOutputName &&
+    !isExpectedPortSelected(snapshot.mcu.selectedOutputName, config.expectedIacOutputName)
+  ) {
+    warnings.push(`Select "${config.expectedIacOutputName}" as this app's MCU output port.`);
+  }
+
+  if (!midiConnected) {
+    warnings.push('MIDI ports are not connected yet.');
+  } else if (!mcuReceiving) {
+    warnings.push('Waiting for MCU feedback from LUNA. Press Play/Stop or select a track in LUNA.');
+  } else if (!focusedTrackSelected) {
+    if (!diagnostics.lastLcdFeedbackAt && !diagnostics.lastSelectFeedbackAt) {
+      warnings.push('MCU feedback is arriving, but no LCD/select focused-track feedback has been received since server start.');
+    } else {
+      warnings.push('Select a track in LUNA to enable focused-track controls.');
+    }
+  } else if (!focusedTrackNamed) {
+    warnings.push('Track name pending from LUNA. Focused-track controls are available.');
+  }
+
+  return warnings;
+};
+
+const buildMidiTestMessage = (currentState: RemoteState): string => {
+  const diagnostics = currentState.mcuDiagnostics;
+
+  if (!currentState.midiConnected) {
+    return 'Check MIDI Status: MIDI input/output ports are not connected yet.';
+  }
+
+  if (!currentState.mcuReceiving) {
+    return 'Check MIDI Status: MIDI ports are connected, but no MCU feedback has arrived yet. Press Play/Stop or select a track in LUNA.';
+  }
+
+  if (currentState.focusedTrackHydrated) {
+    return 'Check MIDI Status: MIDI feedback is arriving and focused track is hydrated.';
+  }
+
+  if (currentState.focusedTrackReady && !currentState.focusedTrackNamed) {
+    return 'Check MIDI Status: focused track is selected and controls are ready. Track name is pending from LUNA.';
+  }
+
+  if (!diagnostics.lastLcdFeedbackAt && !diagnostics.lastSelectFeedbackAt) {
+    return 'Check MIDI Status: MCU feedback is arriving, but no LCD/select focused-track feedback has been received since server start.';
+  }
+
+  if (diagnostics.lastSelectFeedbackAt && !diagnostics.lastLcdFeedbackAt) {
+    return 'Check MIDI Status: MCU select feedback has arrived, but no LCD track-name feedback has been received since server start.';
+  }
+
+  if (diagnostics.lastLcdFeedbackAt && !diagnostics.lastSelectFeedbackAt) {
+    return 'Check MIDI Status: MCU LCD track-name feedback has arrived, but no selected-strip feedback has been received since server start.';
+  }
+
+  return 'Check MIDI Status: MCU focused-track feedback has arrived, but the focused track is not fully hydrated yet.';
+};
+
+const parseFocusedFaderRequest = (
+  input: unknown,
+): {
+  error: string | null;
+  normalized: number;
+  touch: 'start' | 'end' | null;
+} => {
+  if (typeof input !== 'object' || input === null) {
+    return {
+      error: 'Request body must be a JSON object',
+      normalized: 0,
+      touch: null,
+    };
+  }
+
+  const candidate = input as { normalized?: unknown; phase?: unknown };
+
+  if (typeof candidate.normalized !== 'number' || !Number.isFinite(candidate.normalized)) {
+    return {
+      error: 'Expected "normalized" to be a finite number',
+      normalized: 0,
+      touch: null,
+    };
+  }
+
+  const phase = typeof candidate.phase === 'string' ? candidate.phase : 'move';
+
+  if (phase !== 'start' && phase !== 'move' && phase !== 'end') {
+    return {
+      error: 'Expected "phase" to be "start", "move", or "end"',
+      normalized: 0,
+      touch: null,
+    };
+  }
+
+  return {
+    error: null,
+    normalized: Math.max(0, Math.min(1, candidate.normalized)),
+    touch: phase === 'start' ? 'start' : phase === 'end' ? 'end' : null,
+  };
+};
+
+const openAudioMidiSetup = (): void => {
+  const child = spawn('open', ['-a', 'Audio MIDI Setup'], {
+    detached: true,
+    stdio: 'ignore',
+  });
+
+  child.unref();
+};
+
 export const startRemoteServer = async (options: RemoteServerOptions = {}): Promise<RemoteServerInstance> => {
   const logger = options.logger ?? console;
   const host = options.host ?? config.host;
   const port = options.port ?? config.port;
   const state = defaultState();
   const app = express();
+  const stateStreamClients = new Set<express.Response>();
+  const configuredMcuInputName = config.mcuInputName || config.expectedIacInputName;
+  const configuredMcuOutputName = config.mcuOutputName || config.expectedIacOutputName;
+  const mcuService = new McuService({
+    enabled: config.enableMcu && config.enableMidi,
+    debugMidiMessages: config.debugMcuMidi,
+    navigationSendMode: config.mcuNavSendMode,
+    selectedInputId: config.mcuInputId,
+    selectedInputName: configuredMcuInputName,
+    selectedOutputId: config.mcuOutputId,
+    selectedOutputName: configuredMcuOutputName,
+    logger,
+    onStateChange: (details) => {
+      void broadcastStateUpdate(details.reason, details.emittedAt);
+    },
+  });
 
   const clientDistPath = resolveClientDistPath(options.clientDistPath);
   const clientIndexPath = path.join(clientDistPath, 'index.html');
   const clientDistExists = fs.existsSync(clientDistPath);
   const clientIndexExists = fs.existsSync(clientIndexPath);
+  let cachedLunaDetected = false;
+  let cachedLunaDetectedAt = 0;
+
+  await mcuService.start();
 
   const logStageError = (stage: string, error: unknown) => {
     const serialized = serializeError(error);
@@ -319,11 +561,44 @@ export const startRemoteServer = async (options: RemoteServerOptions = {}): Prom
     }
   };
 
+  const getCachedLunaDetected = async (): Promise<boolean> => {
+    const now = Date.now();
+
+    if (now - cachedLunaDetectedAt < LUNA_DETECTION_CACHE_MS) {
+      return cachedLunaDetected;
+    }
+
+    cachedLunaDetectedAt = now;
+    cachedLunaDetected = await isLunaRunning(config.lunaAppName);
+
+    return cachedLunaDetected;
+  };
+
   const getState = async (): Promise<RemoteState> => {
     let lunaDetected = false;
+    const mcuSnapshot = mcuService.getSnapshot();
+    const mcuDiagnostics = mcuService.getDiagnostics();
+    const expectedIacInputFound =
+      hasPortNamed(mcuSnapshot.mcu.inputPorts, config.expectedIacInputName) ||
+      isExpectedPortSelected(mcuSnapshot.mcu.selectedInputName, config.expectedIacInputName);
+    const expectedIacOutputFound =
+      hasPortNamed(mcuSnapshot.mcu.outputPorts, config.expectedIacOutputName) ||
+      isExpectedPortSelected(mcuSnapshot.mcu.selectedOutputName, config.expectedIacOutputName);
+    const midiConnected = Boolean(mcuSnapshot.mcu.selectedInputId && mcuSnapshot.mcu.selectedOutputId);
+    const mcuReceiving = Boolean(
+      mcuSnapshot.mcu.lastMessageAt ||
+        (mcuSnapshot.transport.source === 'mcu' && mcuSnapshot.transport.updatedAt),
+    );
+    const focusedTrackSelected =
+      mcuSnapshot.focusedTrack.source === 'mcu' &&
+      mcuSnapshot.focusedTrack.index !== null;
+    const focusedTrackNamed =
+      mcuSnapshot.focusedTrack.source === 'mcu' &&
+      mcuSnapshot.focusedTrack.name !== null;
+    const focusedTrackHydrated = focusedTrackSelected && focusedTrackNamed;
 
     try {
-      lunaDetected = await isLunaRunning(config.lunaAppName);
+      lunaDetected = await getCachedLunaDetected();
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unable to detect LUNA';
       state.lastError = message;
@@ -334,11 +609,27 @@ export const startRemoteServer = async (options: RemoteServerOptions = {}): Prom
       testMode: config.testMode,
       lunaAppName: config.lunaAppName,
       lunaDetected,
+      midiMode: config.midiMode,
+      expectedIacInputName: config.expectedIacInputName,
+      expectedIacOutputName: config.expectedIacOutputName,
+      expectedIacInputFound,
+      expectedIacOutputFound,
+      midiConnected,
+      mcuReceiving,
+      focusedTrackSelected,
+      focusedTrackNamed,
+      focusedTrackHydrated,
+      focusedTrackReady: focusedTrackSelected,
+      mcuDiagnostics,
+      setupWarnings: buildSetupWarnings(mcuSnapshot, mcuDiagnostics),
       lastCommand: state.lastCommand,
       lastCommandAt: state.lastCommandAt,
       lastError: state.lastError,
       serverTime: new Date().toISOString(),
       pinRequired: config.appPin.length > 0,
+      transport: mcuSnapshot.transport,
+      focusedTrack: mcuSnapshot.focusedTrack,
+      mcu: mcuSnapshot.mcu,
       debug: {
         lastCommandId: state.lastCommand,
         lastKeyAction: state.lastKeyAction,
@@ -349,14 +640,154 @@ export const startRemoteServer = async (options: RemoteServerOptions = {}): Prom
     };
   };
 
+  const writeStateStreamEvent = (response: express.Response, payload: RemoteStateStreamEvent): void => {
+    response.write(`event: state\n`);
+    response.write(`data: ${JSON.stringify(payload)}\n\n`);
+  };
+
+  const broadcastStateUpdate = async (reason: string, emittedAt = new Date().toISOString()): Promise<void> => {
+    if (stateStreamClients.size === 0) {
+      return;
+    }
+
+    const nextState = await getState();
+    if (config.debugMcuMidi && nextState.focusedTrack.meter.clip === true) {
+      logger.log(
+        `[${new Date().toISOString()}] [focused-meter-clip-debug] server pushes state with focusedTrack.meter.clip=true reason=${reason} meterUpdatedAt=${nextState.focusedTrack.meter.updatedAt ?? 'null'} clients=${stateStreamClients.size}`,
+      );
+    }
+    const payload: RemoteStateStreamEvent = {
+      reason,
+      emittedAt,
+      state: nextState,
+    };
+
+    for (const client of stateStreamClients) {
+      writeStateStreamEvent(client, payload);
+    }
+  };
+
   app.use(express.json());
 
   app.get('/api/state', async (_request, response) => {
     response.json(await getState());
   });
 
+  app.get('/api/state/stream', async (request, response) => {
+    response.setHeader('Content-Type', 'text/event-stream');
+    response.setHeader('Cache-Control', 'no-cache, no-transform');
+    response.setHeader('Connection', 'keep-alive');
+    response.setHeader('X-Accel-Buffering', 'no');
+    response.flushHeaders();
+    response.write('retry: 1000\n\n');
+    stateStreamClients.add(response);
+    writeStateStreamEvent(response, {
+      reason: 'stream-connected',
+      emittedAt: new Date().toISOString(),
+      state: await getState(),
+    });
+
+    request.on('close', () => {
+      stateStreamClients.delete(response);
+      response.end();
+    });
+  });
+
   app.get('/api/commands', (_request, response) => {
     response.json({ ok: true, commands: commandRegistry });
+  });
+
+  app.post('/api/open-audio-midi-setup', async (_request, response) => {
+    try {
+      openAudioMidiSetup();
+      response.json({ ok: true, state: await getState() });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unable to open Audio MIDI Setup';
+      state.lastError = message;
+      response.status(500).json({ ok: false, error: message, state: await getState() });
+    }
+  });
+
+  app.post('/api/midi/refresh', async (_request, response) => {
+    try {
+      await mcuService.stop();
+      await mcuService.start();
+      response.json({ ok: true, state: await getState() });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unable to reconnect MIDI';
+      state.lastError = message;
+      response.status(500).json({ ok: false, error: message, state: await getState() });
+    }
+  });
+
+  app.post('/api/midi/test', async (_request, response) => {
+    const currentState = await getState();
+    const ok = currentState.midiConnected && currentState.mcuReceiving;
+
+    response.status(ok ? 200 : 409).json({
+      ok,
+      message: buildMidiTestMessage(currentState),
+      state: currentState,
+    });
+  });
+
+  app.post('/api/focused-fader', async (request, response) => {
+    const parsed = parseFocusedFaderRequest(request.body ?? {});
+
+    if (parsed.error) {
+      response.status(400).json({ ok: false, error: parsed.error, state: await getState() });
+      return;
+    }
+
+    if (config.appPin && normalizePin(request.body?.pin) !== config.appPin) {
+      response.status(401).json({ ok: false, error: 'PIN required or incorrect', state: await getState() });
+      return;
+    }
+
+    try {
+      const currentRemoteState = await getState();
+
+      if (!currentRemoteState.focusedTrackReady) {
+        state.lastError = FOCUSED_TRACK_NOT_SELECTED_ERROR;
+        response.status(409).json({ ok: false, error: state.lastError, state: currentRemoteState });
+        return;
+      }
+
+      if (config.testMode || !config.enableMcu || !config.enableMidi) {
+        state.lastError = null;
+        state.lastKeyAction = `TEST MODE MCU focused fader normalized=${parsed.normalized.toFixed(6)}`;
+        state.lastAppleScript = null;
+        response.json({
+          ok: true,
+          fader: {
+            normalized: parsed.normalized,
+            raw14: Math.round(parsed.normalized * 0x3fff),
+            gainDbText: null,
+          },
+          state: await getState(),
+        });
+        return;
+      }
+
+      const result = await mcuService.sendFocusedFaderPosition(parsed.normalized, { touch: parsed.touch });
+      state.lastError = null;
+      state.lastKeyAction = `MCU strip ${result.stripIndex + 1} fader: ${result.faderMessage.join(' ')}${result.touchMessage ? ` touch ${result.touchMessage.join(' ')}` : ''}`;
+      state.lastAppleScript = null;
+
+      response.json({
+        ok: true,
+        fader: {
+          normalized: result.normalized,
+          raw14: result.raw14,
+          signed: result.signed,
+          gainDbText: result.gainDbText,
+        },
+        state: await getState(),
+      });
+    } catch (error) {
+      state.lastError = error instanceof Error ? error.message : 'Failed to send focused fader';
+      response.status(500).json({ ok: false, error: state.lastError, state: await getState() });
+    }
   });
 
   app.post('/api/command', async (request, response) => {
@@ -375,6 +806,7 @@ export const startRemoteServer = async (options: RemoteServerOptions = {}): Prom
 
     try {
       logger.log(`[${new Date().toISOString()}] POST /api/command command=${command.id}`);
+      const mcuSnapshotBeforeCommand = mcuService.getSnapshot();
 
       if (command.placeholder) {
         state.lastError = command.note ?? `${command.label} shortcut needs confirmation`;
@@ -408,38 +840,206 @@ export const startRemoteServer = async (options: RemoteServerOptions = {}): Prom
         return;
       }
 
-      const description = `${command.id} -> ${command.keys.join('+')}`;
-      const keyAction = buildKeyAction(command);
-      const script = buildAppleScript(config.lunaAppName, command);
+      const keyboardDescription = getKeyboardDescription(command);
+      const focusedMcuDescription = command.mcuControl
+        ? `${command.id} -> MCU focused ${command.mcuControl}`
+        : null;
+      let keyAction: string | null = getInitialKeyAction(command);
+      let script: string | null = null;
+      if (!command.mcuControl && !command.mcuNavigation && hasKeyboardShortcut(command)) {
+        script = buildAppleScript(config.lunaAppName, command);
+      }
       state.lastKeyAction = keyAction;
       state.lastAppleScript = script;
+      let responseWarning: string | undefined;
+      let usedMcuTransport = false;
+      let usedMcuNavigation = false;
 
-      if (config.testMode || !config.enableKeystrokes) {
-        logger.log(`[TEST MODE] ${description}`);
-        logCommandEvent({
-          commandId: command.id,
-          keyAction,
-          script,
-          success: true,
-        });
-      } else {
+      const sendKeyboardAutomation = async (): Promise<void> => {
+        if (!hasKeyboardShortcut(command)) {
+          throw new Error(`${command.label} has no keyboard fallback`);
+        }
+
+        keyAction = buildKeyAction(command);
+        script = buildAppleScript(config.lunaAppName, command);
+        state.lastKeyAction = keyAction;
+        state.lastAppleScript = script;
+
+        if (config.testMode || !config.enableKeystrokes) {
+          logger.log(`[TEST MODE] ${keyboardDescription}`);
+          logCommandEvent({
+            commandId: command.id,
+            keyAction,
+            script,
+            success: true,
+          });
+          return;
+        }
+
         await triggerLunaCommand(config.lunaAppName, command);
-        logger.log(`[SENT] ${description}`);
+        logger.log(`[SENT] ${keyboardDescription}`);
         logCommandEvent({
           commandId: command.id,
           keyAction,
           script,
           success: true,
         });
+      };
+
+      if (command.mcuControl) {
+        const currentRemoteState = await getState();
+
+        if (!currentRemoteState.focusedTrackReady) {
+          state.lastError = FOCUSED_TRACK_NOT_SELECTED_ERROR;
+          logCommandEvent({
+            commandId: command.id,
+            keyAction,
+            script,
+            success: false,
+            error: state.lastError,
+          });
+          response.status(409).json({ ok: false, error: state.lastError, state: await getState() });
+          return;
+        }
+
+        if (!currentRemoteState.focusedTrackNamed) {
+          responseWarning = FOCUSED_TRACK_NAME_PENDING_WARNING;
+        }
+
+        if (config.testMode || !config.enableMcu || !config.enableMidi) {
+          logger.log(`[TEST MODE] ${focusedMcuDescription}`);
+          logCommandEvent({
+            commandId: command.id,
+            keyAction,
+            script,
+            success: true,
+          });
+        } else {
+          const result = await mcuService.sendFocusedTrackControl(command.mcuControl);
+          keyAction = `MCU strip ${result.stripIndex + 1} ${result.role}: ${result.pressMessage.join(' ')} / ${result.releaseMessage.join(' ')}`;
+          state.lastKeyAction = keyAction;
+          logger.log(`[SENT] ${focusedMcuDescription}`);
+          logCommandEvent({
+            commandId: command.id,
+            keyAction,
+            script,
+            success: true,
+          });
+        }
+      } else if (command.mcuNavigation) {
+        const mcuDescription = `${command.id} -> MCU navigation ${command.mcuNavigation}`;
+        keyAction = `MCU navigation ${command.mcuNavigation}`;
+        script = null;
+        state.lastKeyAction = keyAction;
+        state.lastAppleScript = script;
+
+        if (config.testMode) {
+          logger.log(`[TEST MODE] ${mcuDescription}`);
+          logCommandEvent({
+            commandId: command.id,
+            keyAction,
+            script,
+            success: true,
+          });
+        } else if (!config.enableMcu || !config.enableMidi) {
+          state.lastError = 'MCU navigation is disabled by configuration';
+          logCommandEvent({
+            commandId: command.id,
+            keyAction,
+            script,
+            success: false,
+            error: state.lastError,
+          });
+          response.status(409).json({ ok: false, error: state.lastError, state: await getState() });
+          return;
+        } else {
+          const result = await mcuService.sendNavigationControl(command.mcuNavigation);
+          usedMcuNavigation = true;
+          keyAction = `MCU navigation ${result.role} [${result.mode}] delay=${result.delayMs}ms: ${result.pressMessage.join(' ')} / ${result.releaseMessage?.join(' ') ?? 'no release'}`;
+          state.lastKeyAction = keyAction;
+          logger.log(`[SENT] ${mcuDescription}`);
+          logCommandEvent({
+            commandId: command.id,
+            keyAction,
+            script,
+            success: true,
+          });
+        }
+      } else if (command.mcuTransport && (config.mcuTransportMode !== 'keyboard' || !hasKeyboardShortcut(command))) {
+        const mcuDescription = `${command.id} -> MCU transport ${command.mcuTransport}`;
+        keyAction = `MCU transport ${command.mcuTransport}`;
+        script = null;
+        state.lastKeyAction = keyAction;
+        state.lastAppleScript = script;
+
+        if (config.testMode) {
+          logger.log(`[TEST MODE] ${mcuDescription}`);
+          logCommandEvent({
+            commandId: command.id,
+            keyAction,
+            script,
+            success: true,
+          });
+        } else if (!config.enableMcu || !config.enableMidi) {
+          const mcuError = 'MCU transport is disabled by configuration';
+
+          if (config.mcuTransportMode === 'mcu-only' || !hasKeyboardShortcut(command)) {
+            state.lastError = mcuError;
+            logCommandEvent({
+              commandId: command.id,
+              keyAction,
+              script,
+              success: false,
+              error: state.lastError,
+            });
+            response.status(409).json({ ok: false, error: state.lastError, state: await getState() });
+            return;
+          }
+
+          responseWarning = `${mcuError}; used keyboard fallback.`;
+          logger.log(`[FALLBACK] ${mcuDescription}: ${mcuError}`);
+          await sendKeyboardAutomation();
+        } else {
+          try {
+            const result = await mcuService.sendTransportControl(command.mcuTransport);
+            usedMcuTransport = true;
+            keyAction = `MCU transport ${result.role}: ${result.pressMessage.join(' ')} / ${result.releaseMessage.join(' ')}`;
+            state.lastKeyAction = keyAction;
+            logger.log(`[SENT] ${mcuDescription}`);
+            logCommandEvent({
+              commandId: command.id,
+              keyAction,
+              script,
+              success: true,
+            });
+          } catch (error) {
+            const mcuError = error instanceof Error ? error.message : 'Failed to send MCU transport command';
+
+            if (config.mcuTransportMode === 'mcu-only' || !hasKeyboardShortcut(command)) {
+              throw error;
+            }
+
+            responseWarning = `MCU transport failed, used keyboard fallback: ${mcuError}`;
+            logger.log(`[FALLBACK] ${mcuDescription}: ${mcuError}`);
+            await sendKeyboardAutomation();
+          }
+        }
+      } else {
+        await sendKeyboardAutomation();
       }
 
       state.lastCommand = command.id;
       state.lastCommandAt = new Date().toISOString();
       state.lastError = null;
 
+      if (!command.mcuControl && !usedMcuTransport && !usedMcuNavigation) {
+        mcuService.preserveSnapshot(mcuSnapshotBeforeCommand);
+      }
+
       response.json({
         ok: true,
         command: command.id,
+        warning: responseWarning,
         state: await getState(),
       });
     } catch (error) {
@@ -770,7 +1370,7 @@ export const startRemoteServer = async (options: RemoteServerOptions = {}): Prom
           [
             '<!doctype html>',
             '<html lang="en">',
-            '<head><meta charset="utf-8"><title>Luna Studio Remote</title></head>',
+            '<head><meta charset="utf-8"><title>Luna Companion</title></head>',
             '<body>',
             '<h1>Frontend build missing</h1>',
             `<p>Resolved dist path: ${clientDistPath}</p>`,
@@ -786,22 +1386,37 @@ export const startRemoteServer = async (options: RemoteServerOptions = {}): Prom
     response.sendFile(clientIndexPath);
   });
 
-  const server = await new Promise<HttpServer>((resolve, reject) => {
-    const nextServer = app.listen(port, host, () => resolve(nextServer));
-    nextServer.once('error', reject);
-  });
+  let server: HttpServer;
+
+  try {
+    server = await new Promise<HttpServer>((resolve, reject) => {
+      const nextServer = app.listen(port, host, () => resolve(nextServer));
+      nextServer.once('error', reject);
+    });
+  } catch (error) {
+    await mcuService.stop();
+    throw error;
+  }
 
   const localUrl = `http://127.0.0.1:${port}`;
   const lanUrls = getLanUrls(port);
 
   logger.log('');
-  logger.log('Luna Studio Remote');
-  logger.log(`App name: Luna Studio Remote`);
+  logger.log('Luna Companion');
+  logger.log(`App name: Luna Companion`);
   logger.log(`Local URL: ${localUrl}`);
   logger.log(`LAN URLs: ${lanUrls.length ? lanUrls.join(', ') : 'No LAN address detected'}`);
   logger.log(`Resolved dist path: ${clientDistPath} Exists: ${clientDistExists && clientIndexExists ? 'true' : 'false'}`);
   logger.log(`Test mode: ${config.testMode ? 'enabled' : 'disabled'}`);
   logger.log(`Keystrokes enabled: ${config.enableKeystrokes ? 'yes' : 'no'}`);
+  logger.log(`MCU enabled: ${config.enableMcu ? 'yes' : 'no'}`);
+  logger.log(`MIDI enabled: ${config.enableMidi ? 'yes' : 'no'}`);
+  logger.log(`MIDI mode: ${config.midiMode}`);
+  logger.log(`MCU transport mode: ${config.mcuTransportMode}`);
+  logger.log(`MCU navigation send mode: ${config.mcuNavSendMode}`);
+  logger.log(`Expected IAC input: ${config.expectedIacInputName}`);
+  logger.log(`Expected IAC output: ${config.expectedIacOutputName}`);
+  logger.log(`MCU raw MIDI logging: ${config.debugMcuMidi ? 'yes' : 'no'}`);
   logger.log(`LUNA app name: ${config.lunaAppName}`);
   logger.log(`PIN: ${config.appPin ? 'enabled' : 'disabled'}`);
   logger.log(`Bound host: ${host}`);
@@ -815,6 +1430,7 @@ export const startRemoteServer = async (options: RemoteServerOptions = {}): Prom
     lanUrls,
     clientDistPath,
     stop: async () => {
+      await mcuService.stop();
       await new Promise<void>((resolve, reject) => {
         server.close((error) => {
           if (error) {
@@ -831,7 +1447,7 @@ export const startRemoteServer = async (options: RemoteServerOptions = {}): Prom
 
 if (isEntrypoint()) {
   void startRemoteServer().catch((error) => {
-    console.error('Failed to start Luna Studio Remote');
+    console.error('Failed to start Luna Companion');
     console.error(error);
     process.exitCode = 1;
   });

@@ -1,3 +1,7 @@
+/* ============================================================
+   Font loading
+   ============================================================ */
+
 @font-face {
   font-family: "Luna Oxygen";
   src: url("../luna-fonts/Oxygen.otf") format("opentype");
@@ -12,14 +16,60 @@
   font-style: normal;
 }
 
+/* ============================================================
+   Design tokens and layout constants
+   ============================================================ */
+
 :root {
   color-scheme: dark;
   font-family: "Avenir Next", "Segoe UI", sans-serif;
-  --luna-app-bg: #676e72;
-  --luna-panel-bg: #222222;
+  --luna-app-bg: #23272a;
+  --luna-graphite-grain-opacity: 0.56;
+  --remote-frame-scale: 1;
+  --remote-panel-width: 380px;
+  --transport-grid-width: 330px;
+  --transport-record-height: 150px;
+  --transport-primary-height: 125px;
+  --transport-medium-height: 100px;
+  --transport-compact-height: 75px;
+  --transport-row-gap: 2px;
+  --remote-view-slot-padding: 0.72rem;
+  --remote-content-height: calc(
+    var(--transport-record-height) +
+    var(--transport-primary-height) +
+    var(--transport-medium-height) +
+    var(--transport-compact-height) +
+    var(--transport-compact-height) +
+    var(--transport-compact-height) +
+    var(--transport-compact-height) +
+    var(--transport-row-gap) +
+    var(--transport-row-gap) +
+    var(--transport-row-gap) +
+    var(--transport-row-gap) +
+    var(--transport-row-gap) +
+    var(--transport-row-gap)
+  );
+  --remote-view-slot-height: calc(var(--remote-content-height) + (var(--remote-view-slot-padding) * 2));
+  --focus-track-button-height: 44px;
+  --focus-track-action-offset-y: 0px;
+  --focus-track-fader-height: 280px;
+  --focus-track-fader-scale-height: 315px;
+  --focus-track-meter-height: 364px;
+  --focus-track-meter-scale-height: 95%;
+  --focus-track-meter-scale-offset-y: -10%;
+  --luna-panel-bg: #1c1f21;
   --luna-bg: #0b0d10;
   --luna-panel: #23272d;
   --luna-panel-dark: #171a1f;
+  --luna-surface-top: #34393d;
+  --luna-surface-mid: var(--luna-app-bg);
+  --luna-surface-bottom: #171a1c;
+  --luna-surface-speck: rgba(255, 255, 255, 0.068);
+  --luna-surface-speck-fine: rgba(255, 255, 255, 0.036);
+  --luna-surface-groove: rgba(0, 0, 0, 0.22);
+  --luna-surface-groove-fine: rgba(0, 0, 0, 0.11);
+  --luna-surface-sheen: rgba(255, 255, 255, 0.11);
+  --luna-surface-edge: rgba(255, 255, 255, 0.055);
   --luna-button: #4a4f57;
   --luna-button-top: #5f6670;
   --luna-button-bottom: #2d3238;
@@ -35,6 +85,10 @@
   --luna-shadow: rgba(0, 0, 0, 0.5);
 }
 
+/* ============================================================
+   Browser resets and app shell
+   ============================================================ */
+
 * {
   box-sizing: border-box;
   -webkit-tap-highlight-color: transparent;
@@ -45,6 +99,13 @@ body,
 #root {
   min-height: 100%;
   margin: 0;
+}
+
+#root {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 50% 0%, rgba(58, 65, 70, 0.28) 0%, rgba(58, 65, 70, 0) 42%),
+    linear-gradient(180deg, #20262b 0%, #151a1e 45%, #080a0c 100%);
 }
 
 html,
@@ -80,28 +141,85 @@ button:focus-visible {
 }
 
 .app-shell {
+  position: relative;
+  isolation: isolate;
   width: min(1320px, 100%);
+  min-height: 100vh;
   margin: 0 auto;
   padding: max(0.8rem, env(safe-area-inset-top)) 0.8rem max(1rem, env(safe-area-inset-bottom));
 }
 
-.topbar,
-.panel-card,
-.panel-group,
-.tab-button,
-.preset-button,
-.panel-toggle,
-.modifier-toggle,
-.pin-field input,
-.pin-field select {
-  border: 1px solid #1a1a1a;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+.svg-filter-defs {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
 }
 
+.app-shell::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(145deg, rgba(118, 128, 136, 0.36) 0%, rgba(32, 38, 42, 0.08) 42%),
+    #4c565e;
+  filter: url("#powder-coated-graphite-texture");
+  mix-blend-mode: screen;
+  opacity: var(--luna-graphite-grain-opacity);
+}
+
+.app-shell > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* ============================================================
+   Shared graphite panel surfaces
+   ============================================================ */
+
 .topbar,
-.panel-card,
 .panel-group {
-  background: var(--luna-panel-bg);
+  border: 1px solid #121416;
+  box-shadow:
+    inset 0 1px 0 var(--luna-surface-sheen),
+    inset 0 0 0 1px var(--luna-surface-edge),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.5),
+    inset 0 12px 24px rgba(255, 255, 255, 0.028),
+    inset 0 -16px 24px rgba(0, 0, 0, 0.22),
+    0 12px 28px rgba(0, 0, 0, 0.24),
+    0 1px 0 rgba(255, 255, 255, 0.025);
+  background-color: var(--luna-panel-bg);
+  background-image:
+    radial-gradient(circle at 16% 12%, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.045) 15%, rgba(255, 255, 255, 0) 38%),
+    linear-gradient(145deg, rgba(255, 255, 255, 0.022) 0%, rgba(255, 255, 255, 0) 26%, rgba(0, 0, 0, 0.12) 100%),
+    linear-gradient(180deg, var(--luna-surface-top) 0%, #2a2e31 22%, var(--luna-surface-mid) 54%, var(--luna-surface-bottom) 100%),
+    repeating-linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.028) 0 1px,
+      rgba(255, 255, 255, 0) 1px 4px
+    ),
+    repeating-linear-gradient(
+      135deg,
+      var(--luna-surface-speck) 0 1px,
+      rgba(255, 255, 255, 0) 1px 3px
+    ),
+    repeating-linear-gradient(
+      25deg,
+      var(--luna-surface-speck-fine) 0 1px,
+      rgba(255, 255, 255, 0) 1px 2px
+    ),
+    repeating-linear-gradient(
+      45deg,
+      var(--luna-surface-groove) 0 1px,
+      rgba(0, 0, 0, 0) 1px 4px
+    ),
+    repeating-linear-gradient(
+      0deg,
+      var(--luna-surface-groove-fine) 0 1px,
+      rgba(0, 0, 0, 0) 1px 3px
+    );
 }
 
 .topbar {
@@ -110,7 +228,7 @@ button:focus-visible {
   gap: 0.65rem;
   align-items: center;
   padding: 0.45rem 0.7rem;
-  border-radius: 10px;
+  border-radius: 5px;
 }
 
 .production-header {
@@ -132,10 +250,25 @@ button:focus-visible {
   min-width: 0;
 }
 
+.brand-lockup {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.brand-logo-mark {
+  width: auto;
+  height: 32px;
+  flex: 0 0 auto;
+  display: block;
+}
+
 .brand-block h1 {
   margin: 0;
   font-family: "Luna Oxygen Bold", "Avenir Next", sans-serif;
-  font-size: clamp(1.1rem, 2.6vw, 1.55rem);
+  font-size: 1.55rem;
   line-height: 1;
   letter-spacing: 0.08em;
   color: #e5f6fe;
@@ -143,13 +276,8 @@ button:focus-visible {
 }
 
 .eyebrow,
-.status-caption,
-.section-header h2,
-.panel-card h2,
 .button-label,
-.button-helper,
-.pin-field span,
-.modifier-group > span {
+.button-helper {
   text-transform: uppercase;
 }
 
@@ -161,133 +289,6 @@ button:focus-visible {
   font-weight: 800;
 }
 
-.status-strip {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
-  align-items: center;
-  justify-content: flex-end;
-}
-
-.ua-status-logo,
-.status-card-logo {
-  display: block;
-  object-fit: contain;
-}
-
-.ua-status-logo {
-  width: 30px;
-  height: 30px;
-}
-
-.status-card-logo {
-  width: 36px;
-  height: 36px;
-}
-
-.status-pill,
-.status-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  min-height: 38px;
-  padding: 0.5rem 0.8rem;
-  border-radius: 6px;
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  background: linear-gradient(180deg, rgba(79, 81, 82, 0.72), rgba(34, 34, 34, 0.94));
-}
-
-.status-badge {
-  font-weight: 800;
-  letter-spacing: 0.11em;
-}
-
-.status-badge.warning {
-  color: #e8c16d;
-  border-color: rgba(217, 172, 89, 0.35);
-  box-shadow: inset 0 0 0 1px rgba(217, 172, 89, 0.08);
-}
-
-.status-badge.neutral {
-  color: #c7d0dc;
-}
-
-.status-pill.subtle {
-  gap: 0.35rem;
-}
-
-.status-dot,
-.status-orb {
-  display: inline-block;
-  border-radius: 999px;
-}
-
-.status-dot {
-  width: 9px;
-  height: 9px;
-  background: var(--luna-offline);
-}
-
-.status-orb {
-  width: 12px;
-  height: 12px;
-  background: var(--luna-offline);
-  box-shadow: 0 0 12px currentColor;
-}
-
-.status-dot.online,
-.status-orb.online {
-  background: var(--luna-green);
-  color: var(--luna-green);
-}
-
-.status-dot.offline,
-.status-orb.offline {
-  background: var(--luna-offline);
-  color: var(--luna-offline);
-}
-
-.status-caption {
-  margin: 0;
-  color: var(--luna-muted);
-  font-size: 0.68rem;
-  letter-spacing: 0.14em;
-  font-weight: 800;
-}
-
-.tab-row {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 0.45rem;
-  margin-top: 0.75rem;
-}
-
-.tab-button {
-  display: grid;
-  place-items: center;
-  min-height: 56px;
-  padding: 0.65rem 0.6rem;
-  border-radius: 8px;
-  border: 0;
-  box-shadow: none;
-  background: #343637;
-  color: #959696;
-  font-family: "Luna Oxygen Bold", "Avenir Next", sans-serif;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  transition:
-    transform 110ms ease,
-    color 110ms ease,
-    background 110ms ease;
-}
-
-.tab-button.active,
-.tab-button:active {
-  transform: translateY(1px);
-  color: #92a2ad;
-  background: #2a465d;
-}
-
 .layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
@@ -297,75 +298,155 @@ button:focus-visible {
 }
 
 .layout-production {
-  margin-top: 0.35rem;
+  margin-top: 0;
 }
 
 .layout-production .panel-group {
   padding: 0.38rem;
-  border-color: #202020;
 }
 
 .layout-tracking {
   grid-template-columns: minmax(0, 1fr);
 }
 
+/* ============================================================
+   Remote stage and view switching
+   ============================================================ */
+
 .remote-stage,
-.status-panel,
 .tab-panel {
   display: grid;
   gap: 0.72rem;
+  justify-items: center;
 }
 
-.panel-group,
-.panel-card {
-  padding: 0.72rem;
+.tab-panel {
+  position: relative;
+  isolation: isolate;
+  gap: 0.20rem;
+  width: var(--remote-panel-width);
+  justify-self: center;
+  padding: 1.35rem 1.15rem 1rem;
+  transform: scale(var(--remote-frame-scale));
+  transform-origin: top center;
+}
+
+.tab-panel-brand {
+  justify-self: center;
+  margin-bottom: 0.12rem;
+}
+
+.tab-panel-brand .brand-block {
+  justify-content: center;
+}
+
+.tab-panel-brand h1 {
+  font-size: 1.55rem;
+  text-align: center;
+}
+
+.tab-panel > * {
+  position: relative;
+  z-index: 1;
+}
+
+.tab-panel::before,
+.tab-panel::after {
+  content: "";
+  position: absolute;
+  pointer-events: none;
+  border-radius: 15px;
+}
+
+.tab-panel::before {
+  inset: 0;
+  z-index: 0;
+  border: 0;
+}
+
+.tab-panel::after {
+  inset: 0.5rem 0.55rem 0.55rem;
+  z-index: 0;
+  border: 0;
+  box-shadow: none;
+}
+
+.panel-group {
+  padding: var(--remote-view-slot-padding);
   border-radius: 10px;
+  width: max-content;
+  justify-self: center;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
 }
 
-.compact-card {
-  padding: 0.9rem;
+.remote-view-slot {
+  display: grid;
+  align-items: start;
+  justify-items: center;
+  width: 100%;
+  height: var(--remote-view-slot-height);
+  min-height: var(--remote-view-slot-height);
+  overflow: visible;
 }
 
-.section-header,
-.status-card-row,
-.card-row,
-.last-command-display {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 0.85rem;
+.remote-view-toggle {
+  display: inline-grid;
+  grid-template-columns: repeat(2, minmax(0, auto));
+  gap: 0.4rem;
+  justify-self: center;
+  padding: 0.28rem;
+  border-radius: 999px;
+  background: rgba(17, 20, 23, 0.44);
+  border: 1px solid rgba(236, 233, 225, 0.12);
 }
 
-.section-header {
-  margin-bottom: 0.7rem;
+.remote-view-toggle-button {
+  min-width: 126px;
+  min-height: 38px;
+  padding: 0 1rem;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: rgba(236, 233, 225, 0.72);
+  font-family: "Luna Oxygen Bold", "Avenir Next", sans-serif;
+  font-size: 0.76rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  transition:
+    background-color 120ms ease,
+    color 120ms ease;
 }
 
-.section-header h2,
-.panel-card h2 {
-  margin: 0;
-  font-size: 0.84rem;
-  letter-spacing: 0.14em;
-  font-weight: 800;
+.remote-view-toggle-button.is-active {
+  background: #697177;
+  color: #f5f2ea;
 }
 
 .button-grid {
   display: grid;
-  gap: 0.6rem;
+  gap: var(--transport-row-gap);
+  min-height: 0;
 }
 
-.tracking-hero-grid {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
+/* ============================================================
+   Tracking transport grid
+   ============================================================ */
 
 .tracking-console-layout {
   display: grid;
-  gap: 0.08rem;
+  gap: var(--transport-row-gap);
+  align-content: start;
+  width: var(--transport-grid-width);
+  min-width: var(--transport-grid-width);
+  justify-self: center;
 }
 
 .tracking-row-full,
 .tracking-row-halves,
 .tracking-row-thirds {
-  gap: 0.08rem;
+  gap: var(--transport-row-gap);
 }
 
 .tracking-row-full {
@@ -380,23 +461,1440 @@ button:focus-visible {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
-.utility-grid,
-.zoom-grid {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+/* ============================================================
+   Focused channel strip: horizontal console view
+   ============================================================ */
+
+.focused-channel-strip-row {
+  display: grid;
+  place-items: center;
+  overflow-x: auto;
+  padding: 0.95rem 1.6rem 0.35rem;
 }
 
-.marker-grid {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+.focused-channel-strip {
+  --focused-fader-left: 36.25%;
+  --focused-fader-top: 50.785%;
+  --focused-meter-level: 0%;
+  position: relative;
+  width: min(100%, 880px);
+  aspect-ratio: 1322 / 514;
+  flex: 0 0 auto;
+  isolation: isolate;
+  container-type: inline-size;
+  overflow: hidden;
+  border-radius: 18px;
 }
 
-.movement-grid,
-.view-grid {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+.focused-channel-strip::before,
+.focused-channel-strip::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
 }
+
+.focused-channel-strip::before {
+  z-index: 0;
+  background: #596066;
+}
+
+.focused-channel-strip::after {
+  z-index: 4;
+  border-radius: inherit;
+}
+
+/* ============================================================
+   Focus track view: vertical card, actions, fader, and meter
+   ============================================================ */
+
+.focus-track-view {
+  width: max-content;
+  justify-self: center;
+  display: grid;
+  gap: 0.9rem;
+  padding: 0.35rem 0.8rem 0.6rem;
+}
+
+.focus-track-nav-button {
+  min-height: 88px;
+}
+
+.focus-track-card {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  align-content: start;
+  gap: 0.95rem;
+  width: fit-content;
+  max-width: 100%;
+  height: var(--remote-content-height);
+  min-height: var(--remote-content-height);
+  justify-self: center;
+  padding: 1rem 1rem 1.15rem;
+  border-radius: 13px;
+  overflow: hidden;
+  background: linear-gradient(180deg, #778188 0%, #6a747b 52%, #5e686f 100%);
+  border: 0;
+  box-shadow: none;
+}
+
+.focus-track-card-grain {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  pointer-events: none;
+  mix-blend-mode: multiply;
+  opacity: 0.42;
+}
+
+.focus-track-card > :not(.focus-track-card-grain) {
+  position: relative;
+}
+
+.focus-track-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0;
+  align-items: stretch;
+}
+
+.focus-track-readout {
+  display: grid;
+  gap: 0;
+  justify-items: center;
+  align-content: center;
+  min-width: 0;
+  width: 196px;
+  justify-self: center;
+  padding: 0.38rem 0.75rem 0.42rem;
+  border-radius: 7px;
+  background: #222221;
+  border: 1px solid rgba(236, 233, 225, 0.08);
+  cursor: default;
+  transition:
+    border-color 120ms ease,
+    background-color 120ms ease,
+    color 120ms ease;
+}
+
+.focus-track-readout.is-navigation-mode {
+  background: rgba(58, 67, 74, 0.72);
+  border-color: rgba(221, 238, 244, 0.32);
+}
+
+.focus-track-readout:focus-visible {
+  outline: 2px solid rgba(229, 246, 254, 0.82);
+  outline-offset: 3px;
+}
+
+.focus-track-name {
+  min-width: 0;
+  text-align: center;
+  text-transform: uppercase;
+  font-family: "Luna Oxygen Bold", "Avenir Next", sans-serif;
+  font-size: 1.38rem;
+  letter-spacing: 0.08em;
+  color: #a3d462;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.focus-track-action-grid {
+  --focus-track-record-icon-size: 25px;
+  --focus-track-record-icon-offset-x: 0px;
+  --focus-track-record-icon-offset-y: 10px;
+  --focus-track-previous-icon-size: 25px;
+  --focus-track-previous-icon-offset-x: 0px;
+  --focus-track-previous-icon-offset-y: 0px;
+  --focus-track-next-icon-size: 25px;
+  --focus-track-next-icon-offset-x: 0px;
+  --focus-track-next-icon-offset-y: 0px;
+  --focus-track-version-icon-size: 15px;
+  --focus-track-version-icon-offset-x: 0px;
+  --focus-track-version-icon-offset-y: 0px;
+  --focus-track-solo-icon-offset-x: 0px;
+  --focus-track-solo-icon-offset-y: 1px;
+  --focus-track-mute-icon-offset-x: 0px;
+  --focus-track-mute-icon-offset-y: 1px;
+  display: grid;
+  grid-template-columns: repeat(2, 92px);
+  grid-template-areas:
+    "trackUp trackDown"
+    "record version"
+    "solo mute";
+  column-gap: 0.7rem;
+  row-gap: 0.42rem;
+  align-content: start;
+  justify-self: center;
+  width: 196px;
+  transform: translateY(var(--focus-track-action-offset-y));
+}
+
+.focus-track-surface-button {
+  width: 92px;
+  min-width: 92px;
+  height: var(--focus-track-button-height);
+  min-height: var(--focus-track-button-height);
+  max-height: var(--focus-track-button-height);
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 0;
+  padding: 0.14rem 0.38rem;
+}
+
+.focus-track-surface-button::after {
+  inset: 4px;
+}
+
+.focus-track-surface-icon {
+  width: 100%;
+  min-height: 100%;
+  display: grid;
+  place-items: center;
+}
+
+.focus-track-surface-icon .focused-strip-glyph {
+  width: 20px;
+  height: 20px;
+}
+
+.focus-track-surface-icon .focused-strip-svg-icon {
+  width: 20px;
+  height: 20px;
+}
+
+.focus-track-surface-icon .focused-strip-letter {
+  font-size: 1.2rem;
+}
+
+.focus-track-surface-icon .focused-strip-svg-icon-plus {
+  width: 115%;
+  height: 115%;
+}
+
+.focus-track-surface-label {
+  display: none;
+}
+
+.focus-track-action-button {
+  height: var(--focus-track-button-height);
+  min-height: var(--focus-track-button-height);
+}
+
+.focus-track-action-button-trackUp {
+  --focus-track-icon-size: var(--focus-track-previous-icon-size);
+  --focus-track-icon-offset-x: var(--focus-track-previous-icon-offset-x);
+  --focus-track-icon-offset-y: var(--focus-track-previous-icon-offset-y);
+  grid-area: trackUp;
+}
+
+.focus-track-action-button-trackDown {
+  --focus-track-icon-size: var(--focus-track-next-icon-size);
+  --focus-track-icon-offset-x: var(--focus-track-next-icon-offset-x);
+  --focus-track-icon-offset-y: var(--focus-track-next-icon-offset-y);
+  grid-area: trackDown;
+}
+
+.focus-track-action-button-record {
+  --focus-track-icon-size: var(--focus-track-record-icon-size);
+  --focus-track-icon-offset-x: var(--focus-track-record-icon-offset-x);
+  --focus-track-icon-offset-y: var(--focus-track-record-icon-offset-y);
+  --glyph-offset-x: var(--focus-track-record-icon-offset-x);
+  --glyph-offset-y: var(--focus-track-record-icon-offset-y);
+  grid-area: record;
+}
+
+.focus-track-action-button-solo {
+  grid-area: solo;
+}
+
+.focus-track-action-button-mute {
+  grid-area: mute;
+}
+
+.focus-track-action-button-solo .focused-strip-glyph-solo {
+  --glyph-offset-x: var(--focus-track-solo-icon-offset-x);
+  --glyph-offset-y: var(--focus-track-solo-icon-offset-y);
+}
+
+.focus-track-action-button-mute .focused-strip-glyph-mute {
+  --glyph-offset-x: var(--focus-track-mute-icon-offset-x);
+  --glyph-offset-y: var(--focus-track-mute-icon-offset-y);
+}
+
+.focus-track-action-button-version {
+  --focus-track-icon-size: var(--focus-track-version-icon-size);
+  --focus-track-icon-offset-x: var(--focus-track-version-icon-offset-x);
+  --focus-track-icon-offset-y: var(--focus-track-version-icon-offset-y);
+  grid-area: version;
+}
+
+
+.focus-track-action-button-record .focused-strip-glyph {
+  width: var(--focus-track-icon-size);
+  height: var(--focus-track-icon-size);
+}
+
+.focus-track-action-button-record .focused-strip-svg-icon {
+  width: 100%;
+  height: 100%;
+}
+
+.focus-track-action-button-version .luna-icon.focused-strip-svg-icon-plus {
+  position: static;
+  inset: auto;
+  width: var(--focus-track-icon-size);
+  height: var(--focus-track-icon-size);
+  transform: translate(
+    var(--focus-track-icon-offset-x),
+    var(--focus-track-icon-offset-y)
+  );
+  object-fit: contain;
+}
+
+.focus-track-action-button-trackUp .focused-strip-svg-icon.focused-strip-nav-image-bank-left {
+  position: static;
+  inset: auto;
+  width: var(--focus-track-icon-size);
+  height: var(--focus-track-icon-size);
+  transform: translate(
+    var(--focus-track-icon-offset-x),
+    var(--focus-track-icon-offset-y)
+  );
+  object-fit: contain;
+}
+
+.focus-track-action-button-trackDown .focused-strip-svg-icon.focused-strip-nav-image-bank-right {
+  position: static;
+  inset: auto;
+  width: var(--focus-track-icon-size);
+  height: var(--focus-track-icon-size);
+  transform: translate(
+    var(--focus-track-icon-offset-x),
+    var(--focus-track-icon-offset-y)
+  );
+  object-fit: contain;
+}
+
+.focus-track-strip {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: 92px 92px;
+  column-gap: 0.7rem;
+  align-items: stretch;
+  justify-self: center;
+  align-self: stretch;
+  width: 196px;
+  min-height: 0;
+  transform: translateY(30px);
+}
+
+.focus-track-fader-column {
+  display: grid;
+  grid-template-columns: 34px 46px;
+  column-gap: 0.92rem;
+  align-items: start;
+  min-height: 0;
+  justify-self: start;
+  padding-left: 18px;
+  transform: translateY(30px);
+}
+
+.focus-track-fader-scale {
+  display: grid;
+  grid-template-rows: repeat(9, minmax(0, 1fr));
+  align-content: stretch;
+  justify-items: start;
+  height: var(--focus-track-fader-scale-height);
+  min-height: 0;
+  padding-block: 0;
+  color: #000000;
+  font-family: "Luna Oxygen Bold", "Avenir Next", sans-serif;
+  font-size: 0.9rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-align: left;
+  justify-self: start;
+  align-self: start;
+  transform: translate(18px, calc(-13% + 20px));
+}
+
+.focus-track-fader-scale > span,
+.focus-track-meter-scale > span {
+  display: flex;
+  align-items: center;
+  min-height: 0;
+}
+
+.focus-track-fader-scale > span {
+  display: grid;
+  grid-template-columns: 0.55em auto;
+  column-gap: 0.2em;
+  justify-content: start;
+  justify-items: start;
+}
+
+.focus-track-scale-hash {
+  justify-self: start;
+}
+
+.focus-track-fader-hit-zone {
+  position: relative;
+  z-index: 4;
+  width: 34px;
+  height: var(--focus-track-fader-height);
+  min-height: 0;
+  display: grid;
+  place-items: center;
+  align-self: start;
+  transform: translateX(22px);
+  cursor: ns-resize;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.focus-track-fader-hit-zone[aria-disabled="true"] {
+  cursor: default;
+}
+
+.focus-track-fader-hit-zone:focus-visible {
+  outline: 2px solid rgba(229, 246, 254, 0.82);
+  outline-offset: 3px;
+}
+
+.focus-track-fader-rail {
+  position: relative;
+  width: 10px;
+  height: 105%;
+  border-radius: 999px;
+  border: 1px solid rgba(10, 12, 14, 0.95);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0) 12%, rgba(0, 0, 0, 0.2) 100%),
+    linear-gradient(180deg, #0a0c0e 0%, #000000 100%);
+  box-shadow:
+    inset 0 2px 4px rgba(0, 0, 0, 0.85),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.03);
+}
+
+.focus-track-fader-cap {
+  position: absolute;
+  z-index: 5;
+  left: 55%;
+  top: calc((100% - var(--focus-track-fader-level)) - 46px);
+  width: 45px;
+  height: auto;
+  transform: translate(-50%, 6%);
+  object-fit: contain;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.25));
+}
+
+.focus-track-meter-stack {
+  display: grid;
+  justify-items: center;
+  align-content: stretch;
+  gap: 0.35rem;
+  justify-self: center;
+  min-height: 0;
+}
+
+.focus-track-meter-rail {
+  position: relative;
+  display: grid;
+  grid-template-columns: 14px 32px;
+  gap: 0.5rem;
+  align-items: stretch;
+  height: 75%;
+  min-height: 0;
+  width: 46px;
+  padding: 1.5rem 0.1rem 1.5rem 0.1rem;
+  border-radius: 5px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.035) 0%, rgba(255, 255, 255, 0) 18%, rgba(0, 0, 0, 0.16) 100%),
+    #1e1e1e;
+  border: 1px solid rgba(10, 12, 14, 0.8);
+  box-shadow:
+    inset 0 2px 4px rgba(0, 0, 0, 0.5),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.focus-track-meter-scale {
+  display: grid;
+  grid-template-rows: repeat(12, minmax(0, 1fr));
+  justify-items: start;
+  align-content: stretch;
+  align-self: center;
+  height: var(--focus-track-meter-scale-height);
+  transform: translate(2px, var(--focus-track-meter-scale-offset-y));
+  color: #5d646a;
+  font-family: "Luna Oxygen Bold", "Avenir Next", sans-serif;
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  grid-column: 2;
+}
+
+.focus-track-meter-led-stack {
+  position: absolute;
+  left: 5px;
+  bottom: 32px;
+  width: 12px;
+  top: 4px;
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 0;
+}
+
+.focus-track-meter-led {
+  position: relative;
+  flex: 1 1 0;
+  min-height: 0;
+  border-radius: 1px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.3);
+}
+
+.focus-track-meter-led.is-green-zone {
+  background: linear-gradient(180deg, #17251b 0%, #0c150e 100%);
+}
+
+.focus-track-meter-led.is-yellow-zone {
+  background: linear-gradient(180deg, #282512 0%, #17150a 100%);
+}
+
+.focus-track-meter-led.is-orange-zone {
+  background: linear-gradient(180deg, #2a1d12 0%, #18100a 100%);
+}
+
+.focus-track-meter-led.is-red-zone {
+  background: linear-gradient(180deg, #281514 0%, #170b0a 100%);
+}
+
+.focus-track-meter-led::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 1px;
+  opacity: 0;
+  transition: opacity 70ms linear;
+}
+
+.focus-track-meter-led.is-live-on::after,
+.focus-track-meter-led.is-peak-hold-on::after {
+  opacity: 1;
+}
+
+.focus-track-meter-led.is-green-zone::after {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0.02) 35%, rgba(0, 0, 0, 0.16) 100%),
+    linear-gradient(180deg, #28d464 0%, #139a3b 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.16),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.18),
+    0 0 4px rgba(37, 201, 93, 0.22);
+}
+
+.focus-track-meter-led.is-yellow-zone::after {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0.02) 35%, rgba(0, 0, 0, 0.18) 100%),
+    linear-gradient(180deg, #f0d34b 0%, #d5a320 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 249, 220, 0.16),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.2),
+    0 0 4px rgba(241, 194, 46, 0.22);
+}
+
+.focus-track-meter-led.is-orange-zone::after {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.03) 35%, rgba(0, 0, 0, 0.2) 100%),
+    linear-gradient(180deg, #ffad4d 0%, #dd6d1e 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 241, 220, 0.18),
+    inset 0 -1px 0 rgba(79, 31, 0, 0.22),
+    0 0 4px rgba(255, 143, 46, 0.22);
+}
+
+.focus-track-meter-led.is-red-zone::after {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.22) 0%, rgba(255, 255, 255, 0.03) 35%, rgba(0, 0, 0, 0.18) 100%),
+    linear-gradient(180deg, #ff6756 0%, #c61508 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 241, 230, 0.18),
+    inset 0 -1px 0 rgba(79, 9, 0, 0.22);
+}
+
+.focus-track-meter-led-64.is-peak-hold-on::after {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 241, 230, 0.22),
+    inset 0 -1px 0 rgba(79, 9, 0, 0.22),
+    0 0 7px rgba(255, 48, 35, 0.58);
+}
+
+.focus-track-peak-indicator {
+  position: absolute;
+  left: -2px;
+  top: -24px;
+  padding: 0.16rem 0.28rem;
+  border-radius: 999px;
+  background: #bf2d16;
+  color: #fff4eb;
+  font-family: "Luna Oxygen Bold", "Avenir Next", sans-serif;
+  font-size: 0.52rem;
+  letter-spacing: 0.08em;
+}
+
+.focus-track-meter-readout {
+  position: absolute;
+  left: 3px;
+  right: 3px;
+  bottom: 4px;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  height: 24px;
+  padding: 0;
+  border-radius: 3px;
+  background: rgba(15, 17, 18, 0.72);
+  color: #b9c6cd;
+  text-align: center;
+  font-family: "Luna Oxygen Bold", "Avenir Next", sans-serif;
+  font-size: 0.64rem;
+  letter-spacing: 0.04em;
+}
+
+.focused-channel-strip img {
+  display: block;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+.focused-strip-panel,
+.focused-strip-fader-track,
+.focused-strip-fader-cap,
+.focused-strip-fader-hit-zone,
+.focused-strip-meter,
+.focused-strip-buttons,
+.focused-strip-scribble {
+  position: absolute;
+}
+
+.focused-strip-track-panel {
+  display: none;
+  left: 2.57%;
+  top: 4.67%;
+  width: 95.16%;
+  height: 91.05%;
+  z-index: 1;
+  filter: contrast(1.02) brightness(0.97);
+}
+
+.focused-strip-fader-panel {
+  display: none;
+  left: 3.93%;
+  top: 8.56%;
+  width: 92.28%;
+  height: 83.66%;
+  z-index: 2;
+  filter: contrast(1.01) brightness(0.98);
+}
+
+.focused-strip-buttons {
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+}
+
+.focused-strip-button {
+  position: absolute;
+  width: 11.2%;
+  height: 28.8%;
+  top: 15.55%;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #151515;
+  pointer-events: auto;
+  transition:
+    filter 90ms ease,
+    transform 90ms ease,
+    opacity 90ms ease;
+}
+
+.focused-strip-button:disabled {
+  cursor: default;
+  filter: grayscale(0.35) brightness(0.68);
+  opacity: 0.72;
+}
+
+.focused-strip-button.is-pressed,
+.focused-strip-button:active:not(:disabled) {
+  transform: translateY(1px);
+  filter: brightness(0.9);
+}
+
+.focused-strip-button.is-active:not(:disabled) {
+  filter: brightness(1.08) saturate(1.06);
+}
+
+.focused-strip-button-record {
+  --record-icon-color: #4A0100;
+  left: 6.66%;
+}
+
+.focused-strip-button-record.is-active {
+  --record-icon-color: #9C0401;
+}
+
+.focused-strip-button img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+
+.focused-strip-button-solo {
+  left: 19.36%;
+}
+
+.focused-strip-button-mute {
+  left: 32.07%;
+}
+
+.focused-strip-button-version {
+  left: 44.78%;
+}
+
+.focused-channel-strip.is-navigation-mode .focused-strip-button-record,
+.focused-channel-strip.is-navigation-mode .focused-strip-button-mute {
+  width: 17.8%;
+  height: 31.5%;
+  top: 14.2%;
+}
+
+.focused-channel-strip.is-navigation-mode .focused-strip-button-record {
+  left: 7.2%;
+}
+
+.focused-channel-strip.is-navigation-mode .focused-strip-button-mute {
+  left: 31.4%;
+}
+
+.focused-strip-button-icon {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 70%;
+  height: 70%;
+  line-height: 1;
+}
+
+.focused-strip-glyph {
+  --glyph-offset-x: 0px;
+  --glyph-offset-y: -1px;
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  transform: translate(var(--glyph-offset-x), var(--glyph-offset-y));
+}
+
+.focused-strip-glyph-mark {
+  display: block;
+  line-height: 1;
+}
+
+.focused-strip-svg-icon {
+  width: 104%;
+  height: 104%;
+  object-fit: contain;
+  image-rendering: -webkit-optimize-contrast;
+}
+
+.luna-icon-record {
+  display: block;
+  background-color: var(--record-icon-color, #4A0100);
+  -webkit-mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  -webkit-mask-size: contain;
+  mask-repeat: no-repeat;
+  mask-position: center;
+  mask-size: contain;
+  filter: saturate(1.15);
+}
+
+.focused-strip-glyph-record {
+  --glyph-offset-y: -1px;
+}
+
+.focused-strip-glyph-solo {
+  --glyph-offset-y: -2px;
+}
+
+.focused-strip-glyph-mute {
+  --glyph-offset-y: -3px;
+}
+
+.focused-strip-glyph-version {
+  --glyph-offset-x: 0px;
+  --glyph-offset-y: 0px;
+}
+
+.focused-strip-letter,
+.focused-strip-plus {
+  font-family: "Luna Oxygen Bold", "Avenir Next", sans-serif;
+  font-weight: 700;
+  line-height: 1;
+  color: #161616;
+  text-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.2),
+    0 -1px 0 rgba(0, 0, 0, 0.14);
+}
+
+.focused-strip-letter {
+  font-size: clamp(1.95rem, 8.8cqi, 3.75rem);
+  transform: scaleX(0.92);
+}
+
+.focused-strip-svg-icon-plus {
+  width: 118%;
+  height: 118%;
+}
+
+.focused-strip-record-dot {
+  width: 48%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: #b70000;
+}
+
+.focused-strip-button-version.is-primary-action:not(:disabled) {
+  filter: none;
+}
+
+.focused-strip-button-version.is-primary-action.is-pressed,
+.focused-strip-button-version.is-primary-action:active:not(:disabled) {
+  transform: none;
+  filter: none;
+}
+
+/* ============================================================
+   Focused strip action sheet
+   ============================================================ */
+
+.focused-strip-action-sheet-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  padding: 32px;
+  background:
+    radial-gradient(circle at 50% 20%, rgba(74, 82, 88, 0.22) 0%, rgba(12, 14, 16, 0) 42%),
+    rgba(5, 7, 9, 0.78);
+  backdrop-filter: blur(7px) saturate(0.85);
+}
+
+.focused-strip-action-sheet {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  width: min(100%, 500px);
+  display: grid;
+  gap: 0;
+  min-height: 392px;
+  padding: 56px 12px 12px;
+  border-radius: 8px;
+  border: 0;
+  background: #4c565e;
+  background-image:
+    linear-gradient(145deg, rgba(118, 128, 136, 0.36) 0%, rgba(32, 38, 42, 0.08) 42%),
+    #4c565e;
+  align-content: center;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.11),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.05),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.5),
+    inset 0 12px 24px rgba(255, 255, 255, 0.028),
+    inset 0 -16px 24px rgba(0, 0, 0, 0.22),
+    0 12px 28px rgba(0, 0, 0, 0.24),
+    0 1px 0 rgba(255, 255, 255, 0.025);
+}
+
+.focused-strip-action-sheet::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: #ffffff;
+  filter: url("#powder-coated-graphite-texture");
+  mix-blend-mode: multiply;
+  opacity: 0.22;
+}
+
+.focused-strip-action-sheet::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0) 16%),
+    linear-gradient(180deg, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0.06) 100%);
+  opacity: 1;
+}
+
+.focused-strip-action-sheet > * {
+  position: relative;
+  z-index: 1;
+}
+
+.focused-strip-action-sheet-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  min-width: 90px;
+  height: 30px;
+  display: flex;
+  padding: 0 14px;
+  justify-content: center;
+  align-items: center;
+  border: 1px solid rgba(236, 233, 225, 0.12);
+  border-radius: 999px;
+  background: rgba(17, 20, 23, 0.44);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.22);
+  color: #e7ecef;
+  font-family: "Luna Oxygen Bold", "Avenir Next", sans-serif;
+  font-size: 0;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  transition:
+    background-color 100ms ease,
+    color 100ms ease,
+    transform 100ms ease;
+}
+
+.focused-strip-action-sheet-close:hover:not(:disabled) {
+  background: rgba(17, 20, 23, 0.56);
+  color: #ffffff;
+}
+
+.focused-strip-action-sheet-close:active:not(:disabled) {
+  background: #697177;
+}
+
+.focused-strip-action-sheet-close::before {
+  content: "CLOSE";
+  font-size: 0.68rem;
+  letter-spacing: 0.12em;
+  color: #f5f2ea;
+  line-height: 1;
+  transform: translateY(1px);
+  text-shadow:
+    0 1px 0 rgba(0, 0, 0, 0.18);
+}
+
+
+.focused-strip-action-sheet-actions {
+  display: grid;
+  gap: 8px;
+  align-content: center;
+  padding-top: 0;
+  position: relative;
+  z-index: 1;
+}
+
+.focused-strip-action-sheet-button {
+  position: relative;
+  min-height: 74px;
+  display: grid;
+  place-items: center;
+  padding: 0 1.25rem;
+  border: 0;
+  border-radius: 5px;
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.12), transparent 18%),
+    linear-gradient(to bottom, #5f656b, #34393e);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    inset 0 -1px 1px rgba(0, 0, 0, 0.76);
+  color: #2a2a2a;
+  text-align: center;
+  transition:
+    background-color 100ms ease,
+    border-color 100ms ease,
+    box-shadow 100ms ease,
+    color 100ms ease,
+    transform 100ms ease;
+}
+
+.focused-strip-action-sheet-button::before {
+  content: "";
+  position: absolute;
+  inset: 1px;
+  border-radius: 3px;
+  background: linear-gradient(180deg, #272c31 0%, #20252a 100%);
+  box-shadow:
+    inset 0 2px 4px rgba(0, 0, 0, 0.88),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.035);
+  pointer-events: none;
+}
+
+.focused-strip-action-sheet-button::after {
+  content: "";
+  position: absolute;
+  inset: 5px;
+  border-radius: 2px;
+  background:
+    linear-gradient(
+      to bottom,
+      rgba(255, 255, 255, 0.28) 0%,
+      rgba(255, 255, 255, 0.09) 17%,
+      rgba(255, 255, 255, 0) 42%,
+      rgba(0, 0, 0, 0.12) 100%
+    ),
+    repeating-linear-gradient(
+      0deg,
+      var(--switch-cap-grid-row, rgba(180, 185, 189, 0.12)) 0 1px,
+      transparent 1px 4px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      transparent 0 3px,
+      var(--switch-cap-grid-col, rgba(105, 110, 114, 0.1)) 3px 4px
+    ),
+    linear-gradient(
+      to bottom,
+      var(--switch-cap-light, #a8adb1),
+      var(--switch-cap-base, #979ca0) 55%,
+      var(--switch-cap-dark, #858a8e)
+    );
+  border: 1px solid var(--switch-cap-border, #73787c);
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.44),
+    inset 1px 0 1px rgba(255, 255, 255, 0.16),
+    inset -1px 0 2px rgba(0, 0, 0, 0.18),
+    inset 0 -2px 3px rgba(0, 0, 0, 0.22);
+  transition:
+    transform 75ms ease,
+    filter 75ms ease,
+    box-shadow 75ms ease;
+}
+
+.focused-strip-action-sheet-button:hover:not(:disabled)::after {
+  filter: brightness(1.02);
+}
+
+.focused-strip-action-sheet-button:hover:not(:disabled) {
+  filter: brightness(1.03);
+}
+
+.focused-strip-action-sheet-button.is-pressed,
+.focused-strip-action-sheet-button:active:not(:disabled) {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.16),
+    inset 0 -1px 1px rgba(0, 0, 0, 0.72);
+}
+
+.focused-strip-action-sheet-button.is-pressed::after,
+.focused-strip-action-sheet-button:active:not(:disabled)::after {
+  transform: translateY(2px);
+  filter: brightness(0.97);
+  box-shadow:
+    inset 0 4px 8px rgba(0, 0, 0, 0.34),
+    inset 0 1px 0 rgba(255, 255, 255, 0.16);
+}
+
+.focused-strip-action-sheet-button:disabled {
+  opacity: 0.56;
+  cursor: default;
+}
+
+.focused-strip-action-sheet-button:disabled::after {
+  filter: saturate(0.7) brightness(0.92);
+}
+
+.focused-strip-action-sheet-button:nth-child(1) {
+  --switch-cap-light: #f9ffff;
+  --switch-cap-base: #eef9fa;
+  --switch-cap-dark: #c5dcde;
+  --switch-cap-border: #476479;
+  --switch-cap-grid-row: rgba(219, 252, 255, 0.22);
+  --switch-cap-grid-col: rgba(104, 173, 177, 0.14);
+}
+
+.focused-strip-action-sheet-button:nth-child(2) {
+  --switch-cap-light: #fff9ea;
+  --switch-cap-base: #f4ebc7;
+  --switch-cap-dark: #dbc68d;
+  --switch-cap-border: #a57a18;
+  --switch-cap-grid-row: rgba(255, 233, 150, 0.22);
+  --switch-cap-grid-col: rgba(194, 139, 16, 0.14);
+}
+
+.focused-strip-action-sheet-button:nth-child(3) {
+  --switch-cap-light: #fff7f2;
+  --switch-cap-base: #f4e7e0;
+  --switch-cap-dark: #d9c1bd;
+  --switch-cap-border: #723737;
+  --switch-cap-grid-row: rgba(255, 230, 230, 0.22);
+  --switch-cap-grid-col: rgba(186, 115, 115, 0.14);
+}
+
+.focused-strip-action-sheet-label {
+  display: block;
+  font-family: "Luna Oxygen Bold", "Avenir Next", sans-serif;
+  font-size: 1.02rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  line-height: 1.16;
+  color: #2a2a2a;
+  text-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.18),
+    0 -1px 0 rgba(0, 0, 0, 0.18);
+  text-align: center;
+  text-transform: uppercase;
+  position: relative;
+  z-index: 2;
+}
+
+.focused-strip-nav-image {
+  width: 101%;
+  height: 101%;
+  object-fit: contain;
+  image-rendering: -webkit-optimize-contrast;
+}
+
+.focused-strip-nav-image-bank-left,
+.focused-strip-nav-image-bank-right {
+  width: 100%;
+  height: 100%;
+}
+
+.focused-strip-nav-image-channel-left {
+  transform: scaleX(-1);
+}
+
+.focused-strip-scribble {
+  left: 58.4%;
+  top: 15.55%;
+  width: 36.01%;
+  height: 28.4%;
+  z-index: 6;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #9aa6ad;
+  text-align: left;
+  overflow: hidden;
+}
+
+.focused-strip-scribble img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.focused-strip-fader-gain,
+.focused-strip-name {
+  position: absolute;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  font-family: "Luna Oxygen Bold", "Avenir Next", sans-serif;
+  line-height: 1;
+  letter-spacing: 0;
+  color: #a4b1b8;
+  text-transform: uppercase;
+}
+
+.focused-strip-fader-gain {
+  left: 7.5%;
+  right: 7.5%;
+  top: 13%;
+  height: 28%;
+  justify-content: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: clamp(0.72rem, 3.5cqi, 1.42rem);
+}
+
+.focused-strip-name {
+  left: 7.5%;
+  right: 7.5%;
+  bottom: 11%;
+  height: 41%;
+  justify-content: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: clamp(0.9rem, 4.35cqi, 1.82rem);
+}
+
+.focused-strip-fader-track {
+  left: 15.58%;
+  top: 64.6%;
+  width: 69.75%;
+  height: 6.61%;
+  z-index: 3;
+}
+
+.focused-strip-fader-cap {
+  left: var(--focused-fader-left);
+  top: var(--focused-fader-top);
+  width: 28.44%;
+  height: 34.24%;
+  z-index: 4;
+  transform: translateZ(0);
+}
+
+.focused-strip-fader-hit-zone {
+  left: 1.36%;
+  top: 50.785%;
+  width: 98.19%;
+  height: 34.24%;
+  z-index: 7;
+  cursor: ew-resize;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.focused-strip-fader-hit-zone[aria-disabled="true"] {
+  cursor: default;
+}
+
+.focused-strip-fader-hit-zone:focus-visible {
+  outline: 2px solid rgba(229, 246, 254, 0.82);
+  outline-offset: 2px;
+}
+
+.focused-strip-meter {
+  left: 6.5%;
+  top: 82.49%;
+  width: 87.6%;
+  height: 7.78%;
+  z-index: 5;
+  overflow: visible;
+}
+
+.focused-strip-meter-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+}
+
+.focused-strip-meter-active-region {
+  position: absolute;
+  left: 3.1088%;
+  top: 17.5%;
+  width: 93.7824%;
+  height: 65%;
+  z-index: 1;
+  container-type: inline-size;
+  overflow: visible;
+}
+
+.focused-strip-meter-css-shell {
+  position: absolute;
+  left: 3.1088%;
+  top: 17.5%;
+  width: 93.7824%;
+  height: 65%;
+  z-index: 1;
+}
+
+.focused-strip-meter-css-track {
+  position: absolute;
+  inset: 0 10px 0 0;
+  display: grid;
+  grid-template-columns: repeat(32, minmax(0, 1fr));
+  gap: 1px;
+  align-items: stretch;
+  border: 1px solid rgba(20, 24, 26, 0.98);
+  border-radius: 4px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.045) 0%, rgba(255, 255, 255, 0) 32%, rgba(0, 0, 0, 0.18) 100%),
+    linear-gradient(180deg, #151a1b 0%, #080a0b 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.4),
+    inset 0 0 0 1px rgba(0, 0, 0, 0.28),
+    0 1px 0 rgba(255, 255, 255, 0.02);
+  overflow: hidden;
+}
+
+.focused-strip-meter-led {
+  position: relative;
+  min-width: 0;
+  border-radius: 2px;
+  background: linear-gradient(180deg, #1c2223 0%, #090b0c 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.03),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.26);
+}
+
+.focused-strip-meter-led::after {
+  content: "";
+  position: absolute;
+  inset: 1px;
+  border-radius: 1px;
+  opacity: 0;
+  transition: opacity 70ms linear;
+}
+
+.focused-strip-meter-led.is-live-on::after,
+.focused-strip-meter-led.is-peak-hold-on::after {
+  opacity: 1;
+}
+
+.focused-strip-meter-led-1::after,
+.focused-strip-meter-led-2::after,
+.focused-strip-meter-led-3::after,
+.focused-strip-meter-led-4::after,
+.focused-strip-meter-led-5::after,
+.focused-strip-meter-led-6::after,
+.focused-strip-meter-led-7::after,
+.focused-strip-meter-led-8::after,
+.focused-strip-meter-led-9::after,
+.focused-strip-meter-led-10::after,
+.focused-strip-meter-led-11::after,
+.focused-strip-meter-led-12::after,
+.focused-strip-meter-led-13::after,
+.focused-strip-meter-led-14::after,
+.focused-strip-meter-led-15::after,
+.focused-strip-meter-led-16::after,
+.focused-strip-meter-led-17::after,
+.focused-strip-meter-led-18::after,
+.focused-strip-meter-led-19::after,
+.focused-strip-meter-led-20::after,
+.focused-strip-meter-led-21::after,
+.focused-strip-meter-led-22::after,
+.focused-strip-meter-led-23::after,
+.focused-strip-meter-led-24::after {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0.02) 34%, rgba(0, 0, 0, 0.16) 100%),
+    linear-gradient(180deg, #24cb5e 0%, #149c3d 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.16),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.18),
+    0 0 4px rgba(37, 201, 93, 0.24);
+}
+
+.focused-strip-meter-led-25::after,
+.focused-strip-meter-led-26::after,
+.focused-strip-meter-led-27::after,
+.focused-strip-meter-led-28::after,
+.focused-strip-meter-led-29::after,
+.focused-strip-meter-led-30::after,
+.focused-strip-meter-led-31::after {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0.02) 34%, rgba(0, 0, 0, 0.18) 100%),
+    linear-gradient(180deg, #f0cb47 0%, #d97a1f 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 249, 220, 0.16),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.2),
+    0 0 4px rgba(241, 170, 46, 0.24);
+}
+
+.focused-strip-meter-led-32::after {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.22) 0%, rgba(255, 255, 255, 0.03) 32%, rgba(0, 0, 0, 0.18) 100%),
+    linear-gradient(180deg, #ff8c59 0%, #c41406 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 241, 230, 0.18),
+    inset 0 -1px 0 rgba(79, 9, 0, 0.22),
+    0 0 4px rgba(255, 84, 38, 0.18);
+}
+
+.focused-strip-meter-led-32.is-peak-hold-on::after {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 241, 230, 0.22),
+    inset 0 -1px 0 rgba(79, 9, 0, 0.22),
+    0 0 7px rgba(255, 87, 40, 0.48);
+}
+
+.focused-strip-meter-fill-mask {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: var(--focused-meter-level);
+  height: 100%;
+  overflow: hidden;
+  will-change: width;
+  z-index: 1;
+}
+
+.focused-strip-meter-fill-image {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100cqw;
+  height: 100%;
+  object-fit: contain;
+}
+
+.focused-strip-meter-clip {
+  position: absolute;
+  right: 0;
+  top: 10%;
+  width: 8px;
+  height: 80%;
+  min-height: 8px;
+  border-radius: 999px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.22) 0%, rgba(255, 255, 255, 0.04) 24%, rgba(255, 255, 255, 0) 25%),
+    linear-gradient(180deg, #ffbe73 0%, #ff5d26 38%, #c61407 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 245, 232, 0.3),
+    inset 0 -1px 0 rgba(73, 8, 0, 0.35),
+    0 0 0 1px rgba(69, 10, 0, 0.82),
+    0 0 5px rgba(255, 77, 24, 0.18);
+  z-index: 5;
+  opacity: 0;
+  transform: translateZ(0);
+  pointer-events: none;
+}
+
+.focused-strip-meter-clip.is-visible {
+  opacity: 1;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 245, 232, 0.34),
+    inset 0 -1px 0 rgba(73, 8, 0, 0.35),
+    0 0 0 1px rgba(69, 10, 0, 0.82),
+    0 0 7px rgba(255, 81, 25, 0.42);
+}
+
+/* ============================================================
+   Transport button system
+   ============================================================ */
 
 .remote-button {
-  min-height: 92px;
+  min-height: 45px;
 }
+
+
 
 .luna-button {
   --switch-frame-top: #24292e;
@@ -507,9 +2005,7 @@ button:focus-visible {
   pointer-events: none;
 }
 
-.luna-button:disabled,
-.preset-button:disabled,
-.panel-toggle:disabled {
+.luna-button:disabled {
   opacity: 0.56;
   cursor: default;
 }
@@ -519,9 +2015,7 @@ button:focus-visible {
 }
 
 .luna-button:active,
-.luna-button.is-flashing,
-.preset-button:active,
-.panel-toggle:active {
+.luna-button.is-flashing {
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.16),
     inset 0 -1px 1px rgba(0, 0, 0, 0.72);
@@ -633,30 +2127,36 @@ button:focus-visible {
 
 .record-button {
   grid-column: 1 / -1;
-  min-height: clamp(118px, 16vh, 152px);
+  height: var(--transport-record-height);
+  min-height: var(--transport-record-height);
 }
 
 .tracking-record {
   grid-column: 1 / -1;
-  min-height: clamp(138px, 18.7vh, 178px);
+  height: var(--transport-record-height);
+  min-height: var(--transport-record-height);
 }
 
 .transport-button,
 .nav-button,
 .utility-button {
-  min-height: clamp(92px, 14vh, 128px);
+  height: var(--transport-primary-height);
+  min-height: var(--transport-primary-height);
 }
 
 .tracking-primary-button {
-  min-height: clamp(126px, 15.4vh, 156px);
+  height: var(--transport-primary-height);
+  min-height: var(--transport-primary-height);
 }
 
 .tracking-medium-button {
-  min-height: clamp(86px, 10.5vh, 104px);
+  height: var(--transport-medium-height);
+  min-height: var(--transport-medium-height);
 }
 
 .tracking-compact-button {
-  min-height: clamp(72px, 8.4vh, 86px);
+  height: var(--transport-compact-height);
+  min-height: var(--transport-compact-height);
 }
 
 .button-icon {
@@ -784,16 +2284,12 @@ button:focus-visible {
   height: 100%;
 }
 
-.count-in-cluster {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.42rem;
+.tracking-flat-button.tracking-record {
+  --record-icon-color: #4A0100;
 }
 
-.count-in-icon {
-  width: 1rem;
-  height: 1rem;
+.tracking-flat-button.tracking-record.luna-button-active {
+  --record-icon-color: #9C0401;
 }
 
 .tracking-flat-button .button-helper {
@@ -857,9 +2353,13 @@ button:focus-visible {
     inset -1px -1px 5px rgba(0, 0, 0, 0.12);
 }
 
+/* ============================================================
+   Icon and label sizing
+   ============================================================ */
+
 .luna-icon {
-  width: clamp(0.95rem, 2vw, 1.25rem);
-  height: clamp(0.95rem, 2vw, 1.25rem);
+  width: 1.25rem;
+  height: 1.25rem;
   color: #f0f2f4;
 }
 
@@ -888,35 +2388,39 @@ button:focus-visible {
   image-rendering: -webkit-optimize-contrast;
 }
 
-.luna-icon-play {
-  filter: hue-rotate(0deg) saturate(1.25) brightness(1.05);
-}
-
-.luna-icon-record {
-  filter: saturate(1.15);
-}
 
 .luna-icon-loop {
   opacity: 0.9;
 }
 
 .luna-icon-wide {
-  width: clamp(1.05rem, 2.3vw, 1.45rem);
+  width: 2.16rem;
 }
 
-.tracking-record .luna-icon {
-  width: clamp(1.2rem, 2.4vw, 1.55rem);
-  height: clamp(1.2rem, 2.4vw, 1.55rem);
+.tracking-flat-button.tracking-record .transport-icon .luna-icon-record {
+  background-color: transparent;
+}
+
+.tracking-flat-button .transport-icon .luna-icon-play {
+  transform: none;
+}
+
+.tracking-flat-button .transport-icon .luna-icon-loop {
+  transform: none;
 }
 
 .tracking-flat-button .luna-icon {
-  width: clamp(1rem, 2.3vw, 1.35rem);
-  height: clamp(1rem, 2.3vw, 1.35rem);
+  width: 1.9rem;
+  height: 1.9rem;
 }
 
-.tracking-flat-button .count-in-cluster .luna-icon {
-  width: 1rem;
-  height: 1rem;
+.focus-track-action-button-version .luna-icon.focused-strip-svg-icon-plus {
+  width: var(--focus-track-version-icon-size);
+  height: var(--focus-track-version-icon-size);
+  transform: translate(
+    var(--focus-track-version-icon-offset-x),
+    var(--focus-track-version-icon-offset-y)
+  );
 }
 
 .tracking-text-button-label {
@@ -936,7 +2440,7 @@ button:focus-visible {
 .tracking-text-command .tracking-text-button-label,
 .tracking-play-from-stop .tracking-text-button-label,
 .tracking-pre-post-roll .tracking-text-button-label {
-  font-size: clamp(0.66rem, 1.3vw, 0.84rem);
+  font-size: 0.84rem;
   line-height: 1.12;
 }
 
@@ -950,7 +2454,7 @@ button:focus-visible {
   z-index: 2;
   text-align: center;
   font-family: "Luna Oxygen Bold", "Avenir Next", sans-serif;
-  font-size: clamp(0.74rem, 1.45vw, 0.94rem);
+  font-size: 0.94rem;
   font-weight: 800;
   letter-spacing: 0.12em;
   line-height: 1.1;
@@ -978,272 +2482,12 @@ button:focus-visible {
   font-weight: 700;
 }
 
-.status-card {
-  display: grid;
-  gap: 0.7rem;
-  background: var(--luna-panel-bg);
-}
-
-.last-command-display {
-  justify-content: flex-start;
-}
-
-.last-command-icon {
-  display: inline-grid;
-  place-items: center;
-  width: 52px;
-  height: 52px;
-  border-radius: 6px;
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  background: linear-gradient(180deg, rgba(51, 55, 62, 0.9), rgba(18, 20, 24, 0.95));
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
-}
-
-.last-command-icon .luna-icon,
-.last-command-icon img {
-  width: 1.35rem;
-  height: 1.35rem;
-}
-
-.panel-note,
-.feedback-strong {
-  margin: 0;
-}
-
-.panel-note {
-  color: var(--luna-muted);
-  line-height: 1.45;
-}
-
-.feedback-strong {
-  font-size: 0.98rem;
-  font-weight: 700;
-}
-
-.error-card strong {
-  color: #ecb1b1;
-}
-
-.settings-status-row {
-  display: grid;
-  gap: 0.72rem;
-}
-
-.settings-status-row .status-caption,
-.section-header h2,
-.panel-card h2,
-.status-badge,
-.tab-button {
-  font-family: "Luna Oxygen Bold", "Avenir Next", sans-serif;
-}
-
-.settings-panel {
-  align-content: start;
-}
-
-.pin-field {
-  display: grid;
-  gap: 0.5rem;
-}
-
-.pin-field span,
-.modifier-group > span {
-  color: var(--luna-muted);
-  font-size: 0.72rem;
-  letter-spacing: 0.12em;
-  font-weight: 800;
-}
-
-.pin-field input,
-.pin-field select,
-.panel-toggle,
-.preset-button,
-.modifier-toggle {
-  min-height: 52px;
-  padding: 0.8rem 0.95rem;
-  border-radius: 7px;
-  background: linear-gradient(180deg, rgba(59, 64, 72, 0.72), rgba(23, 26, 31, 0.94));
-  color: var(--luna-text);
-}
-
-.panel-toggle,
-.preset-button {
-  font-weight: 700;
-}
-
-.wide-badge {
-  margin-bottom: 0.8rem;
-}
-
-.lab-card {
-  display: grid;
-  gap: 1rem;
-}
-
-.lab-controls {
-  display: grid;
-  gap: 1rem;
-}
-
-.modifier-group {
-  display: grid;
-  gap: 0.6rem;
-}
-
-.modifier-grid,
-.preset-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.65rem;
-}
-
-.modifier-toggle {
-  display: flex;
-  align-items: center;
-  gap: 0.55rem;
-}
-
-.debug-stats {
-  display: grid;
-  gap: 0.85rem;
-  margin: 0;
-}
-
-.debug-stats div {
-  display: flex;
-  justify-content: space-between;
-  gap: 1rem;
-}
-
-.debug-stats dt {
-  color: var(--luna-muted);
-}
-
-.debug-stats dd {
-  margin: 0;
-  text-align: right;
-}
-
-.debug-block {
-  display: block !important;
-}
-
-.debug-block dd {
-  margin-top: 0.45rem;
-  text-align: left;
-}
-
-.debug-block pre {
-  margin: 0;
-  padding: 0.85rem;
-  border-radius: 7px;
-  border: 1px solid rgba(255, 255, 255, 0.04);
-  background: rgba(10, 12, 15, 0.55);
-  color: #d5dce4;
-  white-space: pre-wrap;
-  word-break: break-word;
-  font: 0.82rem/1.45 ui-monospace, SFMono-Regular, Menlo, monospace;
-}
-
-.tracking-switch-panel {
-  grid-column: span 2;
-  min-height: clamp(92px, 14vh, 128px);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.8rem;
-  padding: 0.9rem 1rem;
-  border-radius: 6px;
-  border: 1px solid #2b3036;
-  background: #4d5258;
-  color: var(--luna-text);
-  box-shadow: none;
-  text-align: left;
-}
-
-.tracking-switch-panel:disabled {
-  opacity: 0.56;
-}
-
-.tracking-switch-panel.is-on {
-  border-color: #8d7542;
-  background: #685b3f;
-}
-
-.tracking-switch-copy {
-  display: grid;
-  gap: 0.25rem;
-  min-width: 0;
-}
-
-.tracking-switch-label,
-.tracking-switch-shortcut {
-  text-transform: uppercase;
-}
-
-.tracking-switch-label {
-  font-size: 0.72rem;
-  letter-spacing: 0.11em;
-  font-weight: 800;
-  line-height: 1.25;
-}
-
-.tracking-switch-shortcut {
-  color: #2a2a2a;
-  font-size: 0.66rem;
-  letter-spacing: 0.08em;
-  font-weight: 700;
-}
-
-.tracking-switch {
-  flex: 0 0 auto;
-  width: 2.8rem;
-  height: 1.45rem;
-  display: inline-flex;
-  align-items: center;
-  padding: 0.16rem;
-  border-radius: 999px;
-  border: 1px solid rgba(0, 0, 0, 0.28);
-  background: #2b2f34;
-}
-
-.tracking-switch-thumb {
-  width: 1.05rem;
-  height: 1.05rem;
-  border-radius: 999px;
-  background: #d7dbe0;
-  transform: translateX(0);
-  transition: transform 120ms ease;
-}
-
-.tracking-switch-panel.is-on .tracking-switch {
-  background: #d1a654;
-}
-
-.tracking-switch-panel.is-on .tracking-switch-thumb {
-  transform: translateX(1.25rem);
-}
+/* ============================================================
+   Responsive scaling
+   ============================================================ */
 
 @media (max-width: 1100px) {
   .layout {
-    grid-template-columns: 1fr;
-  }
-
-  .status-panel {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-}
-
-@media (max-width: 820px) {
-  .status-strip {
-    justify-content: flex-end;
-  }
-
-  .marker-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .status-panel {
     grid-template-columns: 1fr;
   }
 }
@@ -1253,76 +2497,16 @@ button:focus-visible {
     padding-left: 0.7rem;
     padding-right: 0.7rem;
   }
+}
 
-  .tracking-hero-grid,
-  .utility-grid,
-  .movement-grid,
-  .zoom-grid,
-  .view-grid,
-  .modifier-grid,
-  .preset-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .marker-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .tab-button {
-    min-height: 54px;
-    padding: 0.6rem 0.45rem;
-  }
-
-  .tracking-console-layout,
-  .tracking-row-full,
-  .tracking-row-halves,
-  .tracking-row-thirds {
-    gap: 0.08rem;
-  }
-
-  .luna-icon {
-    width: 1rem;
-    height: 1rem;
-  }
-
-  .tracking-record .luna-icon {
-    width: 1.2rem;
-    height: 1.2rem;
+@media (max-width: 400px) {
+  :root {
+    --remote-frame-scale: 0.96;
   }
 }
 
-@media (orientation: portrait) {
-  .tracking-record {
-    min-height: clamp(134px, 16.3vh, 170px);
-  }
-
-  .tracking-primary-button {
-    min-height: clamp(124px, 14.8vh, 150px);
-  }
-
-  .tracking-medium-button {
-    min-height: clamp(84px, 10vh, 98px);
-  }
-
-  .tracking-compact-button {
-    min-height: clamp(70px, 8.1vh, 82px);
-  }
-}
-
-@media (orientation: landscape) {
-  .tracking-record {
-    min-height: clamp(122px, 16.4vh, 160px);
-  }
-
-  .tracking-primary-button {
-    min-height: clamp(112px, 14.6vh, 144px);
-  }
-
-  .tracking-medium-button {
-    min-height: clamp(76px, 10.2vh, 92px);
-  }
-
-  .tracking-compact-button {
-    min-height: clamp(66px, 8.8vh, 80px);
+@media (max-width: 380px) {
+  :root {
+    --remote-frame-scale: 0.92;
   }
 }

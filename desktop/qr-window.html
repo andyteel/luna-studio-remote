@@ -7,19 +7,50 @@
       content="default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self';"
     />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>LUNA Studio Remote</title>
-    <link rel="stylesheet" href="./qr-window.css" />
+    <title>Luna Companion</title>
+
+<link
+  rel="icon"
+  type="image/png"
+  href="../assets_original/logos/lc-app-icon-sm.png"
+/>
+
+<link rel="stylesheet" href="./qr-window.css" />
   </head>
   <body>
+    <svg class="svg-filter-defs" aria-hidden="true" focusable="false">
+      <filter
+        id="powder-coated-graphite-texture"
+        x="0"
+        y="0"
+        width="100%"
+        height="100%"
+        colorInterpolationFilters="sRGB"
+      >
+        <feTurbulence type="fractalNoise" baseFrequency="0.46" numOctaves="3" seed="17" result="noise" />
+        <feColorMatrix
+          in="noise"
+          type="matrix"
+          values="
+            0.48 0 0 0 0.34
+            0 0.48 0 0 0.36
+            0 0 0.48 0 0.39
+            0 0 0 0.78 0
+          "
+          result="powder"
+        />
+        <feBlend in="SourceGraphic" in2="powder" mode="multiply" />
+      </filter>
+    </svg>
     <main class="window-shell">
       <section class="utility-frame">
         <header class="topbar remote-topbar">
           <div class="brand-block">
-            <img src="../desktop-assets/ua-diamond-on.png" alt="" class="header-logo" />
-            <div class="brand-copy">
-              <h1>LUNA STUDIO REMOTE</h1>
-              <p class="header-subtitle">REMOTE SERVER</p>
+            <div class="brand-lockup" aria-label="Luna Companion">
+              <img src="../assets_original/logos/lc-app-icon.svg" alt="" aria-hidden="true" class="brand-logo-mark" />
+              <h1>LUNA COMPANION</h1>
             </div>
+            <p class="header-subtitle">REMOTE SERVER</p>
           </div>
         </header>
 
@@ -51,6 +82,14 @@
                     <p class="eyebrow">LAN URL</p>
                     <p id="remote-url" class="url-text">NOT AVAILABLE YET</p>
                   </div>
+                  <div class="info-block midi-status-summary">
+                    <p class="eyebrow">MIDI STATUS</p>
+                    <div class="status-line midi-status-line">
+                      <span id="midi-status-orb" class="status-orb offline"></span>
+                      <p id="midi-status-title" class="status-line-label">CHECKING MIDI</p>
+                    </div>
+                    <p id="midi-status-detail" class="detail">WAITING FOR SERVER MIDI STATUS.</p>
+                  </div>
                   <p id="port-message" class="port-message hidden"></p>
                 </div>
               </section>
@@ -78,11 +117,136 @@
                   <button id="restart-server" class="hardware-button hardware-button-blue" type="button"><span class="button-text">RESTART SERVER</span></button>
                   <button id="stop-server" class="hardware-button hardware-button-amber" type="button"><span class="button-text">STOP SERVER</span></button>
                   <button id="start-server" class="hardware-button hardware-button-blue hidden" type="button"><span class="button-text">START SERVER</span></button>
+                  <button id="midi-setup" class="hardware-button hardware-button-neutral" type="button"><span class="button-text">MIDI SETUP</span></button>
                   <button id="quit-app" class="hardware-button hardware-button-red" type="button"><span class="button-text">QUIT</span></button>
                 </div>
               </section>
             </div>
           </div>
+
+          <section id="midi-setup-panel" class="hardware-panel midi-setup-panel hidden" aria-label="MIDI Setup">
+            <div class="midi-panel-header">
+              <div class="section-header">
+                <h2>MIDI SETUP</h2>
+                <p id="midi-setup-summary" class="detail">CHECKING MIDI CONFIGURATION.</p>
+              </div>
+              <button id="close-midi-setup" class="hardware-button hardware-button-neutral midi-close-button" type="button"><span class="button-text">CLOSE</span></button>
+            </div>
+
+            <div class="midi-setup-scroll">
+              <section class="midi-setup-block midi-connection-block">
+                <h3>IAC MIDI CONNECTION</h3>
+                <div class="midi-port-grid">
+                  <div class="midi-port-row">
+                    <span>INPUT TO APP</span>
+                    <strong id="expected-iac-input">LUNA COMPANION FROM LUNA</strong>
+                  </div>
+                  <div class="midi-port-row">
+                    <span>OUTPUT FROM APP</span>
+                    <strong id="expected-iac-output">LUNA COMPANION TO LUNA</strong>
+                  </div>
+                  <div class="midi-port-row selected-midi-row">
+                    <span>SELECTED INPUT</span>
+                    <strong id="selected-midi-input">NONE</strong>
+                  </div>
+                  <div class="midi-port-row selected-midi-row">
+                    <span>SELECTED OUTPUT</span>
+                    <strong id="selected-midi-output">NONE</strong>
+                  </div>
+                </div>
+              </section>
+
+              <section class="midi-setup-block">
+                <h3>PORT STATUS</h3>
+                <div class="midi-check-grid">
+                  <div class="midi-check" id="check-input-found"><span class="status-dot"></span><strong>EXPECTED INPUT FOUND</strong></div>
+                  <div class="midi-check" id="check-output-found"><span class="status-dot"></span><strong>EXPECTED OUTPUT FOUND</strong></div>
+                  <div class="midi-check" id="check-midi-connected"><span class="status-dot"></span><strong>MIDI CONNECTED</strong></div>
+                  <div class="midi-check" id="check-mcu-receiving"><span class="status-dot"></span><strong>MCU RECEIVING</strong></div>
+                  <div class="midi-check" id="check-focused-selected"><span class="status-dot"></span><strong>FOCUSED TRACK SELECTED</strong></div>
+                  <div class="midi-check" id="check-focused-named"><span class="status-dot"></span><strong>TRACK NAME RECEIVED</strong></div>
+                  <div class="midi-check" id="check-focused-hydrated"><span class="status-dot"></span><strong>FOCUSED TRACK HYDRATED</strong></div>
+                </div>
+              </section>
+
+              <section id="midi-warning-block" class="midi-warning-block hidden">
+                <h3>SETUP WARNING</h3>
+                <div id="midi-warnings" class="midi-warning-list"></div>
+              </section>
+
+              <section class="midi-setup-block midi-actions-block">
+                <h3>ACTIONS</h3>
+                <div class="midi-action-grid">
+                  <button id="open-audio-midi-setup" class="hardware-button hardware-button-blue" type="button"><span class="button-text">OPEN AUDIO MIDI SETUP</span></button>
+                  <button id="refresh-midi" class="hardware-button hardware-button-neutral" type="button"><span class="button-text">RECONNECT MIDI</span></button>
+                  <button id="test-midi" class="hardware-button hardware-button-amber" type="button"><span class="button-text">CHECK MIDI STATUS</span></button>
+                </div>
+              </section>
+
+              <p id="midi-action-message" class="detail midi-action-message hidden"></p>
+
+              <details class="midi-setup-block midi-diagnostics">
+                <summary>DETECTED MIDI PORTS</summary>
+                <div class="detected-port-grid">
+                  <div>
+                    <strong>INPUTS</strong>
+                    <p id="detected-inputs" class="detected-port-list">NONE DETECTED</p>
+                  </div>
+                  <div>
+                    <strong>OUTPUTS</strong>
+                    <p id="detected-outputs" class="detected-port-list">NONE DETECTED</p>
+                  </div>
+                </div>
+                <p id="selected-ports" class="detail selected-port-detail">NO SELECTED MIDI PORTS.</p>
+                <div class="mcu-diagnostic-grid">
+                  <div>
+                    <strong>LAST RAW MESSAGE</strong>
+                    <p id="diag-last-raw" class="detected-port-list">NONE</p>
+                  </div>
+                  <div>
+                    <strong>LAST TRANSPORT</strong>
+                    <p id="diag-last-transport" class="detected-port-list">NONE</p>
+                  </div>
+                  <div>
+                    <strong>LAST LCD</strong>
+                    <p id="diag-last-lcd" class="detected-port-list">NONE</p>
+                  </div>
+                  <div>
+                    <strong>LAST SELECT</strong>
+                    <p id="diag-last-select" class="detected-port-list">NONE</p>
+                  </div>
+                  <div>
+                    <strong>LAST FOCUS UPDATE</strong>
+                    <p id="diag-last-focused" class="detected-port-list">NONE</p>
+                  </div>
+                  <div>
+                    <strong>MESSAGE COUNTS</strong>
+                    <p id="diag-counts" class="detected-port-list">RAW 0 | TRANSPORT 0 | LCD 0 | SELECT 0</p>
+                  </div>
+                </div>
+                <div>
+                  <strong>RECENT MCU MESSAGES</strong>
+                  <p id="diag-recent-messages" class="detected-port-list">NONE RECEIVED</p>
+                </div>
+              </details>
+
+              <section class="midi-setup-block midi-instructions-block">
+                <h3>LUNA SETUP INSTRUCTIONS</h3>
+                <div class="instruction-grid">
+                  <div>
+                    <strong>AUDIO MIDI SETUP</strong>
+                    <p>1. ENABLE IAC DRIVER</p>
+                    <p>2. CREATE OR RENAME BUSES: LUNA COMPANION TO LUNA AND LUNA COMPANION FROM LUNA</p>
+                  </div>
+                  <div>
+                    <strong>LUNA MIDI CONTROL SURFACES</strong>
+                    <p>INPUT DEVICE: LUNA COMPANION TO LUNA</p>
+                    <p>OUTPUT DEVICE: LUNA COMPANION FROM LUNA</p>
+                  </div>
+                </div>
+              </section>
+            </div>
+          </section>
         </section>
       </section>
     </main>

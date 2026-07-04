@@ -1,6 +1,7 @@
 export type ModifierKey = 'command' | 'shift' | 'control' | 'option';
 
 export type BaseKey =
+  | 'backslash'
   | 'digit0'
   | 'space'
   | 'return'
@@ -10,7 +11,9 @@ export type BaseKey =
   | 'apostrophe'
   | 'k'
   | 'l'
+  | 'p'
   | 'r'
+  | 'semicolon'
   | 't'
   | 'z'
   | 'leftArrow'
@@ -21,9 +24,14 @@ export type BaseKey =
   | 'rightBracket'
   | 'equals'
   | 'a'
+  | 'd'
   | 'e'
   | 'q'
   | 'w';
+
+export type FocusedTrackMcuControlRole = 'recordEnable' | 'solo' | 'mute';
+export type McuTransportControlRole = 'play' | 'stop' | 'record' | 'cycle' | 'click' | 'rewind' | 'fastForward';
+export type McuNavigationControlRole = 'channelLeft' | 'channelRight' | 'bankLeft' | 'bankRight';
 
 export type CommandId =
   | 'record'
@@ -52,12 +60,23 @@ export type CommandId =
   | 'autoScroll'
   | 'scrollLeftSelection'
   | 'scrollRightSelection'
-  | 'toggleTimelineMixer';
+  | 'toggleTimelineMixer'
+  | 'focusedTrackRecordArm'
+  | 'focusedTrackSolo'
+  | 'focusedTrackMute'
+  | 'focusedSelectedTrackUp'
+  | 'focusedSelectedTrackDown'
+  | 'newTrackVersion'
+  | 'duplicateTrack'
+  | 'duplicateTrackWithoutContent';
 
 export interface CommandDefinition {
   id: CommandId;
   label: string;
-  keys: Array<ModifierKey | BaseKey>;
+  keys?: Array<ModifierKey | BaseKey>;
+  mcuControl?: FocusedTrackMcuControlRole;
+  mcuTransport?: McuTransportControlRole;
+  mcuNavigation?: McuNavigationControlRole;
   danger?: boolean;
   confirm?: boolean;
   placeholder?: boolean;
@@ -66,18 +85,18 @@ export interface CommandDefinition {
 }
 
 export const commandRegistry: CommandDefinition[] = [
-  { id: 'record', label: 'Record', keys: ['numpad3'], accent: 'record' },
-  { id: 'playStop', label: 'Play / Stop', keys: ['space'], accent: 'neutral' },
-  { id: 'stop', label: 'Stop', keys: ['space'], accent: 'neutral' },
-  { id: 'returnToZero', label: 'Return to Zero', keys: ['return'], accent: 'neutral' },
+  { id: 'record', label: 'Record', keys: ['numpad3'], mcuTransport: 'record', accent: 'record' },
+  { id: 'playStop', label: 'Play / Stop', keys: ['space'], mcuTransport: 'play', accent: 'neutral' },
+  { id: 'stop', label: 'Stop', keys: ['space'], mcuTransport: 'stop', accent: 'neutral' },
+  { id: 'returnToZero', label: 'Return to Zero', mcuTransport: 'rewind', accent: 'neutral' },
   {
     id: 'goToEnd',
     label: 'Go To End',
-    keys: ['control', 'digit0'],
+    mcuTransport: 'fastForward',
     accent: 'neutral',
   },
-  { id: 'loop', label: 'Loop', keys: ['control', 'l'], accent: 'neutral' },
-  { id: 'click', label: 'Click', keys: ['k'], accent: 'neutral' },
+  { id: 'loop', label: 'Loop', keys: ['control', 'l'], mcuTransport: 'cycle', accent: 'neutral' },
+  { id: 'click', label: 'Click', keys: ['k'], mcuTransport: 'click', accent: 'neutral' },
   { id: 'countIn', label: 'Count In', keys: ['shift', 'k'], accent: 'neutral' },
   { id: 'undo', label: 'Undo Last', keys: ['command', 'z'], accent: 'neutral' },
   { id: 'redo', label: 'Redo', keys: ['shift', 'command', 'z'], accent: 'neutral' },
@@ -107,6 +126,57 @@ export const commandRegistry: CommandDefinition[] = [
   { id: 'scrollLeftSelection', label: 'Scroll Left Selection', keys: ['shift', 'leftArrow'], accent: 'neutral' },
   { id: 'scrollRightSelection', label: 'Scroll Right Selection', keys: ['shift', 'rightArrow'], accent: 'neutral' },
   { id: 'toggleTimelineMixer', label: 'Toggle Timeline/Mixer', keys: ['command', 'equals'], accent: 'neutral' },
+  {
+    id: 'focusedTrackRecordArm',
+    label: 'Focused Track Record Arm',
+    keys: [],
+    mcuControl: 'recordEnable',
+    accent: 'record',
+  },
+  {
+    id: 'focusedTrackSolo',
+    label: 'Focused Track Solo',
+    keys: [],
+    mcuControl: 'solo',
+    accent: 'neutral',
+  },
+  {
+    id: 'focusedTrackMute',
+    label: 'Focused Track Mute',
+    keys: [],
+    mcuControl: 'mute',
+    accent: 'neutral',
+  },
+  {
+    id: 'focusedSelectedTrackUp',
+    label: 'Selected Track Up',
+    keys: ['p'],
+    accent: 'neutral',
+  },
+  {
+    id: 'focusedSelectedTrackDown',
+    label: 'Selected Track Down',
+    keys: ['semicolon'],
+    accent: 'neutral',
+  },
+  {
+    id: 'newTrackVersion',
+    label: 'New Track Version',
+    keys: ['control', 'backslash'],
+    accent: 'neutral',
+  },
+  {
+    id: 'duplicateTrack',
+    label: 'Duplicate Track',
+    keys: ['option', 'd'],
+    accent: 'neutral',
+  },
+  {
+    id: 'duplicateTrackWithoutContent',
+    label: 'Duplicate Without Content',
+    keys: ['shift', 'option', 'd'],
+    accent: 'neutral',
+  },
   {
     id: 'abortRecording',
     label: 'Discard Recording',

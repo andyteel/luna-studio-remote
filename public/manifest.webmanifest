@@ -1,6 +1,6 @@
 {
-  "name": "Luna Studio Remote",
-  "short_name": "Luna Studio",
+  "name": "Luna Companion",
+  "short_name": "Luna Companion",
   "description": "A keystroke-based tracking remote for Universal Audio LUNA.",
   "display": "standalone",
   "background_color": "#090b10",

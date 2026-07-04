@@ -18,17 +18,62 @@ const DEFAULT_ENV = {
 };
 
 const WINDOW_BOUNDS = {
-  width: 500,
-  height: 640,
+  width: 680,
+  height: 720,
 };
 
 let tray = null;
 let qrWindow = null;
 let remoteServer = null;
 let isQuitting = false;
+let midiStatusTimer = null;
+let lastMidiActionMessage = null;
+const MIDI_ACTION_MESSAGE_VISIBLE_MS = 15000;
 let permissionsState = {
   permissionsNoteDismissed: false,
 };
+
+const createDefaultMcuDiagnostics = () => ({
+  rawMessageCount: 0,
+  transportMessageCount: 0,
+  lcdMessageCount: 0,
+  selectMessageCount: 0,
+  focusedTrackFeedbackCount: 0,
+  lastRawMessageAt: null,
+  lastTransportFeedbackAt: null,
+  lastLcdFeedbackAt: null,
+  lastSelectFeedbackAt: null,
+  lastFocusedTrackFeedbackAt: null,
+  recentMessages: [],
+});
+
+const createDefaultMidiStatus = () => ({
+  state: 'unknown',
+  title: 'MIDI unavailable',
+  detail: 'Start the server to check MIDI setup.',
+  midiMode: 'iac',
+  expectedIacInputName: 'LUNA Companion From LUNA',
+  expectedIacOutputName: 'LUNA Companion To LUNA',
+  expectedIacInputFound: false,
+  expectedIacOutputFound: false,
+  midiConnected: false,
+  mcuReceiving: false,
+  focusedTrackSelected: false,
+  focusedTrackNamed: false,
+  focusedTrackHydrated: false,
+  focusedTrackReady: false,
+  selectedInputName: null,
+  selectedOutputName: null,
+  inputPorts: [],
+  outputPorts: [],
+  setupWarnings: ['Start the server to check MIDI setup.'],
+  lastMessageAt: null,
+  focusedTrackName: null,
+  focusedTrackFallbackName: null,
+  mcuDiagnostics: createDefaultMcuDiagnostics(),
+  actionMessage: null,
+  checkedAt: null,
+});
 
 let runtimeStatus = {
   state: 'starting',
@@ -41,13 +86,14 @@ let runtimeStatus = {
   portMessage: null,
   showPermissionsNote: true,
   permissionsNote:
-    'LUNA Studio Remote may need Accessibility, Automation, and Local Network access. If macOS prompts, allow access so keystrokes and network discovery work correctly.',
+    'Luna Companion may need Accessibility, Automation, and Local Network access. If macOS prompts, allow access so keystrokes and network discovery work correctly.',
+  midi: createDefaultMidiStatus(),
   updatedAt: new Date().toISOString(),
 };
 
 const getStateFilePath = () => path.join(app.getPath('userData'), 'desktop-state.json');
 const getAppIconPath = () => path.join(app.getAppPath(), 'desktop-assets', 'luna-app-icon.png');
-const getTrayIconPath = () => path.join(app.getAppPath(), 'desktop-assets', 'lsr-tray-icon.png');
+const getTrayIconPath = () => path.join(app.getAppPath(), 'desktop-assets', 'tray-icon.png');
 const getServerEntryPath = () => path.join(app.getAppPath(), 'dist-server', 'server', 'index.js');
 const getWindowHtmlPath = () => path.join(__dirname, 'qr-window.html');
 
@@ -62,10 +108,13 @@ const createTrayImage = () => {
     return nativeImage.createEmpty();
   }
 
-  return trayImage.resize({
+  const resizedTrayImage = trayImage.resize({
     height: 18,
     quality: 'best',
   });
+
+  resizedTrayImage.setTemplateImage(true);
+  return resizedTrayImage;
 };
 
 const buildLanUrl = (port) => {
@@ -162,6 +211,329 @@ const updateStatus = (partial) => {
   broadcastStatus();
 };
 
+const formatFocusedTrackFallbackName = (focusedTrack) => {
+  const index = focusedTrack?.index;
+
+  if (!Number.isInteger(index) || index < 0) {
+    return null;
+  }
+
+  return `Track ${index + 1}`;
+};
+
+const getMidiStatusTitle = (state) => {
+  if (state.focusedTrackHydrated) {
+    return state.focusedTrack?.name ? `Focused Track: ${state.focusedTrack.name}` : 'Focused track hydrated';
+  }
+
+  if (state.focusedTrackSelected) {
+    const fallbackName = formatFocusedTrackFallbackName(state.focusedTrack);
+    return fallbackName ? `Focused track selected: ${fallbackName}` : 'Focused track selected';
+  }
+
+  if (state.mcuReceiving) {
+    return 'LUNA is sending MCU feedback';
+  }
+
+  if (state.midiConnected) {
+    return 'Ports connected';
+  }
+
+  if (!state.expectedIacInputFound || !state.expectedIacOutputFound) {
+    return 'Required IAC ports were not found';
+  }
+
+  return 'MIDI unavailable';
+};
+
+const getMidiStatusState = (state) => {
+  if (state.focusedTrackReady) {
+    return 'ready';
+  }
+
+  if (state.mcuReceiving) {
+    return 'receiving';
+  }
+
+  if (state.midiConnected) {
+    return 'connected';
+  }
+
+  if (!state.expectedIacInputFound || !state.expectedIacOutputFound) {
+    return 'setup-required';
+  }
+
+  return 'unavailable';
+};
+
+const getMidiStatusDetail = (state) => {
+  if (state.focusedTrackHydrated) {
+    return 'Focused-track controls are available.';
+  }
+
+  if (state.focusedTrackSelected) {
+    return 'Track name pending from LUNA. Focused-track controls are available.';
+  }
+
+  if (state.mcuReceiving) {
+    if (state.mcuDiagnostics && !state.mcuDiagnostics.lastLcdFeedbackAt && !state.mcuDiagnostics.lastSelectFeedbackAt) {
+      return 'MCU feedback is arriving, but no LCD/select focused-track feedback has been seen yet.';
+    }
+
+    return 'Select a track in LUNA to enable focused-track controls.';
+  }
+
+  if (state.midiConnected) {
+    return 'Waiting for MCU feedback from LUNA. Press Play/Stop or select a track in LUNA.';
+  }
+
+  if (!state.expectedIacInputFound || !state.expectedIacOutputFound) {
+    return 'Required IAC ports were not found.';
+  }
+
+  return state.setupWarnings?.[0] ?? 'MIDI setup has not been verified yet.';
+};
+
+const normalizeMidiPortName = (name) => String(name ?? '').trim().toLowerCase().replace(/\s+/g, ' ');
+
+const withoutIacDriverPrefix = (name) => name.replace(/^iac driver\s+/, '');
+
+const midiPortNameMatches = (candidateName, expectedName) => {
+  if (!candidateName) {
+    return false;
+  }
+
+  const normalizedCandidateName = normalizeMidiPortName(candidateName);
+  const normalizedExpectedName = normalizeMidiPortName(expectedName);
+  const candidateNames = [
+    normalizedCandidateName,
+    withoutIacDriverPrefix(normalizedCandidateName),
+  ];
+
+  return candidateNames.some((name) => name === normalizedExpectedName || name.includes(normalizedExpectedName));
+};
+
+const hasExpectedPort = (ports, selectedName, expectedName) => {
+  return (
+    midiPortNameMatches(selectedName, expectedName) ||
+    (Array.isArray(ports) && ports.some((port) => midiPortNameMatches(port.name, expectedName)))
+  );
+};
+
+const getMidiSetupWarnings = (state) => {
+  const expectedIacInputFound = hasExpectedPort(
+    state.mcu?.inputPorts,
+    state.mcu?.selectedInputName,
+    state.expectedIacInputName,
+  ) || Boolean(state.expectedIacInputFound);
+  const expectedIacOutputFound = hasExpectedPort(
+    state.mcu?.outputPorts,
+    state.mcu?.selectedOutputName,
+    state.expectedIacOutputName,
+  ) || Boolean(state.expectedIacOutputFound);
+
+  if (!expectedIacInputFound || !expectedIacOutputFound) {
+    return [
+      `Required IAC ports were not found. Expected input: ${state.expectedIacInputName}. Expected output: ${state.expectedIacOutputName}.`,
+    ];
+  }
+
+  if (!state.midiConnected) {
+    return ['MIDI ports are not connected yet.'];
+  }
+
+  if (!state.mcuReceiving) {
+    return ['Waiting for MCU feedback from LUNA. Press Play/Stop or select a track in LUNA.'];
+  }
+
+  if (!state.focusedTrackSelected) {
+    if (state.mcuDiagnostics && !state.mcuDiagnostics.lastLcdFeedbackAt && !state.mcuDiagnostics.lastSelectFeedbackAt) {
+      return ['MCU feedback is arriving, but no LCD/select focused-track feedback has been received since server start.'];
+    }
+
+    return ['Select a track in LUNA to enable focused-track controls.'];
+  }
+
+  if (!state.focusedTrackNamed) {
+    return ['Track name pending from LUNA. Focused-track controls are available.'];
+  }
+
+  return [];
+};
+
+const setMidiActionMessage = (message) => {
+  if (!message) {
+    lastMidiActionMessage = null;
+    return;
+  }
+
+  lastMidiActionMessage = {
+    message,
+    createdAtMs: Date.now(),
+  };
+};
+
+const getVisibleMidiActionMessage = () => {
+  if (!lastMidiActionMessage) {
+    return null;
+  }
+
+  if (Date.now() - lastMidiActionMessage.createdAtMs > MIDI_ACTION_MESSAGE_VISIBLE_MS) {
+    lastMidiActionMessage = null;
+    return null;
+  }
+
+  return lastMidiActionMessage.message;
+};
+
+const withMidiActionMessage = (midi) => ({
+  ...midi,
+  actionMessage: getVisibleMidiActionMessage(),
+});
+
+const toMidiStatus = (state) => {
+  const inputPorts = Array.isArray(state.mcu?.inputPorts) ? state.mcu.inputPorts : [];
+  const outputPorts = Array.isArray(state.mcu?.outputPorts) ? state.mcu.outputPorts : [];
+  const selectedInputName = state.mcu?.selectedInputName ?? null;
+  const selectedOutputName = state.mcu?.selectedOutputName ?? null;
+  const expectedIacInputFound =
+    Boolean(state.expectedIacInputFound) ||
+    hasExpectedPort(inputPorts, selectedInputName, state.expectedIacInputName);
+  const expectedIacOutputFound =
+    Boolean(state.expectedIacOutputFound) ||
+    hasExpectedPort(outputPorts, selectedOutputName, state.expectedIacOutputName);
+  const normalizedState = {
+    ...state,
+    expectedIacInputFound,
+    expectedIacOutputFound,
+  };
+
+  return {
+    state: getMidiStatusState(normalizedState),
+    title: getMidiStatusTitle(normalizedState),
+    detail: getMidiStatusDetail(normalizedState),
+    midiMode: state.midiMode,
+    expectedIacInputName: state.expectedIacInputName,
+    expectedIacOutputName: state.expectedIacOutputName,
+    expectedIacInputFound,
+    expectedIacOutputFound,
+    midiConnected: Boolean(state.midiConnected),
+    mcuReceiving: Boolean(state.mcuReceiving),
+    focusedTrackSelected: Boolean(state.focusedTrackSelected),
+    focusedTrackNamed: Boolean(state.focusedTrackNamed),
+    focusedTrackHydrated: Boolean(state.focusedTrackHydrated),
+    focusedTrackReady: Boolean(state.focusedTrackReady),
+    selectedInputName,
+    selectedOutputName,
+    inputPorts,
+    outputPorts,
+    setupWarnings: getMidiSetupWarnings(normalizedState),
+    lastMessageAt: state.mcu?.lastMessageAt ?? null,
+    focusedTrackName: state.focusedTrack?.name ?? null,
+    focusedTrackFallbackName: formatFocusedTrackFallbackName(state.focusedTrack),
+    mcuDiagnostics: state.mcuDiagnostics ?? createDefaultMcuDiagnostics(),
+    checkedAt: new Date().toISOString(),
+  };
+};
+
+const fetchRemoteState = async () => {
+  if (!runtimeStatus.localUrl) {
+    return null;
+  }
+
+  const response = await fetch(`${runtimeStatus.localUrl}/api/state`);
+
+  if (!response.ok) {
+    throw new Error(`State request failed with HTTP ${response.status}`);
+  }
+
+  return response.json();
+};
+
+const refreshMidiStatus = async () => {
+  if (runtimeStatus.state !== 'running') {
+    updateStatus({
+      midi: {
+        ...createDefaultMidiStatus(),
+        title: runtimeStatus.state === 'stopped' ? 'Server stopped' : 'MIDI unavailable',
+        detail: runtimeStatus.state === 'stopped' ? 'Start the server to check MIDI setup.' : 'Waiting for server.',
+      },
+    });
+    return;
+  }
+
+  try {
+    const state = await fetchRemoteState();
+
+    if (!state) {
+      return;
+    }
+
+    updateStatus({
+      midi: withMidiActionMessage(toMidiStatus(state)),
+    });
+  } catch (error) {
+    updateStatus({
+      midi: {
+        ...runtimeStatus.midi,
+        state: 'unavailable',
+        title: 'MIDI status unavailable',
+        detail: error instanceof Error ? error.message : 'Unable to check MIDI setup.',
+        checkedAt: new Date().toISOString(),
+      },
+    });
+  }
+};
+
+const startMidiStatusPolling = () => {
+  if (midiStatusTimer) {
+    clearInterval(midiStatusTimer);
+  }
+
+  void refreshMidiStatus();
+  midiStatusTimer = setInterval(() => {
+    void refreshMidiStatus();
+  }, 3000);
+};
+
+const stopMidiStatusPolling = () => {
+  if (midiStatusTimer) {
+    clearInterval(midiStatusTimer);
+    midiStatusTimer = null;
+  }
+};
+
+const postRemoteAction = async (endpoint) => {
+  await ensureServerRunning();
+
+  if (!runtimeStatus.localUrl) {
+    throw new Error('Local server URL is not available');
+  }
+
+  const response = await fetch(`${runtimeStatus.localUrl}${endpoint}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+  const payload = await response.json().catch(() => ({}));
+
+  if (payload.state) {
+    const actionMessage = payload.message ?? payload.error ?? null;
+    setMidiActionMessage(actionMessage);
+    updateStatus({
+      midi: withMidiActionMessage(toMidiStatus(payload.state)),
+    });
+  } else {
+    await refreshMidiStatus();
+  }
+
+  return {
+    ok: response.ok && payload.ok !== false,
+    payload,
+  };
+};
+
 const createLogger = () => ({
   log: (...args) => console.log('[desktop-server]', ...args),
   error: (...args) => console.error('[desktop-server]', ...args),
@@ -173,6 +545,11 @@ const startServer = async () => {
     title: 'Starting server…',
     detail: 'Launching the bundled production server.',
     qrCodeDataUrl: null,
+    midi: {
+      ...createDefaultMidiStatus(),
+      title: 'Checking MIDI setup',
+      detail: 'Waiting for the server to report MIDI status.',
+    },
   });
 
   process.env.NODE_ENV = DEFAULT_ENV.NODE_ENV;
@@ -180,6 +557,8 @@ const startServer = async () => {
   process.env.ENABLE_KEYSTROKES = DEFAULT_ENV.ENABLE_KEYSTROKES;
   process.env.LUNA_APP_NAME = DEFAULT_ENV.LUNA_APP_NAME;
   process.env.HOST = DEFAULT_ENV.HOST;
+  process.env.MCU_TRANSPORT_MODE = 'prefer-mcu';
+  process.env.MCU_NAV_SEND_MODE = 'noteOnZeroRelease';
 
   const selectedPort = await findAvailablePort(DEFAULT_PORT);
   process.env.PORT = String(selectedPort);
@@ -187,30 +566,32 @@ const startServer = async () => {
   const moduleUrl = pathToFileURL(getServerEntryPath()).href;
   const serverModule = await import(moduleUrl);
   const { startRemoteServer } = serverModule;
+  const logger = createLogger();
 
   if (typeof startRemoteServer !== 'function') {
     throw new Error('Bundled server entry does not export startRemoteServer');
   }
 
+  logger.log('Luna Companion Remote Server');
   remoteServer = await startRemoteServer({
     host: DEFAULT_ENV.HOST,
     port: selectedPort,
-    logger: createLogger(),
+    logger,
   });
 
   const remoteUrl = buildLanUrl(remoteServer.port) ?? remoteServer.lanUrls[0] ?? null;
   const portMessage =
     remoteServer.port === DEFAULT_PORT
       ? null
-      : `Port ${DEFAULT_PORT} was busy, so LUNA Studio Remote is using port ${remoteServer.port}.`;
+      : `Port ${DEFAULT_PORT} was busy, so Luna Companion is using port ${remoteServer.port}.`;
 
   const qrCodeDataUrl = remoteUrl
     ? await QRCode.toDataURL(remoteUrl, {
         margin: 1,
         width: 260,
         color: {
-          dark: '#0a0a0a',
-          light: '#f6f2e9',
+          dark: '#000000',
+          light: '#ffffff',
         },
       })
     : null;
@@ -227,9 +608,12 @@ const startServer = async () => {
     portMessage,
     qrCodeDataUrl,
   });
+  startMidiStatusPolling();
 };
 
 const stopServer = async () => {
+  stopMidiStatusPolling();
+
   if (!remoteServer) {
     updateStatus({
       state: 'stopped',
@@ -240,6 +624,11 @@ const stopServer = async () => {
       port: null,
       qrCodeDataUrl: null,
       portMessage: null,
+      midi: {
+        ...createDefaultMidiStatus(),
+        title: 'Server stopped',
+        detail: 'Start the server to check MIDI setup.',
+      },
     });
     return;
   }
@@ -263,6 +652,11 @@ const stopServer = async () => {
     port: null,
     qrCodeDataUrl: null,
     portMessage: null,
+    midi: {
+      ...createDefaultMidiStatus(),
+      title: 'Server stopped',
+      detail: 'Start the server to check MIDI setup.',
+    },
   });
 };
 
@@ -305,7 +699,7 @@ const createQrWindow = () => {
     minHeight: WINDOW_BOUNDS.height,
     resizable: false,
     fullscreenable: false,
-    title: 'LUNA Studio Remote',
+    title: 'Luna Companion',
     autoHideMenuBar: true,
     backgroundColor: '#676e72',
     icon: fs.existsSync(getAppIconPath()) ? getAppIconPath() : undefined,
@@ -379,7 +773,7 @@ const refreshTrayMenu = () => {
     },
   ];
 
-  tray.setToolTip(runtimeStatus.remoteUrl ?? 'LUNA Studio Remote');
+  tray.setToolTip(runtimeStatus.remoteUrl ?? 'Luna Companion');
   tray.setContextMenu(Menu.buildFromTemplate(template));
 };
 
@@ -404,7 +798,7 @@ const handleRuntimeError = async (error) => {
 
   await dialog.showMessageBox({
     type: 'error',
-    message: 'LUNA Studio Remote could not start its bundled server.',
+    message: 'Luna Companion could not start its bundled server.',
     detail: error instanceof Error ? error.message : String(error),
   });
 };
@@ -441,6 +835,21 @@ ipcMain.handle('desktop:perform-action', async (_event, action) => {
     permissionsState.permissionsNoteDismissed = true;
     await persistPermissionsState();
     broadcastStatus();
+    return runtimeStatus;
+  }
+
+  if (action === 'open-audio-midi-setup') {
+    await postRemoteAction('/api/open-audio-midi-setup');
+    return runtimeStatus;
+  }
+
+  if (action === 'refresh-midi') {
+    await postRemoteAction('/api/midi/refresh');
+    return runtimeStatus;
+  }
+
+  if (action === 'test-midi') {
+    await postRemoteAction('/api/midi/test');
     return runtimeStatus;
   }
 
@@ -494,7 +903,7 @@ app.whenReady().then(async () => {
   if (!permissionsState.permissionsNoteDismissed) {
     await dialog.showMessageBox({
       type: 'info',
-      message: 'LUNA Studio Remote permissions',
+      message: 'Luna Companion permissions',
       detail:
         'To control LUNA, macOS may ask for Accessibility, Automation, and Local Network access. Allow these prompts so the remote can send keystrokes and stay reachable on your Wi-Fi network.',
     });

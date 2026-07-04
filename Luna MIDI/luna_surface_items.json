@@ -1,0 +1,1342 @@
+{
+    "hardware_items": [
+        {
+            "name": "Strip 1 Record Switch",
+            "type": "switch_midi",
+            "address": "/recv_cmd/144/0",
+            "path": "/control/strip_1/rec_switch"
+        },
+        {
+            "name": "Strip 2 Record Switch",
+            "type": "switch_midi",
+            "address": "/recv_cmd/144/1",
+            "path": "/control/strip_2/rec_switch"
+        },
+        {
+            "name": "Strip 3 Record Switch",
+            "type": "switch_midi",
+            "address": "/recv_cmd/144/2",
+            "path": "/control/strip_3/rec_switch"
+        },
+        {
+            "name": "Strip 4 Record Switch",
+            "type": "switch_midi",
+            "address": "/recv_cmd/144/3",
+            "path": "/control/strip_4/rec_switch"
+        },
+        {
+            "name": "Strip 5 Record Switch",
+            "type": "switch_midi",
+            "address": "/recv_cmd/144/4",
+            "path": "/control/strip_5/rec_switch"
+        },
+        {
+            "name": "Strip 6 Record Switch",
+            "type": "switch_midi",
+            "address": "/recv_cmd/144/5",
+            "path": "/control/strip_6/rec_switch"
+        },
+        {
+            "name": "Strip 7 Record Switch",
+            "type": "switch_midi",
+            "address": "/recv_cmd/144/6",
+            "path": "/control/strip_7/rec_switch"
+        },
+        {
+            "name": "Strip 8 Record Switch",
+            "type": "switch_midi",
+            "address": "/recv_cmd/144/7",
+            "path": "/control/strip_8/rec_switch"
+        },
+        {
+            "name": "Strip 1 Solo Switch",
+            "type": "switch_midi",
+            "address": "/recv_cmd/144/8",
+            "path": "/control/strip_1/solo_switch"
+        },
+        {
+            "name": "Strip 2 Solo Switch",
+            "type": "switch_midi",
+            "address": "/recv_cmd/144/9",
+            "path": "/control/strip_2/solo_switch"
+        },
+        {
+            "name": "Strip 3 Solo Switch",
+            "type": "switch_midi",
+            "address": "/recv_cmd/144/10",
+            "path": "/control/strip_3/solo_switch"
+        },
+        {
+            "name": "Strip 4 Solo Switch",
+            "type": "switch_midi",
+            "address": "/recv_cmd/144/11",
+            "path": "/control/strip_4/solo_switch"
+        },
+        {
+            "name": "Strip 5 Solo Switch",
+            "type": "switch_midi",
+            "address": "/recv_cmd/144/12",
+            "path": "/control/strip_5/solo_switch"
+        },
+        {
+            "name": "Strip 6 Solo Switch",
+            "type": "switch_midi",
+            "address": "/recv_cmd/144/13",
+            "path": "/control/strip_6/solo_switch"
+        },
+        {
+            "name": "Strip 7 Solo Switch",
+            "type": "switch_midi",
+            "address": "/recv_cmd/144/14",
+            "path": "/control/strip_7/solo_switch"
+        },
+        {
+            "name": "Strip 8 Solo Switch",
+            "type": "switch_midi",
+            "address": "/recv_cmd/144/15",
+            "path": "/control/strip_8/solo_switch"
+        },
+        {
+            "name": "Strip 1 Mute Switch",
+            "type": "switch_midi",
+            "address": "/recv_cmd/144/16",
+            "path": "/control/strip_1/mute_switch"
+        },
+        {
+            "name": "Strip 2 Mute Switch",
+            "type": "switch_midi",
+            "address": "/recv_cmd/144/17",
+            "path": "/control/strip_2/mute_switch"
+        },
+        {
+            "name": "Strip 3 Mute Switch",
+            "type": "switch_midi",
+            "address": "/recv_cmd/144/18",
+            "path": "/control/strip_3/mute_switch"
+        },
+        {
+            "name": "Strip 4 Mute Switch",
+            "type": "switch_midi",
+            "address": "/recv_cmd/144/19",
+            "path": "/control/strip_4/mute_switch"
+        },
+        {
+            "name": "Strip 5 Mute Switch",
+            "type": "switch_midi",
+            "address": "/recv_cmd/144/20",
+            "path": "/control/strip_5/mute_switch"
+        },
+        {
+            "name": "Strip 6 Mute Switch",
+            "type": "switch_midi",
+            "address": "/recv_cmd/144/21",
+            "path": "/control/strip_6/mute_switch"
+        },
+        {
+            "name": "Strip 7 Mute Switch",
+            "type": "switch_midi",
+            "address": "/recv_cmd/144/22",
+            "path": "/control/strip_7/mute_switch"
+        },
+        {
+            "name": "Strip 8 Mute Switch",
+            "type": "switch_midi",
+            "address": "/recv_cmd/144/23",
+            "path": "/control/strip_8/mute_switch"
+        },
+        {
+            "name": "Strip 1 Select Switch",
+            "type": "switch_midi",
+            "address": "/recv_cmd/144/24",
+            "path": "/control/strip_1/select_switch"
+        },
+        {
+            "name": "Strip 2 Select Switch",
+            "type": "switch_midi",
+            "address": "/recv_cmd/144/25",
+            "path": "/control/strip_2/select_switch"
+        },
+        {
+            "name": "Strip 3 Select Switch",
+            "type": "switch_midi",
+            "address": "/recv_cmd/144/26",
+            "path": "/control/strip_3/select_switch"
+        },
+        {
+            "name": "Strip 4 Select Switch",
+            "type": "switch_midi",
+            "address": "/recv_cmd/144/27",
+            "path": "/control/strip_4/select_switch"
+        },
+        {
+            "name": "Strip 5 Select Switch",
+            "type": "switch_midi",
+            "address": "/recv_cmd/144/28",
+            "path": "/control/strip_5/select_switch"
+        },
+        {
+            "name": "Strip 6 Select Switch",
+            "type": "switch_midi",
+            "address": "/recv_cmd/144/29",
+            "path": "/control/strip_6/select_switch"
+        },
+        {
+            "name": "Strip 7 Select Switch",
+            "type": "switch_midi",
+            "address": "/recv_cmd/144/30",
+            "path": "/control/strip_7/select_switch"
+        },
+        {
+            "name": "Strip 8 Select Switch",
+            "type": "switch_midi",
+            "address": "/recv_cmd/144/31",
+            "path": "/control/strip_8/select_switch"
+        },
+        {
+            "name": "Strip 1 Knob Switch",
+            "type": "switch_midi",
+            "address": "/recv_cmd/144/32",
+            "path": "/control/strip_1/knob_switch"
+        },
+        {
+            "name": "Strip 2 Knob Switch",
+            "type": "switch_midi",
+            "address": "/recv_cmd/144/33",
+            "path": "/control/strip_2/knob_switch"
+        },
+        {
+            "name": "Strip 3 Knob Switch",
+            "type": "switch_midi",
+            "address": "/recv_cmd/144/34",
+            "path": "/control/strip_3/knob_switch"
+        },
+        {
+            "name": "Strip 4 Knob Switch",
+            "type": "switch_midi",
+            "address": "/recv_cmd/144/35",
+            "path": "/control/strip_4/knob_switch"
+        },
+        {
+            "name": "Strip 5 Knob Switch",
+            "type": "switch_midi",
+            "address": "/recv_cmd/144/36",
+            "path": "/control/strip_5/knob_switch"
+        },
+        {
+            "name": "Strip 6 Knob Switch",
+            "type": "switch_midi",
+            "address": "/recv_cmd/144/37",
+            "path": "/control/strip_6/knob_switch"
+        },
+        {
+            "name": "Strip 7 Knob Switch",
+            "type": "switch_midi",
+            "address": "/recv_cmd/144/38",
+            "path": "/control/strip_7/knob_switch"
+        },
+        {
+            "name": "Strip 8 Knob Switch",
+            "type": "switch_midi",
+            "address": "/recv_cmd/144/39",
+            "path": "/control/strip_8/knob_switch"
+        },
+        {
+            "name": "Track Encoder Switch",
+            "type": "switch_midi",
+            "address": "/recv_cmd/144/40",
+            "path": "/control/control_assign/track_encoder_switch"
+        },
+        {
+            "name": "Pan Encoder Switch",
+            "type": "switch_midi",
+            "address": "/recv_cmd/144/42",
+            "path": "/control/control_assign/pan_encoder_switch"
+        },
+        {
+            "name": "EQ Encoder Switch",
+            "type": "switch_midi",
+            "address": "/recv_cmd/144/44",
+            "path": "/control/control_assign/eq_encoder_switch"
+        },
+        {
+            "name": "Send Encoder Switch",
+            "type": "switch_midi",
+            "address": "/recv_cmd/144/41",
+            "path": "/control/control_assign/send_encoder_switch"
+        },
+        {
+            "name": "Plugin Encoder Switch",
+            "type": "switch_midi",
+            "address": "/recv_cmd/144/43",
+            "path": "/control/control_assign/plugin_encoder_switch"
+        },
+        {
+            "name": "Instrument Encoder Switch",
+            "type": "switch_midi",
+            "address": "/recv_cmd/144/45",
+            "path": "/control/control_assign/instrument_encoder_switch"
+        },
+        {
+            "name": "Bank L Switch",
+            "type": "switch_midi",
+            "address": "/recv_cmd/144/46",
+            "path": "/control/control_assign/bank_left_switch"
+        },
+        {
+            "name": "Bank R Switch",
+            "type": "switch_midi",
+            "address": "/recv_cmd/144/47",
+            "path": "/control/control_assign/bank_right_switch"
+        },
+        {
+            "name": "Channel L Switch",
+            "type": "switch_midi",
+            "address": "/recv_cmd/144/48",
+            "path": "/control/control_assign/channel_left_switch"
+        },
+        {
+            "name": "Channel R Switch",
+            "type": "switch_midi",
+            "address": "/recv_cmd/144/49",
+            "path": "/control/control_assign/channel_right_switch"
+        },
+        {
+            "name": "Flip Switch",
+            "type": "switch_midi",
+            "address": "/recv_cmd/144/50",
+            "path": "/control/control_assign/flip_switch"
+        },
+        {
+            "name": "Beats SMPTE Switch",
+            "type": "switch_midi",
+            "address": "/recv_cmd/144/53",
+            "path": "/control/transport/beats_smpte_switch"
+        },
+        {
+            "name": "F1 Switch",
+            "type": "switch_midi",
+            "address": "/recv_cmd/144/54",
+            "path": "/control/function/f1_switch"
+        },
+        {
+            "name": "F2 Switch",
+            "type": "switch_midi",
+            "address": "/recv_cmd/144/55",
+            "path": "/control/function/f2_switch"
+        },
+        {
+            "name": "Shift Switch",
+            "type": "switch_midi",
+            "address": "/recv_cmd/144/70",
+            "path": "/control/modify/shift_switch"
+        },
+        {
+            "name": "Option Switch",
+            "type": "switch_midi",
+            "address": "/recv_cmd/144/71",
+            "path": "/control/modify/option_switch"
+        },
+        {
+            "name": "Control Switch",
+            "type": "switch_midi",
+            "address": "/recv_cmd/144/72",
+            "path": "/control/modify/control_switch"
+        },
+        {
+            "name": "Command Switch",
+            "type": "switch_midi",
+            "address": "/recv_cmd/144/73",
+            "path": "/control/modify/command_switch"
+        },
+        {
+            "name": "Automation Read/Off Switch",
+            "type": "switch_midi",
+            "address": "/recv_cmd/144/74",
+            "path": "/control/automation/read_off_switch"
+        },
+        {
+            "name": "Automation Write Switch",
+            "type": "switch_midi",
+            "address": "/recv_cmd/144/75",
+            "path": "/control/automation/write_switch"
+        },
+        {
+            "name": "Automation Trim Switch",
+            "type": "switch_midi",
+            "address": "/recv_cmd/144/76",
+            "path": "/control/automation/trim_switch"
+        },
+        {
+            "name": "Automation Touch Switch",
+            "type": "switch_midi",
+            "address": "/recv_cmd/144/77",
+            "path": "/control/automation/touch_switch"
+        },
+        {
+            "name": "Automation Latch Switch",
+            "type": "switch_midi",
+            "address": "/recv_cmd/144/78",
+            "path": "/control/automation/latch_switch"
+        },
+        {
+            "name": "Group Switch",
+            "type": "switch_midi",
+            "address": "/recv_cmd/144/79",
+            "path": "/control/automation/group_switch"
+        },
+        {
+            "name": "Undo Switch",
+            "type": "switch_midi",
+            "address": "/recv_cmd/144/81",
+            "path": "/control/utility/undo_switch"
+        },
+        {
+            "name": "Cancel Switch",
+            "type": "switch_midi",
+            "address": "/recv_cmd/144/82",
+            "path": "/control/utility/cancel_switch"
+        },
+        {
+            "name": "Enter Switch",
+            "type": "switch_midi",
+            "address": "/recv_cmd/144/83",
+            "path": "/control/utility/enter_switch"
+        },
+        {
+            "name": "Marker Switch",
+            "type": "switch_midi",
+            "address": "/recv_cmd/144/84",
+            "path": "/control/transport/marker_switch"
+        },
+        {
+            "name": "Cycle Switch",
+            "type": "switch_midi",
+            "address": "/recv_cmd/144/86",
+            "path": "/control/transport/cycle_switch"
+        },
+        {
+            "name": "Click Switch",
+            "type": "switch_midi",
+            "address": "/recv_cmd/144/89",
+            "path": "/control/transport/click_switch"
+        },
+        {
+            "name": "Solo Master Switch",
+            "type": "switch_midi",
+            "address": "/recv_cmd/144/90",
+            "path": "/control/transport/solo_master_switch"
+        },
+        {
+            "name": "FRwd Switch",
+            "type": "switch_midi",
+            "address": "/recv_cmd/144/91",
+            "path": "/control/transport/frwd_switch"
+        },
+        {
+            "name": "FFwd Switch",
+            "type": "switch_midi",
+            "address": "/recv_cmd/144/92",
+            "path": "/control/transport/ffwd_switch"
+        },
+        {
+            "name": "Stop Switch",
+            "type": "switch_midi",
+            "address": "/recv_cmd/144/93",
+            "path": "/control/transport/stop_switch"
+        },
+        {
+            "name": "Play Switch",
+            "type": "switch_midi",
+            "address": "/recv_cmd/144/94",
+            "path": "/control/transport/play_switch"
+        },
+        {
+            "name": "Record Switch",
+            "type": "switch_midi",
+            "address": "/recv_cmd/144/95",
+            "path": "/control/transport/record_switch"
+        },
+        {
+            "name": "Up Switch",
+            "type": "switch_midi",
+            "address": "/recv_cmd/144/96",
+            "path": "/control/transport/up_switch"
+        },
+        {
+            "name": "Down Switch",
+            "type": "switch_midi",
+            "address": "/recv_cmd/144/97",
+            "path": "/control/transport/down_switch"
+        },
+        {
+            "name": "Left Switch",
+            "type": "switch_midi",
+            "address": "/recv_cmd/144/98",
+            "path": "/control/transport/left_switch"
+        },
+        {
+            "name": "Right Switch",
+            "type": "switch_midi",
+            "address": "/recv_cmd/144/99",
+            "path": "/control/transport/right_switch"
+        },
+        {
+            "name": "Zoom Switch",
+            "type": "switch_midi",
+            "address": "/recv_cmd/144/100",
+            "path": "/control/transport/zoom_switch"
+        },
+        {
+            "name": "Strip 1 Fader Touch",
+            "type": "switch_midi",
+            "address": "/recv_cmd/144/104",
+            "path": "/control/strip_1/fader_touch_switch"
+        },
+        {
+            "name": "Strip 2 Fader Touch",
+            "type": "switch_midi",
+            "address": "/recv_cmd/144/105",
+            "path": "/control/strip_2/fader_touch_switch"
+        },
+        {
+            "name": "Strip 3 Fader Touch",
+            "type": "switch_midi",
+            "address": "/recv_cmd/144/106",
+            "path": "/control/strip_3/fader_touch_switch"
+        },
+        {
+            "name": "Strip 4 Fader Touch",
+            "type": "switch_midi",
+            "address": "/recv_cmd/144/107",
+            "path": "/control/strip_4/fader_touch_switch"
+        },
+        {
+            "name": "Strip 5 Fader Touch",
+            "type": "switch_midi",
+            "address": "/recv_cmd/144/108",
+            "path": "/control/strip_5/fader_touch_switch"
+        },
+        {
+            "name": "Strip 6 Fader Touch",
+            "type": "switch_midi",
+            "address": "/recv_cmd/144/109",
+            "path": "/control/strip_6/fader_touch_switch"
+        },
+        {
+            "name": "Strip 7 Fader Touch",
+            "type": "switch_midi",
+            "address": "/recv_cmd/144/110",
+            "path": "/control/strip_7/fader_touch_switch"
+        },
+        {
+            "name": "Strip 8 Fader Touch",
+            "type": "switch_midi",
+            "address": "/recv_cmd/144/111",
+            "path": "/control/strip_8/fader_touch_switch"
+        },
+        {
+            "name": "Strip Main Fader Touch",
+            "type": "switch_midi",
+            "address": "/recv_cmd/144/112",
+            "path": "/control/strip_main/fader_touch_switch"
+        },
+        {
+            "name": "Strip 1 Record Led",
+            "type": "led_midi",
+            "address": "/send_cmd/144/0",
+            "path": "/control/strip_1/record_led"
+        },
+        {
+            "name": "Strip 2 Record Led",
+            "type": "led_midi",
+            "address": "/send_cmd/144/1",
+            "path": "/control/strip_2/record_led"
+        },
+        {
+            "name": "Strip 3 Record Led",
+            "type": "led_midi",
+            "address": "/send_cmd/144/2",
+            "path": "/control/strip_3/record_led"
+        },
+        {
+            "name": "Strip 4 Record Led",
+            "type": "led_midi",
+            "address": "/send_cmd/144/3",
+            "path": "/control/strip_4/record_led"
+        },
+        {
+            "name": "Strip 5 Record Led",
+            "type": "led_midi",
+            "address": "/send_cmd/144/4",
+            "path": "/control/strip_5/record_led"
+        },
+        {
+            "name": "Strip 6 Record Led",
+            "type": "led_midi",
+            "address": "/send_cmd/144/5",
+            "path": "/control/strip_6/record_led"
+        },
+        {
+            "name": "Strip 7 Record Led",
+            "type": "led_midi",
+            "address": "/send_cmd/144/6",
+            "path": "/control/strip_7/record_led"
+        },
+        {
+            "name": "Strip 8 Record Led",
+            "type": "led_midi",
+            "address": "/send_cmd/144/7",
+            "path": "/control/strip_8/record_led"
+        },
+        {
+            "name": "Strip 1 Solo Led",
+            "type": "led_midi",
+            "address": "/send_cmd/144/8",
+            "path": "/control/strip_1/solo_led"
+        },
+        {
+            "name": "Strip 2 Solo Led",
+            "type": "led_midi",
+            "address": "/send_cmd/144/9",
+            "path": "/control/strip_2/solo_led"
+        },
+        {
+            "name": "Strip 3 Solo Led",
+            "type": "led_midi",
+            "address": "/send_cmd/144/10",
+            "path": "/control/strip_3/solo_led"
+        },
+        {
+            "name": "Strip 4 Solo Led",
+            "type": "led_midi",
+            "address": "/send_cmd/144/11",
+            "path": "/control/strip_4/solo_led"
+        },
+        {
+            "name": "Strip 5 Solo Led",
+            "type": "led_midi",
+            "address": "/send_cmd/144/12",
+            "path": "/control/strip_5/solo_led"
+        },
+        {
+            "name": "Strip 6 Solo Led",
+            "type": "led_midi",
+            "address": "/send_cmd/144/13",
+            "path": "/control/strip_6/solo_led"
+        },
+        {
+            "name": "Strip 7 Solo Led",
+            "type": "led_midi",
+            "address": "/send_cmd/144/14",
+            "path": "/control/strip_7/solo_led"
+        },
+        {
+            "name": "Strip 8 Solo Led",
+            "type": "led_midi",
+            "address": "/send_cmd/144/15",
+            "path": "/control/strip_8/solo_led"
+        },
+        {
+            "name": "Strip 1 Mute Led",
+            "type": "led_midi",
+            "address": "/send_cmd/144/16",
+            "path": "/control/strip_1/mute_led"
+        },
+        {
+            "name": "Strip 2 Mute Led",
+            "type": "led_midi",
+            "address": "/send_cmd/144/17",
+            "path": "/control/strip_2/mute_led"
+        },
+        {
+            "name": "Strip 3 Mute Led",
+            "type": "led_midi",
+            "address": "/send_cmd/144/18",
+            "path": "/control/strip_3/mute_led"
+        },
+        {
+            "name": "Strip 4 Mute Led",
+            "type": "led_midi",
+            "address": "/send_cmd/144/19",
+            "path": "/control/strip_4/mute_led"
+        },
+        {
+            "name": "Strip 5 Mute Led",
+            "type": "led_midi",
+            "address": "/send_cmd/144/20",
+            "path": "/control/strip_5/mute_led"
+        },
+        {
+            "name": "Strip 6 Mute Led",
+            "type": "led_midi",
+            "address": "/send_cmd/144/21",
+            "path": "/control/strip_6/mute_led"
+        },
+        {
+            "name": "Strip 7 Mute Led",
+            "type": "led_midi",
+            "address": "/send_cmd/144/22",
+            "path": "/control/strip_7/mute_led"
+        },
+        {
+            "name": "Strip 8 Mute Led",
+            "type": "led_midi",
+            "address": "/send_cmd/144/23",
+            "path": "/control/strip_8/mute_led"
+        },
+        {
+            "name": "Strip 1 Select Led",
+            "type": "led_midi",
+            "address": "/send_cmd/144/24",
+            "path": "/control/strip_1/select_led"
+        },
+        {
+            "name": "Strip 2 Select Led",
+            "type": "led_midi",
+            "address": "/send_cmd/144/25",
+            "path": "/control/strip_2/select_led"
+        },
+        {
+            "name": "Strip 3 Select Led",
+            "type": "led_midi",
+            "address": "/send_cmd/144/26",
+            "path": "/control/strip_3/select_led"
+        },
+        {
+            "name": "Strip 4 Select Led",
+            "type": "led_midi",
+            "address": "/send_cmd/144/27",
+            "path": "/control/strip_4/select_led"
+        },
+        {
+            "name": "Strip 5 Select Led",
+            "type": "led_midi",
+            "address": "/send_cmd/144/28",
+            "path": "/control/strip_5/select_led"
+        },
+        {
+            "name": "Strip 6 Select Led",
+            "type": "led_midi",
+            "address": "/send_cmd/144/29",
+            "path": "/control/strip_6/select_led"
+        },
+        {
+            "name": "Strip 7 Select Led",
+            "type": "led_midi",
+            "address": "/send_cmd/144/30",
+            "path": "/control/strip_7/select_led"
+        },
+        {
+            "name": "Strip 8 Select Led",
+            "type": "led_midi",
+            "address": "/send_cmd/144/31",
+            "path": "/control/strip_8/select_led"
+        },
+        {
+            "name": "Track Encoder Led",
+            "type": "led_midi",
+            "address": "/send_cmd/144/40",
+            "path": "/control/control_assign/track_encoder_led"
+        },
+        {
+            "name": "Pan Encoder Led",
+            "type": "led_midi",
+            "address": "/send_cmd/144/42",
+            "path": "/control/control_assign/pan_encoder_led"
+        },
+        {
+            "name": "EQ Encoder Led",
+            "type": "led_midi",
+            "address": "/send_cmd/144/44",
+            "path": "/control/control_assign/eq_encoder_led"
+        },
+        {
+            "name": "Send Encoder Led",
+            "type": "led_midi",
+            "address": "/send_cmd/144/41",
+            "path": "/control/control_assign/send_encoder_led"
+        },
+        {
+            "name": "Plugin Encoder Led",
+            "type": "led_midi",
+            "address": "/send_cmd/144/43",
+            "path": "/control/control_assign/plugin_encoder_led"
+        },
+        {
+            "name": "Instrument Encoder Led",
+            "type": "led_midi",
+            "address": "/send_cmd/144/45",
+            "path": "/control/control_assign/instrument_encoder_led"
+        },
+        {
+            "name": "Bank L Led",
+            "type": "led_midi",
+            "address": "/send_cmd/144/46",
+            "path": "/control/control_assign/bank_left_led"
+        },
+        {
+            "name": "Bank R Led",
+            "type": "led_midi",
+            "address": "/send_cmd/144/47",
+            "path": "/control/control_assign/bank_right_led"
+        },
+        {
+            "name": "Channel L Led",
+            "type": "led_midi",
+            "address": "/send_cmd/144/48",
+            "path": "/control/control_assign/channel_left_led"
+        },
+        {
+            "name": "Channel R Led",
+            "type": "led_midi",
+            "address": "/send_cmd/144/49",
+            "path": "/control/control_assign/channel_right_led"
+        },
+        {
+            "name": "Flip Led",
+            "type": "led_midi",
+            "address": "/send_cmd/144/50",
+            "path": "/control/control_assign/flip_led"
+        },
+        {
+            "name": "F1 Led",
+            "type": "led_midi",
+            "address": "/send_cmd/144/55",
+            "path": "/control/function/f1_led"
+        },
+        {
+            "name": "Shift Led",
+            "type": "led_midi",
+            "address": "/send_cmd/144/70",
+            "path": "/control/modify/shift_led"
+        },
+        {
+            "name": "Option Led",
+            "type": "led_midi",
+            "address": "/send_cmd/144/71",
+            "path": "/control/modify/option_led"
+        },
+        {
+            "name": "Control Led",
+            "type": "led_midi",
+            "address": "/send_cmd/144/72",
+            "path": "/control/modify/control_led"
+        },
+        {
+            "name": "Command Led",
+            "type": "led_midi",
+            "address": "/send_cmd/144/73",
+            "path": "/control/modify/command_led"
+        },
+        {
+            "name": "Automation Read/Off Led",
+            "type": "led_midi",
+            "address": "/send_cmd/144/74",
+            "path": "/control/automation/read_off_led"
+        },
+        {
+            "name": "Automation Write Led",
+            "type": "led_midi",
+            "address": "/send_cmd/144/75",
+            "path": "/control/automation/write_led"
+        },
+        {
+            "name": "Automation Trim Led",
+            "type": "led_midi",
+            "address": "/send_cmd/144/76",
+            "path": "/control/automation/trim_led"
+        },
+        {
+            "name": "Automation Touch Led",
+            "type": "led_midi",
+            "address": "/send_cmd/144/77",
+            "path": "/control/automation/touch_led"
+        },
+        {
+            "name": "Automation Latch Led",
+            "type": "led_midi",
+            "address": "/send_cmd/144/78",
+            "path": "/control/automation/latch_led"
+        },
+        {
+            "name": "Group Led",
+            "type": "led_midi",
+            "address": "/send_cmd/144/79",
+            "path": "/control/automation/group_led"
+        },
+        {
+            "name": "Undo Led",
+            "type": "led_midi",
+            "address": "/send_cmd/144/81",
+            "path": "/control/utility/undo_led"
+        },
+        {
+            "name": "Cancel Led",
+            "type": "led_midi",
+            "address": "/send_cmd/144/82",
+            "path": "/control/utility/cancel_led"
+        },
+        {
+            "name": "Enter Led",
+            "type": "led_midi",
+            "address": "/send_cmd/144/83",
+            "path": "/control/utility/enter_led"
+        },
+        {
+            "name": "Marker Led",
+            "type": "led_midi",
+            "address": "/send_cmd/144/54",
+            "path": "/control/transport/marker_led"
+        },
+        {
+            "name": "Cycle Led",
+            "type": "led_midi",
+            "address": "/send_cmd/144/86",
+            "path": "/control/transport/cycle_led"
+        },
+        {
+            "name": "Click Led",
+            "type": "led_midi",
+            "address": "/send_cmd/144/89",
+            "path": "/control/transport/click_led"
+        },
+        {
+            "name": "Solo Master Led",
+            "type": "led_midi",
+            "address": "/send_cmd/144/90",
+            "path": "/control/transport/solo_master_led"
+        },
+        {
+            "name": "FRwd Led",
+            "type": "led_midi",
+            "address": "/send_cmd/144/91",
+            "path": "/control/transport/frwd_led"
+        },
+        {
+            "name": "FFwd Led",
+            "type": "led_midi",
+            "address": "/send_cmd/144/92",
+            "path": "/control/transport/ffwd_led"
+        },
+        {
+            "name": "Stop Led",
+            "type": "led_midi",
+            "address": "/send_cmd/144/93",
+            "path": "/control/transport/stop_led"
+        },
+        {
+            "name": "Play Led",
+            "type": "led_midi",
+            "address": "/send_cmd/144/94",
+            "path": "/control/transport/play_led"
+        },
+        {
+            "name": "Record Led",
+            "type": "led_midi",
+            "address": "/send_cmd/144/95",
+            "path": "/control/transport/record_led"
+        },
+        {
+            "name": "Up Led",
+            "type": "led_midi",
+            "address": "/send_cmd/144/96",
+            "path": "/control/transport/up_led"
+        },
+        {
+            "name": "Down Led",
+            "type": "led_midi",
+            "address": "/send_cmd/144/97",
+            "path": "/control/transport/down_led"
+        },
+        {
+            "name": "Left Led",
+            "type": "led_midi",
+            "address": "/send_cmd/144/98",
+            "path": "/control/transport/left_led"
+        },
+        {
+            "name": "Right Led",
+            "type": "led_midi",
+            "address": "/send_cmd/144/99",
+            "path": "/control/transport/right_led"
+        },
+        {
+            "name": "Zoom Led",
+            "type": "led_midi",
+            "address": "/send_cmd/144/100",
+            "path": "/control/transport/zoom_led"
+        },
+        {
+            "name": "SMPTE Led",
+            "type": "led_midi",
+            "address": "/send_cmd/144/113",
+            "path": "/control/transport/smpte_led"
+        },
+        {
+            "name": "Beats Led",
+            "type": "led_midi",
+            "address": "/send_cmd/144/114",
+            "path": "/control/transport/beats_led"
+        },
+        {
+            "name": "Strip 1 Fader Position",
+            "type": "fader_position_midi",
+            "address": "/recv_cmd/224",
+            "path": "/control/strip_1/fader_position"
+        },
+        {
+            "name": "Strip 2 Fader Position",
+            "type": "fader_position_midi",
+            "address": "/recv_cmd/225",
+            "path": "/control/strip_2/fader_position"
+        },
+        {
+            "name": "Strip 3 Fader Position",
+            "type": "fader_position_midi",
+            "address": "/recv_cmd/226",
+            "path": "/control/strip_3/fader_position"
+        },
+        {
+            "name": "Strip 4 Fader Position",
+            "type": "fader_position_midi",
+            "address": "/recv_cmd/227",
+            "path": "/control/strip_4/fader_position"
+        },
+        {
+            "name": "Strip 5 Fader Position",
+            "type": "fader_position_midi",
+            "address": "/recv_cmd/228",
+            "path": "/control/strip_5/fader_position"
+        },
+        {
+            "name": "Strip 6 Fader Position",
+            "type": "fader_position_midi",
+            "address": "/recv_cmd/229",
+            "path": "/control/strip_6/fader_position"
+        },
+        {
+            "name": "Strip 7 Fader Position",
+            "type": "fader_position_midi",
+            "address": "/recv_cmd/230",
+            "path": "/control/strip_7/fader_position"
+        },
+        {
+            "name": "Strip 8 Fader Position",
+            "type": "fader_position_midi",
+            "address": "/recv_cmd/231",
+            "path": "/control/strip_8/fader_position"
+        },
+        {
+            "name": "Strip Main Fader Position",
+            "type": "fader_position_midi",
+            "address": "/recv_cmd/232",
+            "path": "/control/strip_main/fader_position"
+        },
+        {
+            "name": "Strip 1 Fader Setpoint",
+            "type": "fader_setpoint_midi",
+            "address": "/send_cmd/224",
+            "path": "/control/strip_1/fader_setpoint"
+        },
+        {
+            "name": "Strip 2 Fader Setpoint",
+            "type": "fader_setpoint_midi",
+            "address": "/send_cmd/225",
+            "path": "/control/strip_2/fader_setpoint"
+        },
+        {
+            "name": "Strip 3 Fader Setpoint",
+            "type": "fader_setpoint_midi",
+            "address": "/send_cmd/226",
+            "path": "/control/strip_3/fader_setpoint"
+        },
+        {
+            "name": "Strip 4 Fader Setpoint",
+            "type": "fader_setpoint_midi",
+            "address": "/send_cmd/227",
+            "path": "/control/strip_4/fader_setpoint"
+        },
+        {
+            "name": "Strip 5 Fader Setpoint",
+            "type": "fader_setpoint_midi",
+            "address": "/send_cmd/228",
+            "path": "/control/strip_5/fader_setpoint"
+        },
+        {
+            "name": "Strip 6 Fader Setpoint",
+            "type": "fader_setpoint_midi",
+            "address": "/send_cmd/229",
+            "path": "/control/strip_6/fader_setpoint"
+        },
+        {
+            "name": "Strip 7 Fader Setpoint",
+            "type": "fader_setpoint_midi",
+            "address": "/send_cmd/230",
+            "path": "/control/strip_7/fader_setpoint"
+        },
+        {
+            "name": "Strip 8 Fader Setpoint",
+            "type": "fader_setpoint_midi",
+            "address": "/send_cmd/231",
+            "path": "/control/strip_8/fader_setpoint"
+        },
+        {
+            "name": "Strip Main Fader Setpoint",
+            "type": "fader_setpoint_midi",
+            "address": "/send_cmd/232",
+            "path": "/control/strip_main/fader_setpoint"
+        },
+        {
+            "name": "Strip 1 Knob Position",
+            "type": "knob_position_midi",
+            "address": "/recv_cmd/176/16",
+            "path": "/control/strip_1/knob_position"
+        },
+        {
+            "name": "Strip 2 Knob Position",
+            "type": "knob_position_midi",
+            "address": "/recv_cmd/176/17",
+            "path": "/control/strip_2/knob_position"
+        },
+        {
+            "name": "Strip 3 Knob Position",
+            "type": "knob_position_midi",
+            "address": "/recv_cmd/176/18",
+            "path": "/control/strip_3/knob_position"
+        },
+        {
+            "name": "Strip 4 Knob Position",
+            "type": "knob_position_midi",
+            "address": "/recv_cmd/176/19",
+            "path": "/control/strip_4/knob_position"
+        },
+        {
+            "name": "Strip 5 Knob Position",
+            "type": "knob_position_midi",
+            "address": "/recv_cmd/176/20",
+            "path": "/control/strip_5/knob_position"
+        },
+        {
+            "name": "Strip 6 Knob Position",
+            "type": "knob_position_midi",
+            "address": "/recv_cmd/176/21",
+            "path": "/control/strip_6/knob_position"
+        },
+        {
+            "name": "Strip 7 Knob Position",
+            "type": "knob_position_midi",
+            "address": "/recv_cmd/176/22",
+            "path": "/control/strip_7/knob_position"
+        },
+        {
+            "name": "Strip 8 Knob Position",
+            "type": "knob_position_midi",
+            "address": "/recv_cmd/176/23",
+            "path": "/control/strip_8/knob_position"
+        },
+        {
+            "name": "Jog Wheel",
+            "type": "jog_wheel_position_midi",
+            "address": "/recv_cmd/176/60",
+            "path": "/control/transport/jog_wheel"
+        },
+        {
+            "name": "Strip 1 Knob Halo",
+            "type": "knob_halo_midi",
+            "address": "/send_cmd/176/48",
+            "path": "/control/strip_1/knob_halo"
+        },
+        {
+            "name": "Strip 2 Knob Halo",
+            "type": "knob_halo_midi",
+            "address": "/send_cmd/176/49",
+            "path": "/control/strip_2/knob_halo"
+        },
+        {
+            "name": "Strip 3 Knob Halo",
+            "type": "knob_halo_midi",
+            "address": "/send_cmd/176/50",
+            "path": "/control/strip_3/knob_halo"
+        },
+        {
+            "name": "Strip 4 Knob Halo",
+            "type": "knob_halo_midi",
+            "address": "/send_cmd/176/51",
+            "path": "/control/strip_4/knob_halo"
+        },
+        {
+            "name": "Strip 5 Knob Halo",
+            "type": "knob_halo_midi",
+            "address": "/send_cmd/176/52",
+            "path": "/control/strip_5/knob_halo"
+        },
+        {
+            "name": "Strip 6 Knob Halo",
+            "type": "knob_halo_midi",
+            "address": "/send_cmd/176/53",
+            "path": "/control/strip_6/knob_halo"
+        },
+        {
+            "name": "Strip 7 Knob Halo",
+            "type": "knob_halo_midi",
+            "address": "/send_cmd/176/54",
+            "path": "/control/strip_7/knob_halo"
+        },
+        {
+            "name": "Strip 8 Knob Halo",
+            "type": "knob_halo_midi",
+            "address": "/send_cmd/176/55",
+            "path": "/control/strip_8/knob_halo"
+        },
+        {
+            "name": "Strip 1 Upper Lcd",
+            "type": "strip_lcd_midi",
+            "address": "/send_sysex/0/strip_lcd_upper",
+            "path": "/control/strip_1/lcd_upper"
+        },
+        {
+            "name": "Strip 2 Upper Lcd",
+            "type": "strip_lcd_midi",
+            "address": "/send_sysex/1/strip_lcd_upper",
+            "path": "/control/strip_2/lcd_upper"
+        },
+        {
+            "name": "Strip 3 Upper Lcd",
+            "type": "strip_lcd_midi",
+            "address": "/send_sysex/2/strip_lcd_upper",
+            "path": "/control/strip_3/lcd_upper"
+        },
+        {
+            "name": "Strip 4 Upper Lcd",
+            "type": "strip_lcd_midi",
+            "address": "/send_sysex/3/strip_lcd_upper",
+            "path": "/control/strip_4/lcd_upper"
+        },
+        {
+            "name": "Strip 5 Upper Lcd",
+            "type": "strip_lcd_midi",
+            "address": "/send_sysex/4/strip_lcd_upper",
+            "path": "/control/strip_5/lcd_upper"
+        },
+        {
+            "name": "Strip 6 Upper Lcd",
+            "type": "strip_lcd_midi",
+            "address": "/send_sysex/5/strip_lcd_upper",
+            "path": "/control/strip_6/lcd_upper"
+        },
+        {
+            "name": "Strip 7 Upper Lcd",
+            "type": "strip_lcd_midi",
+            "address": "/send_sysex/6/strip_lcd_upper",
+            "path": "/control/strip_7/lcd_upper"
+        },
+        {
+            "name": "Strip 8 Upper Lcd",
+            "type": "strip_lcd_midi",
+            "address": "/send_sysex/7/strip_lcd_upper",
+            "path": "/control/strip_8/lcd_upper"
+        },
+        {
+            "name": "Strip 1 Lower Lcd",
+            "type": "strip_lcd_midi",
+            "address": "/send_sysex/0/strip_lcd_lower",
+            "path": "/control/strip_1/lcd_lower"
+        },
+        {
+            "name": "Strip 2 Lower Lcd",
+            "type": "strip_lcd_midi",
+            "address": "/send_sysex/1/strip_lcd_lower",
+            "path": "/control/strip_2/lcd_lower"
+        },
+        {
+            "name": "Strip 3 Lower Lcd",
+            "type": "strip_lcd_midi",
+            "address": "/send_sysex/2/strip_lcd_lower",
+            "path": "/control/strip_3/lcd_lower"
+        },
+        {
+            "name": "Strip 4 Lower Lcd",
+            "type": "strip_lcd_midi",
+            "address": "/send_sysex/3/strip_lcd_lower",
+            "path": "/control/strip_4/lcd_lower"
+        },
+        {
+            "name": "Strip 5 Lower Lcd",
+            "type": "strip_lcd_midi",
+            "address": "/send_sysex/4/strip_lcd_lower",
+            "path": "/control/strip_5/lcd_lower"
+        },
+        {
+            "name": "Strip 6 Lower Lcd",
+            "type": "strip_lcd_midi",
+            "address": "/send_sysex/5/strip_lcd_lower",
+            "path": "/control/strip_6/lcd_lower"
+        },
+        {
+            "name": "Strip 7 Lower Lcd",
+            "type": "strip_lcd_midi",
+            "address": "/send_sysex/6/strip_lcd_lower",
+            "path": "/control/strip_7/lcd_lower"
+        },
+        {
+            "name": "Strip 8 Lower Lcd",
+            "type": "strip_lcd_midi",
+            "address": "/send_sysex/7/strip_lcd_lower",
+            "path": "/control/strip_8/lcd_lower"
+        },
+        {
+            "name": "Timecode Display",
+            "type": "timecode_display_midi",
+            "address": "/send_cmd/176/64",
+            "path": "/control/transport/timecode_display"
+        },
+        {
+            "name": "Strip 1 Meter",
+            "type": "strip_meter_midi",
+            "address": "/send_cmd/208/0",
+            "path": "/control/strip_1/meter_level"
+        },
+        {
+            "name": "Strip 2 Meter",
+            "type": "strip_meter_midi",
+            "address": "/send_cmd/208/1",
+            "path": "/control/strip_2/meter_level"
+        },
+        {
+            "name": "Strip 3 Meter",
+            "type": "strip_meter_midi",
+            "address": "/send_cmd/208/2",
+            "path": "/control/strip_3/meter_level"
+        },
+        {
+            "name": "Strip 4 Meter",
+            "type": "strip_meter_midi",
+            "address": "/send_cmd/208/3",
+            "path": "/control/strip_4/meter_level"
+        },
+        {
+            "name": "Strip 5 Meter",
+            "type": "strip_meter_midi",
+            "address": "/send_cmd/208/4",
+            "path": "/control/strip_5/meter_level"
+        },
+        {
+            "name": "Strip 6 Meter",
+            "type": "strip_meter_midi",
+            "address": "/send_cmd/208/5",
+            "path": "/control/strip_6/meter_level"
+        },
+        {
+            "name": "Strip 7 Meter",
+            "type": "strip_meter_midi",
+            "address": "/send_cmd/208/6",
+            "path": "/control/strip_7/meter_level"
+        },
+        {
+            "name": "Strip 8 Meter",
+            "type": "strip_meter_midi",
+            "address": "/send_cmd/208/7",
+            "path": "/control/strip_8/meter_level"
+        }
+    ]
+}
