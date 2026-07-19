@@ -1,17 +1,14 @@
-# Luna Companion v2.0.0
+# Luna Companion v2.0.1
 
-Luna Companion v2.0.0 is a focused tracking remote for Universal Audio LUNA. It starts a local server on the Mac, shows a LAN URL and QR code, and lets an iPhone, iPad, or another browser on the same network control the production tracking surface.
+Luna Companion v2.0.1 is a focused reliability update for Universal Audio LUNA sessions with active meters, buses, mixed track types, and larger track counts.
 
 ## What's New
 
-- Focused channel strip UI for tracking sessions.
-- Bidirectional focused fader control between LUNA and the remote.
-- Focused meter and peak display with LUNA MCU feedback.
-- Focused track arm, solo, and mute controls over MCU/IAC.
-- Scribble-strip navigation mode for selected-track movement.
-- Plus modal actions for new track version, duplicate track, and duplicate without content.
-- Production cleanup removed hidden debug tabs and client-side test-lab UI.
-- Packaging metadata and file lists were cleaned up for release.
+- Correctly decodes MCU meter messages for all eight local surface strips.
+- Prevents active buses or neighboring tracks from driving the selected track's remote meter.
+- Clears stale meter values when LUNA refreshes or reassigns the current surface bank.
+- Adds automated regression coverage for packed strip levels, zero-level clears, and peak-hold diagnostics.
+- Adds the complete verified LUNA controller configuration to the desktop MIDI Setup panel and README.
 
 ## Installation
 
@@ -19,7 +16,7 @@ Luna Companion v2.0.0 is a focused tracking remote for Universal Audio LUNA. It 
 2. Move `Luna Companion.app` into `Applications`.
 3. Launch the app.
 
-macOS may show a security warning because this app is not currently signed or notarized. Right-click the app and choose Open the first time you launch it.
+The release build is signed and notarized for macOS.
 
 ## MIDI Setup
 
@@ -34,6 +31,11 @@ In LUNA MIDI Control Surfaces, set:
 
 - Input device: `LUNA Companion To LUNA`
 - Output device: `LUNA Companion From LUNA`
+- Surface Shows Tracks From: `Focused Window`
+- Bank to Selected Track: `On`
+- Scroll LUNA When Banking: `On`
+- Show Main Track: `On`
+- Use Surface Fader Taper: `On`
 
 ## Notes
 
