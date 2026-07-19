@@ -16,8 +16,8 @@ export interface FocusedTrackMeterState {
   raw: number | null;
   normalized: number | null;
   peak: number | null;
-  // D0 00..0C carry live focused-meter levels.
-  // D0 0F is a delayed LUNA peak-hold diagnostic.
+  // D0 data packs the local strip in the upper nibble and its level in the lower nibble.
+  // Levels 00..0C carry live meter values; 0F is a delayed LUNA peak-hold diagnostic.
   // This field tracks the currently accepted visible red peak-hold lamp behavior.
   clip: boolean | null;
   source: FeedbackSource;

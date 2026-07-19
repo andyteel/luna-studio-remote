@@ -13,6 +13,7 @@
     "build": "npm run build:client && npm run build:server",
     "build:client": "vite build",
     "build:server": "tsc -p tsconfig.server.json",
+    "test:mcu": "tsx --test tests/mcu-meter.test.ts",
     "preview": "vite preview",
     "start": "node dist-server/server/index.js",
     "desktop:dev": "npm run desktop:build && electron .",

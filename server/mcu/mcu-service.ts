@@ -428,7 +428,7 @@ type ParsedMcuMeterFeedback = Readonly<{
   raw: number;
   normalized: number | null;
   clip: boolean | null;
-  encoding: 'focused-level' | 'status-per-strip';
+  encoding: 'packed-strip-level' | 'status-per-strip';
 }>;
 
 type McuStripLcdState = Readonly<{
@@ -668,26 +668,28 @@ export const parseMcuFaderFeedback = (bytes: number[]): ParsedMcuFaderFeedback |
 };
 
 export const parseMcuMeterFeedback = (bytes: number[]): ParsedMcuMeterFeedback | null => {
-  const [status, raw] = bytes;
+  const [status, rawData] = bytes;
 
   if (
     typeof status !== 'number' ||
-    typeof raw !== 'number'
+    typeof rawData !== 'number'
   ) {
     return null;
   }
 
   if (status === MCU_METER_FOCUSED_LEVEL_STATUS) {
-    const rawLevel = raw & 0x7f;
+    const packedStripLevel = rawData & 0x7f;
+    const stripIndex = (packedStripLevel >> 4) & 0x07;
+    const rawLevel = packedStripLevel & 0x0f;
     const isConfirmedClip = rawLevel === MCU_METER_CONFIRMED_CLIP_RAW;
     const isNormalLevel = rawLevel <= MCU_METER_OBSERVED_MAX_RAW;
 
     return {
-      stripIndex: null,
+      stripIndex,
       raw: rawLevel,
       normalized: isNormalLevel ? rawLevel / MCU_METER_OBSERVED_MAX_RAW : null,
       clip: isConfirmedClip ? true : rawLevel < MCU_METER_OBSERVED_MAX_RAW ? false : null,
-      encoding: 'focused-level',
+      encoding: 'packed-strip-level',
     };
   }
 
@@ -697,8 +699,8 @@ export const parseMcuMeterFeedback = (bytes: number[]): ParsedMcuMeterFeedback |
   ) {
     return {
       stripIndex: status - MCU_MESSAGE_MAP.stripFamilies.meterStatusBase,
-      raw,
-      normalized: Math.max(0, Math.min(raw, 127)) / 127,
+      raw: rawData,
+      normalized: Math.max(0, Math.min(rawData, 127)) / 127,
       clip: null,
       encoding: 'status-per-strip',
     };
@@ -1368,17 +1370,25 @@ export class McuService {
         [update.row]: update.text,
       };
 
+      if (update.row === 'upper') {
+        this.resetStripMeterFeedback(update.slot);
+      }
+
       this.logFocusedSyncDebug(
         `[focused-sync-debug] lcd row=${update.row} strip=${update.slot + 1} text="${formatNullableText(update.text)}" previous="${formatNullableText(previousText)}" selectedStrip=${formatNullableStrip(this.selectedStripIndex)} focusedStrip=${formatNullableStrip(this.focusedTrack.index)} action=${willUpdateFocusedTrack ? 'update-focused-track' : 'cache-only'}`,
       );
 
       if (willUpdateFocusedTrack) {
         const previousFocusedName = this.focusedTrack.name;
+        const cachedFeedback = this.stripFeedbackStates[update.slot] ?? createStripFeedbackState();
 
         this.focusedTrack = {
           ...this.focusedTrack,
           index: update.slot,
           name: update.text,
+          meter: {
+            ...cachedFeedback.meter,
+          },
           source: 'mcu',
           updatedAt: receivedAt,
         };
@@ -1468,7 +1478,7 @@ export class McuService {
       `[focused-meter-debug] rawD0=${feedback.raw} parsedMeter=${parsedMeterDetail} liveMeter=${liveMeterNormalized.toFixed(4)} clip=${feedback.clip === true ? 'true' : feedback.clip === false ? 'false' : 'unchanged'} focusedStrip=${stripIndex === null ? '--' : stripIndex + 1} uiMeter=${liveMeterNormalized.toFixed(4)} encoding=${feedback.encoding}`,
     );
 
-    if (feedback.encoding !== 'focused-level') {
+    if (feedback.encoding !== 'packed-strip-level') {
       return;
     }
 
@@ -1614,14 +1624,14 @@ export class McuService {
   }
 
   private isLivePeakTriggerFeedback(feedback: ParsedMcuMeterFeedback): boolean {
-    if (feedback.encoding === 'focused-level' && feedback.raw >= 0x0b && feedback.raw <= MCU_METER_OBSERVED_MAX_RAW) {
+    if (feedback.encoding === 'packed-strip-level' && feedback.raw >= 0x0b && feedback.raw <= MCU_METER_OBSERVED_MAX_RAW) {
       this.logMeterDebug(
         `[${new Date().toISOString()}] [focused-meter-clip-debug] upper meter event raw=${feedback.raw.toString(16).padStart(2, '0').toUpperCase()} normalized=${feedback.normalized?.toFixed(4) ?? 'null'}`,
       );
     }
 
     return (
-      feedback.encoding === 'focused-level' &&
+      feedback.encoding === 'packed-strip-level' &&
       feedback.raw >= MCU_METER_WARNING_THRESHOLD_RAW &&
       feedback.raw <= MCU_METER_OBSERVED_MAX_RAW &&
       typeof feedback.normalized === 'number' &&
@@ -1653,6 +1663,19 @@ export class McuService {
     }
 
     return currentClip;
+  }
+
+  private resetStripMeterFeedback(stripIndex: number): void {
+    this.clearMeterClipTimer(stripIndex);
+    const current = this.stripFeedbackStates[stripIndex] ?? createStripFeedbackState();
+    const emptyMeter = createStripFeedbackState().meter;
+
+    this.stripFeedbackStates[stripIndex] = {
+      ...current,
+      meter: {
+        ...emptyMeter,
+      },
+    };
   }
 
   private scheduleMeterClipClear(stripIndex: number, reason: 'live-meter' | 'd0-0f-refresh'): void {
