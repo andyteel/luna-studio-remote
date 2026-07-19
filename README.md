@@ -107,8 +107,12 @@ Once the IAC Driver has been configured, assign the Luna Companion MIDI ports in
 4. Set the **Output Device** to **IAC Luna Companion From Luna**.
 5. Enable the controller by checking the **On** box.
 6. Set **Surface Shows Tracks From** to **Focused Window**.
+7. Set **Bank to Selected Track** to **On**.
+8. Set **Scroll LUNA When Banking** to **On**.
+9. Set **Show Main Track** to **On**.
+10. Set **Use Surface Fader Taper** to **On**.
 
-> **Recommended:** Setting **Surface Shows Tracks From** to **Focused Window** allows Luna Companion to follow the track selection in whichever LUNA window is currently active, keeping the Focus Track display synchronized as you work.
+All five controller options are required for the verified workflow. In particular, **Bank to Selected Track** keeps focused-track names, meters, and controls synchronized when selecting tracks beyond the current eight-channel MCU bank.
 
 > **Note:** The Input and Output devices are intentionally reversed from the application's perspective. LUNA receives MIDI data from **IAC Luna Companion To Luna** and sends MIDI feedback to **IAC Luna Companion From Luna**.
 
@@ -333,6 +337,7 @@ Verify that:
 - LUNA is configured to use the Luna Companion IAC ports.
 - The controller is enabled in **Settings > Controllers**.
 - **Surface Shows Tracks From** is set to **Focused Window**.
+- **Bank to Selected Track**, **Scroll LUNA When Banking**, **Show Main Track**, and **Use Surface Fader Taper** are all **On**.
 
 Press **Play**, **Stop**, or select a track in LUNA. The server should indicate that MIDI communication has been established.
 
@@ -351,6 +356,7 @@ If commands such as **Undo**, **Redo**, **Track Options**, or timeline navigatio
 If the Focus Track screen does not follow your selection:
 
 - Confirm that **Surface Shows Tracks From** is set to **Focused Window** in LUNA's **Controllers** settings.
+- Confirm that **Bank to Selected Track**, **Scroll LUNA When Banking**, **Show Main Track**, and **Use Surface Fader Taper** are all **On**.
 - Click the track you want to control in LUNA.
 
 ## Button indicators don't match LUNA
